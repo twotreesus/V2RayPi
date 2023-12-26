@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>KeepAlive</key>
+    <true/>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>Label</key>
+    <string>homebrew.mxcl.v2ray-core</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+           <key>V2RAY_LOCATION_ASSET</key>
+           <string>/usr/local/share/v2ray-core/</string>
+    </dict>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/usr/local/bin/v2ray</string>
+      <string>-config</string>
+      <string>/usr/local/etc/v2ray/config.json</string>
+    </array>
+  </dict>
+</plist>

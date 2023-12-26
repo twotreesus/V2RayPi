@@ -1,0 +1,927 @@
+<link rel="stylesheet" href="/static/css/Chart.css">
+<div id="advance_page" class="mdui-container">
+    <p></p>
+    <div class="mdui-row">
+        <div class="mdui-table-fluid">
+            <table id="advance_table" class="mdui-table">
+                <tbody>
+                <tr>
+                    <td colspan="6">
+                        <div class="mdui-row mdui-typo mdui-valign">
+                            <h5 class="mdui-col-xs-2">自动切换</h5>
+                            <h6 class="mdui-typo-caption-opacity mdui-col-xs-8">按预设的探测地址和间隔时间进行 https 请求测试，如果连续超时或失败超过指定次数，则自动切换到根据 ping 值优选的节点</h6>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>启用</td>
+                    <td colspan="5">
+                        <label class="mdui-switch">
+                            <input id="enable_auto_switch" type="checkbox" checked onchange="enable_auto_detect_change()"/>
+                            <i class="mdui-switch-icon"></i>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>探测地址</td>
+                    <td colspan="2">
+                        <input id="detect_url" class="mdui-textfield-input mdui-col-sm-3 mdui-typo-display-1" type="text" onchange="detect_url_change()"/>
+                    </td>
+                    <td colspan="3">
+                        <div class="mdui-typo-caption-opacity">必须为 https 开头的国外地址，错误的地址会导致反复切换，请谨慎填写</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>时间间隔</td>
+                    <td colspan="2">
+                        <div>
+                            <input id="detect_time_span" class="mdui-textfield-input mdui-col-sm-3 mdui-typo-display-1" type="number" onchange="detect_time_span_change()" style="text-align: center;max-width: 50px"/>
+                        </div>
+
+                    </td>
+                    <td colspan="3">
+                        <div class="mdui-typo-caption-opacity">单位：秒，整数，范围：10-3600</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>请求超时</td>
+                    <td colspan="2">
+                        <input id="detect_timeout" class="mdui-textfield-input mdui-col-sm-3 mdui-typo-display-1" type="number" onchange="detect_timeout_change()" style="text-align: center;max-width: 50px"/>
+                    </td>
+                    <td colspan="3">
+                        <div class="mdui-typo-caption-opacity">单位：秒，支持小数，范围：0.5-10</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>重试次数</td>
+                    <td colspan="2">
+                        <input id="detect_max_retry" class="mdui-textfield-input mdui-col-sm-3 mdui-typo-display-1" type="number" onchange="detect_max_retry_change()" style="text-align: center;max-width: 50px"/>
+                    </td>
+                    <td colspan="3">
+                        <div class="mdui-typo-caption-opacity">达到重试次数后触发切换，范围：1-10</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>最近切换</td>
+                    <td colspan="5">
+                        <div class="mdui-row">
+                            <div id="detect_last_switch_time" class="mdui-col mdui-typo-caption-opacity"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="mdui-row mdui-typo mdui-valign">
+                            <h5 class="mdui-col-xs-2">本地代理</h5>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Socks 5 代理</td>
+                    <td colspan="5">
+                        <label class="mdui-switch">
+                            <input id="enable_socks_proxy" type="checkbox" checked onchange="enable_socks_proxy_change()"/>
+                            <i class="mdui-switch-icon"></i>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>端口</td>
+                    <td colspan="5">
+                        <div class="mdui-row mdui-valign">
+                            <div id="socks_proxy_port" class="mdui-col-sm-3"></div>
+                            <div id="modify_socks_proxy_port" class="mdui-col-sm-2">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="modify_socks_proxy_port()">修改</button>
+                            </div>
+                            <div id="clear_socks_proxy_port" class="mdui-col-sm-2" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_socks_proxy_port()">默认</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="mdui-row mdui-typo mdui-valign">
+                            <h5 class="mdui-col-xs-2">DNS 服务器</h5>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>国内 DNS</td>
+                    <td colspan="5">
+                        <div class="mdui-row mdui-valign">
+                            <div id="local_dns" class="mdui-col-sm-3"></div>
+                            <div id="modify_local_dns" class="mdui-col-sm-2">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="modify_local_dns()">修改</button>
+                            </div>
+                            <div id="clear_local_dns" class="mdui-col-sm-2" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_local_dns()">清除</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>国外 DNS</td>
+                    <td colspan="5">
+                        <div class="mdui-row mdui-valign">
+                            <div id="remote_dns" class="mdui-col-sm-3"></div>
+                            <div id="modify_remote_dns" class="mdui-col-sm-2">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="modify_remote_dns()">修改</button>
+                            </div>
+                            <div id="clear_remote_dns" class="mdui-col-sm-2" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_remote_dns()">清除</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="mdui-row mdui-typo mdui-valign">
+                            <h5 class="mdui-col-xs-2">自定义路由规则</h5>
+                            <h6 class="mdui-typo-caption-opacity mdui-col-xs-8">仅「智能分流」或「全局代理」模式下生效</h6>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>代理优先</td>
+                    <td colspan="2">
+                        <label class="mdui-switch">
+                            <input id="proxy_preferred" type="checkbox" checked onchange="proxy_preferred_change()"/>
+                            <i class="mdui-switch-icon"></i>
+                        </label>
+                    </td>
+                    <td colspan="3">
+                        <div class="mdui-typo-caption-opacity">
+                            设置当未命中任何规则时，默认直连还是代理，关闭即是「直连优先」，例如:
+                            <ul>
+                                <li>在「直连优先」+ 国外域名代理规则 的情况下，可实现类似GFW模式</li>
+                                <li>在「代理优先」+ 国内域名直连规则 的情况下，可实现大陆白名单模式</li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>屏蔽广告</td>
+                    <td colspan="2">
+                        <label class="mdui-switch">
+                            <input id="block_ad" type="checkbox" checked onchange="block_ad_change()"/>
+                            <i class="mdui-switch-icon"></i>
+                        </label>
+                    </td>
+                    <td colspan="3">
+                        <div class="mdui-typo-caption-opacity">
+                            添加域名阻止规则：geosite:category-ads-all
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>规则</td>
+                    <td>
+                        <div id="add_rule" class="mdui-col-sm-3">
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="create_rule()">创建</button>
+                        </div>
+                    </td>
+                    <td>
+                        <div id="clear_rule" class="mdui-col-sm-3">
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_rule()">清除</button>
+                        </div>
+                    </td>
+                    <td colspan="3">
+                        <div class="mdui-typo-caption-opacity">
+                            规则顺序会影响到匹配效果，当从前向后匹配到第一条规则时，则应用该规则策略并跳过后面的规则
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-typo-caption-opacity">
+                    <td>序号</td>
+                    <td>类型</td>
+                    <td>匹配值</td>
+                    <td>策略</td>
+                    <td>操作</td>
+                    <td>启用</td>
+                </tr>
+                <tr id="rule_template" style="display: none">
+                    <td class="rule_index"></td>
+                    <td class="rule_type"></td>
+                    <td class="rule_contents"></td>
+                    <td class="rule_policy"></td>
+                    <td>
+                        <div class="mdui-row-sm5">
+                            <div class="mdui-chip edit_rule" title="编辑规则">
+                                <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">edit</i></span>
+                            </div>
+                            <div class="mdui-chip up_rule" title="上移">
+                                <span class="mdui-chip-icon mdui-color-grey-500"><i class="mdui-icon material-icons">keyboard_arrow_up</i></span>
+                            </div>
+                            <div class="mdui-chip down_rule" title="下移">
+                                <span class="mdui-chip-icon mdui-color-grey-500"><i class="mdui-icon material-icons">keyboard_arrow_down</i></span>
+                            </div>
+                            <div class="mdui-chip delete_rule" title="删除规则">
+                                <span class="mdui-chip-icon mdui-color-red-500"><i class="mdui-icon material-icons">delete</i></span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <label class="mdui-switch">
+                            <input class="rule_enable" type="checkbox" checked/>
+                            <i class="mdui-switch-icon"></i>
+                        </label>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="mdui-row mdui-typo mdui-valign">
+                            <h5 class="mdui-col-xs-2">三方 GEO 数据库</h5>
+                            <h6 class="mdui-typo-caption-opacity mdui-col-xs-8">
+                                从 <a href="https://github.com/Loyalsoldier/v2ray-rules-dat">Loyalsoldier</a> 更新最新数据库
+                            </h6>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>当前版本</td>
+                    <td colspan="5" id="geo_data_current_ver"></td>
+                </tr>
+                <tr>
+                    <td>最新版本</td>
+                    <td colspan="5">
+                        <div class="mdui-row mdui-typo mdui-valign">
+                            <div id="geo_data_new_ver" class="mdui-col-sm-3 mdui-text-color-blue"></div>
+                            <div id="check_geo_data" class="mdui-col-sm-3">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_geo_data()">查询</button>
+                            </div>
+                            <div id="update_geo_data" class="mdui-col-sm-3" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_geo_data()">更新</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="mdui-row mdui-typo mdui-valign">
+                            <h5 class="mdui-col-xs-2">其他设置</h5>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Mux 多路复用</td>
+                    <td colspan="2">
+                        <label class="mdui-switch">
+                            <input id="enable_mux" type="checkbox" checked onchange="enable_mux_change()"/>
+                            <i class="mdui-switch-icon"></i>
+                        </label>
+                    </td>
+                    <td colspan="4">
+                        <div class="mdui-typo-caption-opacity">
+                            <p>Mux 功能是在一条 TCP 连接上分发多个 TCP 连接的数据。实现细节详见<a href="https://www.v2ray.com/developer/protocols/muxcool.html">Mux.Cool</a></p>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>日志级别</td>
+                    <td colspan="2">
+                        <select id="select_log_level" onchange="change_log_level()">
+                            <option value="0">debug</option>
+                            <option value="1">info</option>
+                            <option value="2">warning</option>
+                            <option value="3">error</option>
+                            <option value="4">none</option>
+                        </select>
+                    </td>
+                    <td colspan="4">
+                        <div class="mdui-typo-caption-opacity">
+                            <p>日志的级别，默认值为<code>"warning"</code>。</p>
+                            <ul>
+                                <li><code>"debug"</code>: 只有开发人员能看懂的信息。同时包含所有<code>"info"</code>内容。</li>
+                                <li><code>"info"</code>: V2Ray 在运行时的状态，不影响正常使用。同时包含所有<code>"warning"</code>内容。</li>
+                                <li><code>"warning"</code>: V2Ray 遇到了一些问题，通常是外部问题，不影响 V2Ray 的正常运行，但有可能影响用户的体验。同时包含所有<code>"error"</code>内容。</li>
+                                <li><code>"error"</code>: V2Ray 遇到了无法正常运行的问题，需要立即解决。</li>
+                                <li><code>"none"</code>: 不记录任何内容。</li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
+                <tr class="mdui-color-light-blue-50">
+                    <td class="mdui-typo-caption-opacity">提交</td>
+                    <td colspan="5">
+                        <div class="mdui-row">
+                            <div id="discard" class="mdui-col-sm-2" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="discard_config()">放弃</button>
+                            </div>
+                            <div id="apply" class="mdui-col-sm-2" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="apply_advance_config()">应用</button>
+                            </div>
+                            <div id="reset" class="mdui-col-sm-2">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple" onclick="reset_advance_config()">重置</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <p></p>
+</div>
+
+<!--create rule dialog-->
+<div id="rule_dialog" class="mdui-dialog">
+    <div id="rule_dialog_title" class="mdui-dialog-title">创建路由规则</div>
+    <div class="mdui-dialog-content">
+        <div class="mdui-row">
+            <div class="mdui-table-fluid">
+                <table class="mdui-table">
+                    <thead>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>类型</td>
+                        <td>匹配值（可添加多行，一行一个，不带引号）</td>
+                        <td>策略</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select id="select_rule_type" onchange="select_rule_type()">
+                                <option value="0" selected>IP</option>
+                                <option value="1">域名</option>
+                            </select>
+                        </td>
+                        <td>
+                            <div class="mdui-textfield">
+                                <textarea id="rule_contents" rows="3" class="mdui-textfield-input" type="text">
+                                </textarea>
+                            </div>
+                        </td>
+                        <td>
+                            <select id="select_policy_type">
+                                <option value="0" selected>🌐 直连</option>
+                                <option value="1">✈️ 代理</option>
+                                <option value="2">✂️ 阻止</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">
+                            <div style="margin-right: 24px">
+                                <div id="ip_rule_explain" class="mdui-typo" style="display: none">
+                                    <h5>匹配值说明</h5>
+                                    <p>设置 IP 匹配，有以下几种形式：</p>
+                                    <ul>
+                                        <li>IP: 形如<code>"127.0.0.1"</code>。</li>
+                                        <li><a href="https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing" target="_blank">CIDR</a>: 形如<code>"10.0.0.0/8"</code>.</li>
+                                        <li>GeoIP: 形如<code>"geoip:cn"</code>，必须以<code>geoip:</code>（小写）开头，后面跟双字符国家代码，支持几乎所有可以上网的国家。<ul>
+                                            <li>特殊值：<code>"geoip:private"</code> (V2Ray 3.5+)，包含所有私有地址，如<code>127.0.0.1</code>。</li>
+                                        </ul>
+                                        </li>
+                                        <li>从文件中加载 IP: 形如<code>"ext:file:tag"</code>，必须以<code>ext:</code>（小写）开头，后面跟文件名和标签，文件存放在<a href="https://www.v2ray.com/chapter_02/env.html#asset-location">资源目录</a>中，文件格式与<code>geoip.dat</code>相同标签必须在文件中存在。</li>
+                                    </ul>
+                                </div>
+                                <div id="domain_rule_explain" class="mdui-typo" style="display: none">
+                                    <h5>匹配值说明</h5>
+                                    <p>设置域名匹配，有以下几种形式：</p>
+                                    <ul>
+                                        <li>纯字符串: 当此字符串匹配目标域名中任意部分，该规则生效。比如"sina.com"可以匹配"sina.com"、"sina.com.cn"和"www.sina.com"，但不匹配"sina.cn"。</li>
+                                        <li>正则表达式: 由<code>"regexp:"</code>开始，余下部分是一个正则表达式。当此正则表达式匹配目标域名时，该规则生效。例如"regexp:\\.goo.*\\.com$"匹配"www.google.com"、"fonts.googleapis.com"，但不匹配"google.com"。</li>
+                                        <li>子域名 (推荐): 由<code>"domain:"</code>开始，余下部分是一个域名。当此域名是目标域名或其子域名时，该规则生效。例如"domain:v2ray.com"匹配"www.v2ray.com"、"v2ray.com"，但不匹配"xv2ray.com"。</li>
+                                        <li>完整匹配: 由<code>"full:"</code>开始，余下部分是一个域名。当此域名完整匹配目标域名时，该规则生效。例如"full:v2ray.com"匹配"v2ray.com"但不匹配"www.v2ray.com"。</li>
+                                        <li>预定义域名列表：由<code>"geosite:"</code>开头，余下部分是一个名称，如<code>geosite:google</code>或者<code>geosite:cn</code>。名称及域名列表参考<a href="https://www.v2ray.com/chapter_02/03_routing.html#dlc">预定义域名列表</a>。</li>
+                                        <li>从文件中加载域名: 形如<code>"ext:file:tag"</code>，必须以<code>ext:</code>（小写）开头，后面跟文件名和标签，文件存放在<a href="https://www.v2ray.com/chapter_02/env.html#asset-location">资源目录</a>中，文件格式与<code>geosite.dat</code>相同，标签必须在文件中存在。</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="mdui-dialog-actions">
+        <button class="mdui-btn mdui-ripple mdui-text-color-grey-500" onclick="close_rule_dialog()">取消</button>
+        <button id="create_rule" class="mdui-btn mdui-ripple" style="display: none" onclick="add_rule()">添加</button>
+        <button id="update_rule" class="mdui-btn mdui-ripple" style="display: none" onclick="update_rule()">更新</button>
+    </div>
+</div>
+
+<script src="/static/js/Chart.js"></script>
+<script type="text/javascript">
+    //# sourceURL=advance.js
+    $(document).ready(function () {
+        refresh_remote()
+    });
+
+    var g_config_remote = null;
+    var g_config_local = null;
+    function refresh_remote() {
+        $.get("/get_advance_config", function (data) {
+            g_config_remote = data["advance_config"];
+            g_config_local = JSON.parse(JSON.stringify(g_config_remote));
+            refresh_local();
+        });
+    }
+
+    function refresh_local() {
+        var change =  JSON.stringify(g_config_remote) !== JSON.stringify(g_config_local)
+        if (change) {
+            $('#discard').show();
+            $('#apply').show();
+        }
+        else {
+            $('#discard').hide();
+            $('#apply').hide();
+        }
+
+        // auto detect
+        $("#enable_auto_switch").prop('checked', g_config_local['auto_detect']['enabled']);
+        var detect_url = g_config_local['auto_detect']['detect_url'];
+        $("#detect_url").val(detect_url);
+
+        var detect_time_span = g_config_local['auto_detect']['detect_span'];
+        $("#detect_time_span").val(detect_time_span);
+
+        var detect_timeout = g_config_local['auto_detect']['timeout'];
+        $("#detect_timeout").val(detect_timeout);
+
+        var detect_max_retry = g_config_local['auto_detect']['failed_count'];
+        $("#detect_max_retry").val(detect_max_retry);
+
+        var detect_last_switch = g_config_local['auto_detect']['last_switch_time'];
+        $("#detect_last_switch_time").html(detect_last_switch);
+
+        // log
+        var log_index = g_log_levels.indexOf(g_config_local['log']['level']);
+        $("#select_log_level").prop('selectedIndex', log_index);
+
+        // local proxy
+        var enable_socks = g_config_local['inbound']['enable_socks_proxy'];
+        $("#enable_socks_proxy").prop('checked', enable_socks);
+        var socks_port = g_config_local['inbound']['socks_proxy_port'];
+        var default_socks_port = g_config_local['inbound']['default_socks_proxy_port'];
+        if (socks_port > 0) {
+            $("#socks_proxy_port").html(socks_port).removeClass("mdui-text-color-black-disabled");
+            $("#clear_socks_proxy_port").show();
+        }
+        else {
+            $("#socks_proxy_port").html(default_socks_port).addClass("mdui-text-color-black-disabled");
+            $("#clear_socks_proxy_port").hide();
+        }
+
+        // dns
+        dns_config = g_config_local["dns"];
+        default_dns_local = dns_config["default_local"];
+        default_dns_remote = dns_config["default_remote"];
+        dns_local = dns_config["local"];
+        dns_remote = dns_config["remote"];
+
+        if (dns_local.length > 0) {
+            $("#local_dns").html(dns_local).removeClass("mdui-text-color-black-disabled");
+            $("#clear_local_dns").show();
+        }
+        else {
+            $("#local_dns").html(default_dns_local).addClass("mdui-text-color-black-disabled");
+            $("#clear_local_dns").hide();
+        }
+
+        if (dns_remote.length > 0) {
+            $("#remote_dns").html(dns_remote).removeClass("mdui-text-color-black-disabled");
+            $("#clear_remote_dns").show();
+        }
+        else {
+            $("#remote_dns").html(default_dns_remote).addClass("mdui-text-color-black-disabled");
+            $("#clear_remote_dns").hide();
+        }
+
+        // rule
+
+        var proxy_preferred = g_config_local['proxy_preferred'];
+        $("#proxy_preferred").prop('checked', proxy_preferred);
+
+        $("tr[id^='real_rule']").remove();
+        var base_policy_index = $("#rule_template").index();
+        var policys = g_config_local["policys"];
+        policys.forEach(function (policy) {
+            var type_dic = {
+                ip:'IP',
+                domain:'域名'
+            };
+            var type = type_dic[policy['type']];
+            var contents = policy['contents'];
+            var contents_html = ''
+            contents.forEach(function (line) {
+                line_html = line + '<br>';
+                contents_html += line_html;
+            });
+
+            var outbound_dic = {
+                direct: '🌐 直连',
+                proxy: '✈️ 代理',
+                block: '✂️ 阻止'
+            };
+            var outbound = outbound_dic[policy['outbound']];
+
+            var rule_row = $("#rule_template").clone();
+            var index = policys.indexOf(policy);
+            rule_row.attr('id', 'real_rule' + index);
+            rule_row.find('.rule_index').html((index + 1).toString());
+            rule_row.find('.rule_type').html(type);
+            rule_row.find('.rule_contents').html(contents_html);
+            rule_row.find('.rule_policy').html(outbound);
+            rule_row.find('.rule_enable').prop('checked', policy['enable']);
+
+            $("#advance_table > tbody > tr").eq(base_policy_index + index).after(rule_row);
+            rule_row.show();
+        });
+
+        $(".delete_rule").click(function () {
+            var row = $(this).closest("tr");
+            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
+            var policys = g_config_local["policys"];
+
+            policys.splice(rule_index, 1);
+            refresh_local();
+        })
+
+        $(".edit_rule").click(function () {
+            var row = $(this).closest("tr");
+            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
+            var rule = g_config_local["policys"][rule_index];
+            edit_rule(rule_index, rule);
+        })
+
+        $(".up_rule").click(function () {
+            var row = $(this).closest("tr");
+            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
+            if (rule_index > 0) {
+                rule = g_config_local['policys'][rule_index];
+                previous_rule = g_config_local['policys'][rule_index - 1];
+
+                g_config_local['policys'][rule_index - 1] = rule;
+                g_config_local['policys'][rule_index] = previous_rule;
+
+                refresh_local();
+            }
+        });
+
+        $(".down_rule").click(function () {
+            var row = $(this).closest("tr");
+            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
+            if (rule_index < (g_config_local['policys'].length - 1)) {
+                rule = g_config_local['policys'][rule_index];
+                next_rule = g_config_local['policys'][rule_index + 1];
+
+                g_config_local['policys'][rule_index + 1] = rule;
+                g_config_local['policys'][rule_index] = next_rule;
+
+                refresh_local();
+            }
+        });
+
+        $(".rule_enable").change(function () {
+            var row = $(this).closest("tr");
+            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
+            var rule = g_config_local["policys"][rule_index];
+            rule['enable'] = $(this).prop('checked');
+            setTimeout(function () {
+                refresh_local();
+            }, 300);
+        });
+
+        // geo data
+        current_geo_version = g_config_local['geo_data']['current_version']
+        if (current_geo_version === "") {
+            current_geo_version = "[内置版本]";
+        }
+        $("#geo_data_current_ver").html(current_geo_version);
+
+        // mux
+        var enable_mux = g_config_local['enable_mux'];
+        $("#enable_mux").prop('checked', enable_mux);
+    }
+
+    function modify_socks_proxy_port() {
+        mdui.prompt("请输入Socks 5 代理端口：", function (port) {
+            port = port.trim();
+            if (!port.length) {
+                return;
+            }
+            g_config_local['inbound']['socks_proxy_port'] = parseInt(port);
+            refresh_local();
+        });
+    }
+
+    function clear_socks_proxy_port() {
+        g_config_local['inbound']['socks_proxy_port'] = 0;
+        refresh_local();
+    }
+    
+    function modify_local_dns() {
+        mdui.prompt("请输入国内 DNS 地址：", function (dns) {
+            dns = dns.trim();
+            if (!dns.length) {
+                return;
+            }
+
+            dns_config = g_config_local["dns"];
+            dns_config["local"] = dns
+            refresh_local();
+        });
+    }
+
+    function clear_local_dns() {
+        dns_config = g_config_local["dns"];
+        dns_config["local"] = ""
+        refresh_local();
+    }
+    
+    function modify_remote_dns() {
+        mdui.prompt("请输入国外 DNS 地址：", function (dns) {
+            dns = dns.trim();
+            if (!dns.length) {
+                return;
+            }
+
+            dns_config = g_config_local["dns"];
+            dns_config["remote"] = dns
+            refresh_local();
+        });
+    }
+    
+    function clear_remote_dns() {
+        dns_config = g_config_local["dns"];
+        dns_config["remote"] = ""
+        refresh_local();
+    }
+
+    function discard_config() {
+        g_config_local = JSON.parse(JSON.stringify(g_config_remote));
+        refresh_local();
+    }
+
+    function apply_advance_config() {
+        pop_toast("正在应用高级配置...");
+        $.ajax({
+            url: "/set_advance_config",
+            type: "POST",
+            dataType: "json",
+            contentType: "application/json;charset=utf-8",
+            data: JSON.stringify(g_config_local)
+        }).done(function (data) {
+            if (check_result(data)) {
+                update_toast("应用成功")
+            }
+            else {
+                update_toast("应用失败")
+            }
+        }).always(function () {
+            close_toast();
+            refresh_remote();
+        });
+    }
+
+    function reset_advance_config() {
+        mdui.confirm("确认重置高级配置为默认值？", function () {
+            pop_toast("正在重置高级配置为默认值...");
+            $.get('/reset_advance_config').done(function (data) {
+                if (check_result(data)) {
+                    update_toast("重置成功")
+                }
+                else {
+                    update_toast("重置失败")
+                }
+            }).always(function () {
+                close_toast();
+                refresh_remote();
+            });
+        });
+    }
+    
+    function enable_auto_detect_change() {
+        g_config_local['auto_detect']['enabled'] = $("#enable_auto_switch").prop('checked');
+        refresh_local();
+    }
+
+    function detect_url_change() {
+        var input = $("#detect_url");
+        var url = input.val().trim();
+        if (!url.startsWith('https://'))
+            url = 'https://github.com/';
+        input.val(url);
+
+        g_config_local['auto_detect']['detect_url'] = url;
+        refresh_local();
+    }
+
+    function detect_time_span_change() {
+        var input = $("#detect_time_span");
+        var time_span = parseInt(input.val());
+        if (time_span > 3600) {
+            time_span = 3600;
+        } else if (time_span < 10) {
+            time_span = 10;
+        }
+        input.val(time_span);
+
+        g_config_local['auto_detect']['detect_span'] = time_span;
+        refresh_local();
+    }
+
+    function detect_timeout_change() {
+        var input = $("#detect_timeout");
+        var timeout = parseFloat(input.val());
+        if (timeout > 10) {
+            timeout = 10;
+        } else if (timeout < 0.5) {
+            timeout = 0.5;
+        }
+        input.val(timeout);
+
+        g_config_local['auto_detect']['timeout'] = timeout;
+        refresh_local();
+    }
+
+    function detect_max_retry_change() {
+        var input = $("#detect_max_retry");
+        var max_retry = parseInt(input.val());
+        if (max_retry > 10) {
+            max_retry = 10;
+        } else if (max_retry < 1) {
+            max_retry = 1;
+        }
+        input.val(max_retry);
+
+        g_config_local['auto_detect']['failed_count'] = max_retry;
+        refresh_local();
+    }
+
+    function enable_socks_proxy_change() {
+        g_config_local['inbound']['enable_socks_proxy'] = $("#enable_socks_proxy").prop('checked');
+        refresh_local();
+    }
+
+    function block_ad_change() {
+        g_config_local['block_ad'] = $("#block_ad").prop('checked');
+        refresh_local();
+    }
+
+    function proxy_preferred_change() {
+        g_config_local['proxy_preferred'] = $("#proxy_preferred").prop('checked');
+        refresh_local();
+    }
+
+    function enable_mux_change() {
+        g_config_local['enable_mux'] = $("#enable_mux").prop('checked');
+        refresh_local();
+    }
+
+    var g_rule_dialog = null
+    var rule_types = [
+        'ip',
+        'domain'
+    ];
+    var outbound_typs = [
+        'direct',
+        'proxy',
+        'block'
+    ];
+
+    function create_rule() {
+        g_rule_dialog = new mdui.Dialog("#rule_dialog", { modal:true, closeOnEsc:false});
+        $("#rule_dialog_title").text('创建路由规则');
+        $("#create_rule").show();
+        $("#update_rule").hide();
+        select_rule_type();
+
+        g_rule_dialog.open();
+        mdui.mutation();
+    }
+
+    function clear_rule() {
+        g_config_local["policys"] = [];
+        refresh_local();
+    }
+
+    function edit_rule(rule_index, rule) {
+        g_rule_dialog = new mdui.Dialog("#rule_dialog", { modal:true, closeOnEsc:false});
+        $("#rule_dialog_title").text('编辑路由规则');
+        $("#create_rule").hide();
+        $("#update_rule").show();
+        $("#select_rule_type").val(rule_types.indexOf(rule.type));
+        select_rule_type();
+
+        var contents = '';
+        rule.contents.forEach(function (content) {
+            contents += content + '\n';
+        });
+        contents = contents.slice(0, -1);
+        $("#rule_contents").val(contents);
+        $("#select_policy_type").val(outbound_typs.indexOf(rule.outbound));
+
+        g_rule_dialog.rule_index = rule_index;
+        g_rule_dialog.open();
+        mdui.mutation();
+    }
+
+    function update_rule() {
+        var type_index = $("#select_rule_type").prop('selectedIndex');
+        type = rule_types[type_index];
+        var outbound_index = $("#select_policy_type").prop('selectedIndex');
+        outbound = outbound_typs[outbound_index];
+        var contents = $("#rule_contents").val();
+
+        $.get("/make_policy", {"type":type, "contents":contents, "outbound":outbound}).done(function (policy) {
+            g_config_local["policys"][g_rule_dialog.rule_index] = policy;
+            refresh_local();
+        }).always(function () {
+            close_rule_dialog();
+        });
+    }
+
+    function add_rule() {
+        var type_index = $("#select_rule_type").prop('selectedIndex');
+        type = rule_types[type_index];
+        var outbound_index = $("#select_policy_type").prop('selectedIndex');
+        outbound = outbound_typs[outbound_index];
+        var contents = $("#rule_contents").val();
+
+        $.get("/make_policy", {"type":type, "contents":contents, "outbound":outbound}).done(function (policy) {
+            g_config_local["policys"].push(policy);
+            refresh_local();
+        }).always(function () {
+            close_rule_dialog();
+        });
+    }
+
+    function close_rule_dialog() {
+        g_rule_dialog.close();
+        g_rule_dialog.destroy();
+        g_rule_dialog = null;
+    }
+
+    function select_rule_type() {
+        var rule_contents = $('#rule_contents');
+        rule_contents.val('');
+        var rule_type = $("#select_rule_type").prop('selectedIndex');
+        if (rule_type === 0) {
+            $("#ip_rule_explain").show();
+            $("#domain_rule_explain").hide();
+            rule_contents.attr('placeholder', 'geoip:us\n39.156.69.79');
+        } else if (rule_type === 1) {
+            $("#ip_rule_explain").hide();
+            $("#domain_rule_explain").show();
+            rule_contents.attr('placeholder', 'geosite:cn\ngoogle.com');
+        }
+        mdui.mutation();
+    }
+
+    function check_geo_data() {
+        message("正在查询...");
+        $.get("/check_new_geo_data").done(function (data) {
+            var new_version = data["version"];
+            $("#geo_data_new_ver").html(new_version);
+
+            var current_version = $("#geo_data_current_ver").html();
+            if (new_version === current_version) {
+                message("当前已是最新版本无需更新");
+                $("#check_geo_data").show();
+                $("#update_geo_data").hide();
+            }
+            else {
+                message("已发布新版本，可更新");
+                $("#check_geo_data").hide();
+                $("#update_geo_data").show();
+            }
+        }).fail(function () {
+            message("检查失败");
+        });
+    }
+
+    function update_geo_data() {
+        pop_toast("正在更新数据库...");
+        $.get("/update_geo_data").done(function (data) {
+            if (check_result(data)) {
+                update_toast("数据库更新成功")
+            }
+            else {
+                update_toast("数据库更新失败")
+            }
+        }).always(function () {
+            close_toast();
+            refresh_remote();
+
+            setTimeout(check_geo_data, 2000);
+        });
+    }
+
+    var g_log_levels = ['debug', 'info', 'warning', 'error', 'none'];
+    function change_log_level() {
+        g_config_local['log']['level'] = g_log_levels[$("#select_log_level").prop('selectedIndex')];
+        refresh_local();
+    }
+
+</script>

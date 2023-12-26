@@ -1,0 +1,24 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+      runs-on: ubuntu-latest
+      name: Build image job
+      steps:
+          - name: Checkout master
+            uses: actions/checkout@master
+          - name: Build and publish image
+            uses: ilteoood/docker_buildx@master
+            with:
+              publish: true
+              imageName: raydoom/v2ray-funpi
+              platform: linux/amd64,linux/arm64 # 你准备构建的镜像平台
+              tag: latest # 默认latest，可以针对平台，修改tag
+              dockerUser: ${{ secrets.DOCKER_USERNAME }} # docker hub userid
+              dockerPassword: ${{ secrets.DOCKER_PASSWORD }} # docker hub password
