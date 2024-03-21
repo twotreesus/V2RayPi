@@ -1,0 +1,363 @@
+<link rel="stylesheet" href="/static/css/Chart.css">
+<div id="status_page" class="mdui-container">
+    <p></p>
+    <div class="mdui-row">
+        <div class="mdui-table-fluid">
+            <table class="mdui-table">
+                <tbody>
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <h5>运行状态</h5>
+                    </td>
+                </tr>
+                <tr>
+                    <td>运行状态</td>
+                    <td>
+                        <div class="mdui-row">
+                            <div id="running" class="mdui-chip" style="display: none">
+                                <span class="mdui-chip-icon mdui-color-green"><i class="mdui-icon material-icons">play_arrow</i></span>
+                                <span class="mdui-chip-title">运行中</span>
+                            </div>
+                            <div id="stoped" class="mdui-chip" style="display: none">
+                                <span class="mdui-chip-icon mdui-color-red"><i class="mdui-icon material-icons">stop</i></span>
+                                <span class="mdui-chip-title">已停止</span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>运行控制</td>
+                    <td>
+                        <div class="mdui-row">
+                            <div id="start_service" class="mdui-chip" onclick="start_service()" style="display: none">
+                                <span class="mdui-chip-icon mdui-color-green"><i class="mdui-icon material-icons">play_arrow</i></span>
+                                <span class="mdui-chip-title">启动</span>
+                            </div>
+                            <div id="stop_services" class="mdui-chip" onclick="stop_service()" style="display: none">
+                                <span class="mdui-chip-icon mdui-color-red"><i class="mdui-icon material-icons">stop</i></span>
+                                <span class="mdui-chip-title">停止</span>
+                            </div>
+                            <div id="restart_service" class="mdui-chip" onclick="restart_service()" style="display: none">
+                                <span class="mdui-chip-icon mdui-color-yellow-700"><i class="mdui-icon material-icons">settings_backup_restore</i></span>
+                                <span class="mdui-chip-title">重启</span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>代理模式</td>
+                    <td>
+                        <div class="mdui-row">
+                            <div class="mdui-col-sm-3">
+                                <label for="proxy_mode"></label>
+                                <select id="proxy_mode" class="mdui-select" mdui-select="{position: 'bottom'}">
+                                    <option value="0">直连</option>
+                                    <option value="1">智能分流</option>
+                                    <option value="2">全局代理</option>
+                                </select>
+                            </div>
+                            <div id="switch_mode" class="mdui-col-sm-3" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="switch_proxy_mode()">切换</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>v2ray-core 当前版本</td>
+                    <td id="v2ray_current_ver"></td>
+                </tr>
+                <tr>
+                    <td>v2ray-core 最新版本</td>
+                    <td>
+                        <div class="mdui-row">
+                            <div id="v2ray_new_ver" class="mdui-col-sm-3 mdui-text-color-blue"></div>
+                            <div id="check_update" class="mdui-col-sm-3">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2ray_new_ver()">查询</button>
+                            </div>
+                            <div id="update" class="mdui-col-sm-3" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_v2ray()">升级</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <h5>节点信息</h5>
+                    </td>
+                </tr>
+                <tr>
+                    <td>名称</td>
+                    <td id="remark"></td>
+                </tr>
+                <tr>
+                    <td>地址</td>
+                    <td id="host"></td>
+                </tr>
+                <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <h5>性能监控</h5>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-container">
+                            <div class="mdui-row-sm-2">
+                                <div class="mdui-col">
+                                    <canvas id="cpu_usage" class="chartjs-render-monitor"></canvas>
+                                </div>
+                                <div class="mdui-col">
+                                    <canvas id="memory_usage" class="chartjs-render-monitor"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <p></p>
+</div>
+
+<script src="/static/js/Chart.js"></script>
+<script type="text/javascript">
+    //# sourceURL=status.js
+    var cpu_bar = null;
+    var memory_bar = null;
+
+    $(document).ready(function () {
+        $("#proxy_mode").change(function () {
+            $("#switch_mode").show();
+        })
+
+        refresh()
+    });
+
+    function refresh() {
+        $.get("/get_status", function (data) {
+            if (data["running"]) {
+                $("#running").show();
+                $("#stoped").hide();
+                $("#start_service").hide();
+                $("#stop_services").show();
+                $("#restart_service").show();
+            }
+            else {
+                $("#running").hide();
+                $("#stoped").show();
+                $("#start_service").show();
+                $("#stop_services").hide();
+                $("#restart_service").hide();
+            }
+
+            mode = data["proxy_mode"];
+            $("#proxy_mode").prop("selectedIndex", mode);
+            $("#v2ray_current_ver").html(data["version"]);
+            $("#v2ray_new_ver").html(window.g_new_version);
+            $("#remark").html(data["ps"]);
+            $("#host").html(data["add"]);
+
+
+            cpu_bar = new Chart($("#cpu_usage"), {
+                type: 'bar',
+                data: null,
+                options: {
+                    responsive: true,
+                    tooltips: {enabled: false},
+                    hover: {mode: null},
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'CPU 占用率 %'
+                    },
+                    scales: {
+                        yAxes: [{
+                            display: true,
+                            ticks: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }]
+                    },
+                }
+            });
+            cpu_bar.inited = false;
+
+            memory_bar = new Chart($("#memory_usage"), {
+                type: 'bar',
+                data: null,
+                options: {
+                    responsive: true,
+                    tooltips: {enabled: false},
+                    hover: {mode: null},
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: '内存 占用率 %'
+                    },
+                    scales: {
+                        yAxes: [{
+                            display: true,
+                            ticks: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }]
+                    },
+                }
+            });
+            memory_bar.inited = false;
+        });
+
+        add_interval(setInterval(update_performance, 1000));
+    }
+    
+    function update_performance() {
+        $.get("/get_performance", function (data) {
+            cpu_status = data["cpu"];
+            if (!cpu_bar.inited) {
+                cpu_bar.data = {
+                    labels: Object.keys(cpu_status),
+                    datasets: [{
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        borderWidth: 1,
+                        data: []
+                    }]
+                };
+                cpu_bar.inited = true;
+            }
+
+            cpu_bar.data.datasets[0].data = [];
+            Object.keys(cpu_status).forEach(function (k) {
+                cpu_bar.data.datasets[0].data.push(cpu_status[k]);
+            })
+
+            cpu_bar.update();
+
+            memory_status = data["memory"];
+            if (!memory_bar.inited) {
+                memory_bar.data = {
+                    labels: [""],
+                    datasets: [{
+                        backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                        borderColor: 'rgb(153, 102, 255)',
+                        borderWidth: 1,
+                        data: [0]
+                    }]
+                };
+                memory_bar.inited = true;
+            }
+
+            memory_bar.data.labels[0] = "total: " + memory_status["total"] + " MB used: " + memory_status["used"] + " MB";
+            memory_bar.data.datasets[0].data[0] = memory_status["percent"];
+            memory_bar.update();
+        });
+    }
+
+    function check_v2ray_new_ver() {
+        message("正在查询...");
+        $.get("/check_v2ray_new_ver").done(function (data) {
+            window.g_new_version = data["version"];
+            $("#v2ray_new_ver").html(window.g_new_version)
+            var current_version = $("#v2ray_current_ver").html();
+            if (window.g_new_version === current_version) {
+                message("当前已是最新版本无需更新");
+                $("#check_update").show();
+                $("#update").hide();
+            }
+            else {
+                message("已发布新版本，点击升级按钮更新");
+                $("#check_update").hide();
+                $("#update").show();
+            }
+        }).fail(function () {
+            message("检查失败");
+        });
+    }
+
+    function update_v2ray() {
+        pop_toast("正在升级...");
+        $.get("/update_v2ray").done(function (data) {
+            if (check_result(data)) {
+                update_toast("升级成功")
+            }
+            else {
+                update_toast("升级失败")
+            }
+        }).always(function () {
+            close_toast();
+            refresh();
+            check_v2ray_new_ver();
+        });
+    }
+
+    function start_service() {
+        pop_toast("正在启动...");
+        $.get("/start_service").done(function (data) {
+            if (check_result(data)) {
+                update_toast("启动成功")
+            }
+            else {
+                update_toast("启动失败")
+            }
+        }).always(function () {
+            close_toast();
+            refresh();
+        });
+    }
+
+    function stop_service() {
+        pop_toast("正在停止...");
+        $.get("/stop_service").done(function (data) {
+            if (check_result(data)) {
+                update_toast("停止成功")
+            }
+            else {
+                update_toast("停止失败")
+            }
+        }).always(function () {
+            close_toast();
+            refresh();
+        });
+    }
+
+    function restart_service() {
+        pop_toast("正在重启...");
+        $.get("/restart_service").done(function (data) {
+            if (check_result(data)) {
+                update_toast("重启成功")
+            }
+            else {
+                update_toast("重启失败")
+            }
+        }).always(function () {
+            close_toast();
+            refresh();
+        });
+    }
+
+    function switch_proxy_mode() {
+        pop_toast("正在切换代理模式...");
+        mode = $("#proxy_mode").prop('selectedIndex')
+        $.get("/switch_proxy_mode", { "mode": mode })
+            .done(function (data) {
+                if (check_result(data)) {
+                    update_toast("切换成功")
+                    $("#switch_mode").hide();
+                }
+                else {
+                    update_toast("切换失败")
+                }
+            }).always(function () {
+                close_toast();
+                refresh();
+            });
+    }
+</script>
