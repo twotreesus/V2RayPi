@@ -8,9 +8,9 @@ export PATH
 #install Needed Packages
 apt-get update -y
 apt-get install wget curl socat git python3 python3-setuptools python3-dev python3-pip python3-wheel openssl libssl-dev ca-certificates supervisor -y
-pip3 install --upgrade setuptools
-pip3 install wheel
-pip3 install -r requirements.txt
+pip3 install --upgrade setuptools --break-system-packages
+pip3 install wheel --break-system-packages
+pip3 install -r requirements.txt --break-system-packages
 
 #enable rc.local
 cat>/etc/rc.local<<-EOF
