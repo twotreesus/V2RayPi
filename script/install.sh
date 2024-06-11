@@ -81,6 +81,7 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
+systemctl enable v2ray.service
 systemctl disable v2ray_iptable.service
 
 # 
