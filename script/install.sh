@@ -9,10 +9,22 @@ export PATH
 apt-get update -y
 apt-get install wget curl socat git iptables python3 python3-setuptools python3-dev python3-pip python3-wheel openssl libssl-dev ca-certificates supervisor -y
 
-# For python 3.11 and above, uncomment --break-system-packages
-pip3 install --upgrade setuptools # --break-system-packages
-pip3 install wheel # --break-system-packages
-pip3 install -r requirements.txt # --break-system-packages
+# check python version
+PYTHON_VERSION=$(python3 --version | awk '{print $2}')
+PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
+PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
+
+# pip force args
+if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 11 ]; then
+    PIP_ARGS="--break-system-packages"
+else
+    PIP_ARGS=""
+fi
+
+# install pip packages
+pip3 install --upgrade setuptools $PIP_ARGS
+pip3 install wheel $PIP_ARGS
+pip3 install -r requirements.txt $PIP_ARGS
 
 #enable rc.local
 cat>/etc/rc.local<<-EOF
