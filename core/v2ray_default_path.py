@@ -1,5 +1,6 @@
 # encoding: utf-8
 import sys
+import platform
 from os import path
 class V2rayDefaultPath:
     @classmethod
@@ -19,13 +20,19 @@ class V2rayDefaultPath:
     @classmethod
     def config_file(cls) -> str:
         if sys.platform == 'darwin':
-            return '/usr/local/etc/v2ray/config.json'
+            if platform.machine() == 'arm64':
+                return '/opt/homebrew/etc/v2ray/config.json'
+            else:
+                return '/usr/local/etc/v2ray/config.json'
         else:
             return '/etc/v2ray/config.json'
 
     @classmethod
     def asset_path(cls) -> str:
         if sys.platform == 'darwin':
-            return '/usr/local/share/v2ray/'
+            if platform.machine() == 'arm64':
+                return '/opt/homebrew/share/v2ray/'
+            else:
+                return '/usr/local/share/v2ray/'
         else:
             return '/usr/local/share/v2ray/'
