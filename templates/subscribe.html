@@ -7,15 +7,15 @@
                 <tbody id="subscribe_body">
                 <tr>
                     <td colspan="5">
-                        <div class="mdui-row" style="width: 100%;">
-                            <div class="mdui-col-xs-1" style="width: 8%;">
-                                <strong class="mdui-typo">最近订阅</strong>
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-1" style="width: 8%; display: flex; align-items: center;">
+                                <strong class="mdui-typo" style="white-space: nowrap;">最近订阅</strong>
                             </div>
-                            <div class="mdui-col-xs-6" style="width: 60%;">
-                                <span id="last_subscribe"></span>
+                            <div class="mdui-col-xs-3" style="width: 30%; display: flex; align-items: center;">
+                                <span id="last_subscribe" style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
                             </div>
-                            <div class="mdui-col-xs-5" style="width: 32%;">
-                                <div class="mdui-row" style="display: flex; gap: 16px;">
+                            <div class="mdui-col-xs-5" style="display: flex; align-items: center;">
+                                <div style="display: flex; gap: 8px; justify-content: flex-start;">
                                     <div id="update_all_subscribe" style="display: none">
                                         <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_all_subscribe()">全部更新</button>
                                     </div>
@@ -33,18 +33,18 @@
                 <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="5"></td></tr>
                 <tr id="subscribe_template" class="mdui-color-light-blue-50" style="display: none">
                     <td colspan="5">
-                        <div class="mdui-row" style="width: 100%;">
-                            <div class="mdui-col-xs-1" style="width: 8%;">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-1" style="width: 8%; display: flex; align-items: center;">
                                 <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
                                     <i class="mdui-icon material-icons group-toggle">expand_more</i>
                                     <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">订阅地址</strong>
                                 </div>
                             </div>
-                            <div class="mdui-col-xs-6" style="width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                <strong class="url" style="display: block; overflow: hidden; text-overflow: ellipsis;"></strong>
+                            <div class="mdui-col-xs-6" style="width: 60%; display: flex; align-items: center;">
+                                <strong class="url" style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></strong>
                             </div>
-                            <div class="mdui-col-xs-5" style="width: 32%;">
-                                <div class="mdui-row" style="display: flex; gap: 16px;">
+                            <div class="mdui-col-xs-5" style="width: 15%; display: flex; align-items: center;">
+                                <div style="display: flex; gap: 8px; justify-content: flex-start;">
                                     <div>
                                         <button class="update_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple">更新</button>
                                     </div>
