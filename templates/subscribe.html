@@ -35,17 +35,13 @@
                     <td colspan="5">
                         <div class="mdui-row" style="width: 100%;">
                             <div class="mdui-col-xs-1" style="width: 8%;">
-                                <strong class="mdui-typo subscribe-index">订阅地址</strong>
-                            </div>
-                            <div class="mdui-col-xs-6" style="width: 60%;">
-                                <div class="mdui-row toggle-row" style="cursor: pointer; width: 100%;">
-                                    <div class="mdui-col-xs-1" style="width: 24px;">
-                                        <i class="mdui-icon material-icons group-toggle">expand_more</i>
-                                    </div>
-                                    <div class="mdui-col" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                        <strong class="url" style="display: block; overflow: hidden; text-overflow: ellipsis;"></strong>
-                                    </div>
+                                <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
+                                    <i class="mdui-icon material-icons group-toggle">expand_more</i>
+                                    <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">订阅地址</strong>
                                 </div>
+                            </div>
+                            <div class="mdui-col-xs-6" style="width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <strong class="url" style="display: block; overflow: hidden; text-overflow: ellipsis;"></strong>
                             </div>
                             <div class="mdui-col-xs-5" style="width: 32%;">
                                 <div class="mdui-row" style="display: flex; gap: 16px;">
@@ -84,10 +80,10 @@
                 <tbody id="node_list_body">
                 <tr id="node_header_template" class="mdui-typo-caption-opacity" style="display: none">
                     <td style="width: 8%;">序号</td>
-                    <td>名称</td>
-                    <td>地址</td>
-                    <td>延迟</td>
-                    <td>操作</td>
+                    <td style="width: 37%;">名称</td>
+                    <td style="width: 30%;">地址</td>
+                    <td style="width: 10%;">延迟</td>
+                    <td style="width: 15%;">操作</td>
                 </tr>
                 <tr id="node_template" style="display: none">
                     <td class="node_index"></td>
@@ -95,7 +91,7 @@
                     <td class="node_addr"></td>
                     <td class="node_delay"></td>
                     <td>
-                        <div class="mdui-row">
+                        <div style="display: flex; gap: 8px; justify-content: flex-start;">
                             <div class="mdui-chip apply_node" title="应用节点">
                                 <span class="mdui-chip-icon mdui-color-green-500"><i class="mdui-icon material-icons">check</i></span>
                             </div>
