@@ -3,3 +3,4 @@
 config/
 **/__pycache__/
 **/*.pyc
+config/app_config.json
