@@ -72,6 +72,9 @@ class V2RayUserConfig(BaseDataItem):
                 self.check_url = 'https://github.com/Loyalsoldier/v2ray-rules-dat/releases'
                 self.current_version = ''
 
+            def enabled(self) -> bool:
+                return self.current_version != ''
+
         def __init__(self):
             self.log: V2RayUserConfig.AdvanceConfig.Log = V2RayUserConfig.AdvanceConfig.Log()
             self.inbound : V2RayUserConfig.AdvanceConfig.InBound = V2RayUserConfig.AdvanceConfig.InBound()

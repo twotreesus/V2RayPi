@@ -166,7 +166,7 @@ class CoreService:
         result = True
         result = cls.v2ray.update()
         if result:
-            if cls.user_config.advance_config.geo_data.current_version != '':
+            if cls.user_config.advance_config.geo_data.enabled():
                 cls.update_geo_data()
 
         return result

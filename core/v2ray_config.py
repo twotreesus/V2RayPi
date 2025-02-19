@@ -398,10 +398,18 @@ class V2RayConfig(DontPickleNone):
                         rule = cls._make_user_domain_rule(policy.contents, V2RayUserConfig.AdvanceConfig.Policy.Outbound[policy.outbound])
                     config.routing.rules.append(rule)
 
-            if user_config.proxy_mode == V2RayUserConfig.ProxyMode.ProxyAuto.value:
+            if user_config.proxy_mode == V2RayUserConfig.ProxyMode.ProxyAuto.value:                
+                # Support Mainland whitelist mode by default
                 ip_cn = cls._make_ip_cn_rule()
                 site_cn = cls._make_site_cn_rule()
                 config.routing.rules.extend((ip_cn, site_cn))
+
+                # Support GFW mode when direct preferred & extra geodata enabled
+                if not user_config.advance_config.proxy_preferred:
+                    if user_config.advance_config.geo_data.enabled():
+                        ip_not_cn = cls._make_ip_not_cn_rule()
+                        site_not_cn = cls._make_site_not_cn_rule()
+                        config.routing.rules.extend((ip_not_cn, site_not_cn))
 
         raw_config = jsonpickle.encode(config, unpicklable=False, indent=4)
         return raw_config
@@ -575,6 +583,20 @@ class V2RayConfig(DontPickleNone):
         rule.add_domain('geosite:cn')
         rule.outboundTag = Tags.direct.value
 
+        return rule
+
+    @classmethod
+    def _make_ip_not_cn_rule(cls) -> Routing.Rule:
+        rule = Routing.Rule()
+        rule.add_ip('geoip:!cn')
+        rule.outboundTag = Tags.proxy.value
+        return rule
+
+    @classmethod
+    def _make_site_not_cn_rule(cls) -> Routing.Rule:
+        rule = Routing.Rule()
+        rule.add_domain('geosite:geolocation-!cn')
+        rule.outboundTag = Tags.proxy.value
         return rule
 
     @classmethod
