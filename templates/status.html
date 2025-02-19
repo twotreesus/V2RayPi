@@ -1,4 +1,12 @@
 <link rel="stylesheet" href="/static/css/Chart.css">
+<style>
+    .node-name {
+        background-color: #4CAF50;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+</style>
 <div id="status_page" class="mdui-container">
     <p></p>
     <div class="mdui-row">
@@ -156,7 +164,7 @@
             $("#proxy_mode").prop("selectedIndex", mode);
             $("#v2ray_current_ver").html(data["version"]);
             $("#v2ray_new_ver").html(window.g_new_version);
-            $("#remark").html(data["ps"]);
+            $("#remark").html('<span class="node-name">' + data["ps"] + '</span>');
             $("#host").html(data["add"]);
 
 

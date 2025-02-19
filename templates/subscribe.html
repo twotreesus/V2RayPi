@@ -123,6 +123,48 @@
     </div>
 </div>
 
+<style>
+    .node_running {
+        position: relative;
+    }
+    .node_running::after {
+        content: '';
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        right: 4px;
+        bottom: 4px;
+        background: rgba(76, 175, 80, 0.15);
+        border-radius: 8px;
+        pointer-events: none;
+    }
+    .node_running td.node_name {
+        text-align: left;
+    }
+    .node_running .node_name span {
+        display: inline-block;
+        background-color: #4CAF50;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    .node_running .apply_node .mdui-chip-icon {
+        color: white !important;
+        background-color: #FF9800 !important;
+    }
+    .subscribe-index {
+        display: inline-block;
+        background-color: rgba(0, 0, 0, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+    .subscribe-index.running {
+        background-color: #4CAF50;
+        color: white !important;
+    }
+</style>
+
 <script src="/static/js/qrcode.js"></script>
 <script src="/static/js/jquery.qrcode.js"></script>
 <script type="text/javascript">
@@ -184,12 +226,15 @@
                 var node_row = $("#node_template").clone();
                 node_row.attr("id", "real_node_" + group_index.toString() + "_" + node_index.toString());
                 node_row.attr("url", url);
+                node_row.attr("data-url", url);
+                node_row.attr("data-index", node_index - 1);
                 node_row.addClass("group-" + group_index);
                 node_row.find(".node_index").html(node_index.toString());
-                node_row.find(".node_name").html(node_data["ps"]);
+                node_row.find(".node_name").html('<span>' + node_data["ps"] + '</span>');
                 node_row.find(".node_addr").html(node_data["add"]);
                 if (node_data["ps"] === node_running) {
-                    node_row.find(".apply_node").find("i").html("vpn_key");
+                    node_row.addClass("node_running");
+                    node_row.find(".apply_node .mdui-icon").html("vpn_key");
                 }
 
                 $("#node_list_body").append(node_row);
@@ -297,6 +342,18 @@
             setTimeout(function() {
                 bind_node_row_event();
                 update_ping_result();
+                
+                // Update group title style
+                if (node_running) {
+                    var runningNode = $(".node_running");
+                    if (runningNode.length > 0) {
+                        var nodeUrl = runningNode.attr("url");
+                        var groupRow = $("tr[id^='real_subscribe_']").filter(function() {
+                            return $(this).find(".url").text() === nodeUrl;
+                        });
+                        groupRow.find(".subscribe-index").addClass("running");
+                    }
+                }
             }, 100);
         });
     }
@@ -306,13 +363,28 @@
         $.get("/apply_node", {subscribe:url, node_index:index}).done(function (data) {
             if (check_result(data)) {
                 update_toast("应用成功");
+                // Update node status
+                var prev_running = $(".node_running");
+                prev_running.removeClass("node_running");
+                prev_running.find(".apply_node .mdui-icon").html("check");
+                $(".subscribe-index").removeClass("running");
+                
+                // Update current node
+                var current_node = $("tr[data-url='"+url+"'][data-index='"+index+"']");
+                current_node.addClass("node_running");
+                current_node.find(".apply_node .mdui-icon").html("vpn_key");
+                
+                // Update group title
+                var groupRow = $("tr[id^='real_subscribe_']").filter(function() {
+                    return $(this).find(".url").text() === url;
+                });
+                groupRow.find(".subscribe-index").addClass("running");
             }
             else {
                 update_toast("应用失败");
             }
         }).always(function () {
             close_toast();
-            refresh();
         });
     }
     
