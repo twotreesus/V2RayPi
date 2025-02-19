@@ -2,63 +2,88 @@
     <p></p>
     <div class="mdui-row">
         <div class="mdui-table-fluid">
+            <!-- 订阅列表表格 -->
             <table class="mdui-table">
                 <tbody id="subscribe_body">
                 <tr>
-                    <td class="mdui-typo"><strong>最近订阅</strong></td>
-                    <td id="last_subscribe"></td>
-                    <td colspan="3">
-                        <div class="mdui-row">
-                            <div id="update_all_subscribe" class="mdui-col-sm-3" style="display: none">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_all_subscribe()">全部更新</button>
+                    <td colspan="5">
+                        <div class="mdui-row" style="width: 100%;">
+                            <div class="mdui-col-xs-1" style="width: 8%;">
+                                <strong class="mdui-typo">最近订阅</strong>
                             </div>
-                            <div class="mdui-col-sm-3">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_subscribe()">订阅</button>
+                            <div class="mdui-col-xs-6" style="width: 60%;">
+                                <span id="last_subscribe"></span>
                             </div>
-                            <div id="ping_test" class="mdui-col-sm-3" style="display: none">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="ping_test()">ping</button>
+                            <div class="mdui-col-xs-5" style="width: 32%;">
+                                <div class="mdui-row" style="display: flex; gap: 16px;">
+                                    <div id="update_all_subscribe" style="display: none">
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_all_subscribe()">全部更新</button>
+                                    </div>
+                                    <div>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_subscribe()">订阅</button>
+                                    </div>
+                                    <div id="ping_test" style="display: none">
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="ping_test()">ping</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </td>
                 </tr>
-                <tr class="mdui-color-grey-100"><td colspan="5"></td></tr>
+                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="5"></td></tr>
                 <tr id="subscribe_template" class="mdui-color-light-blue-50" style="display: none">
-                    <td class="mdui-typo"><strong>订阅地址</strong></td>
-                    <td class="mdui-typo">
-                        <div class="mdui-row toggle-row" style="cursor: pointer;">
-                            <div class="mdui-col-xs-1">
-                                <i class="mdui-icon material-icons group-toggle">expand_more</i>
+                    <td colspan="5">
+                        <div class="mdui-row" style="width: 100%;">
+                            <div class="mdui-col-xs-1" style="width: 8%;">
+                                <strong class="mdui-typo">订阅地址</strong>
                             </div>
-                            <div class="mdui-col">
-                                <strong class="url"></strong>
+                            <div class="mdui-col-xs-6" style="width: 60%;">
+                                <div class="mdui-row toggle-row" style="cursor: pointer; width: 100%;">
+                                    <div class="mdui-col-xs-1" style="width: 24px;">
+                                        <i class="mdui-icon material-icons group-toggle">expand_more</i>
+                                    </div>
+                                    <div class="mdui-col" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        <strong class="url" style="display: block; overflow: hidden; text-overflow: ellipsis;"></strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mdui-col-xs-5" style="width: 32%;">
+                                <div class="mdui-row" style="display: flex; gap: 16px;">
+                                    <div>
+                                        <button class="update_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple">更新</button>
+                                    </div>
+                                    <div>
+                                        <button class="remove_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple">删除</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </td>
-                    <td colspan="3">
-                        <div class="mdui-row">
-                            <div class="mdui-col-sm-3">
-                                <button class="update_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple">更新</button>
-                            </div>
-                            <div class="mdui-col-sm-3">
-                                <button class="remove_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple">删除</button>
-                            </div>
-                        </div>
-
                     </td>
                 </tr>
                 <tr id="manual_template" class="mdui-color-light-blue-50" style="display: none">
-                    <td class="mdui-typo"><strong>手动节点</strong></td>
-                    <td></td>
-                    <td colspan="3">
-                        <div class="mdui-row">
-                            <div class="mdui-col-sm-3">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_manual_node()">添加</button>
+                    <td colspan="5">
+                        <div class="mdui-row" style="width: 100%;">
+                            <div class="mdui-col-xs-1" style="width: 8%;">
+                                <strong class="mdui-typo">手动节点</strong>
+                            </div>
+                            <div class="mdui-col" style="width: 92%;">
+                                <div class="mdui-row" style="display: flex; gap: 16px;">
+                                    <div>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_manual_node()">添加</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </td>
                 </tr>
+                </tbody>
+            </table>
+            
+            <!-- 节点列表表格 -->
+            <table class="mdui-table" style="margin-top: 8px;">
+                <tbody id="node_list_body">
                 <tr id="node_header_template" class="mdui-typo-caption-opacity" style="display: none">
-                    <td>序号</td>
+                    <td style="width: 8%;">序号</td>
                     <td>名称</td>
                     <td>地址</td>
                     <td>延迟</td>
@@ -151,7 +176,7 @@
                 var node_head_row = $("#node_header_template").clone();
                 node_head_row.attr("id", "real_header_" + index.toString());
                 node_head_row.addClass("group-" + index);
-                tbody.append(node_head_row);
+                $("#node_list_body").append(node_head_row);
                 node_head_row.hide();
             }
             
@@ -167,7 +192,7 @@
                     node_row.find(".apply_node").find("i").html("vpn_key");
                 }
 
-                tbody.append(node_row);
+                $("#node_list_body").append(node_row);
                 // Initially hide all nodes
                 node_row.hide();
                 $(".group-" + group_index).hide();
