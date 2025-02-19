@@ -25,7 +25,14 @@
                 <tr id="subscribe_template" class="mdui-color-light-blue-50" style="display: none">
                     <td class="mdui-typo"><strong>订阅地址</strong></td>
                     <td class="mdui-typo">
-                        <strong class="url"></strong>
+                        <div class="mdui-row toggle-row" style="cursor: pointer;">
+                            <div class="mdui-col-xs-1">
+                                <i class="mdui-icon material-icons group-toggle">expand_more</i>
+                            </div>
+                            <div class="mdui-col">
+                                <strong class="url"></strong>
+                            </div>
+                        </div>
                     </td>
                     <td colspan="3">
                         <div class="mdui-row">
@@ -96,6 +103,8 @@
 <script src="/static/js/jquery.qrcode.js"></script>
 <script type="text/javascript">
     //# sourceURL=subscribe.js
+    var nodeGroups = {};
+    
     $(document).ready(function () {
         mdui.mutation();
         refresh();
@@ -126,6 +135,7 @@
                 var url_row = $("#subscribe_template").clone();
                 url_row.find(".url").html(url);
                 url_row.attr("id", "real_subscribe_" + index.toString());
+                url_row.find(".group-toggle").attr("data-group", index);
                 tbody.append(url_row);
                 url_row.show();
             }
@@ -140,14 +150,16 @@
             function make_node_head(index) {
                 var node_head_row = $("#node_header_template").clone();
                 node_head_row.attr("id", "real_header_" + index.toString());
+                node_head_row.addClass("group-" + index);
                 tbody.append(node_head_row);
-                node_head_row.show();
+                node_head_row.hide();
             }
             
-            function make_node_row(url, node_data, group_idnex, node_index) {
+            function make_node_row(url, node_data, group_index, node_index) {
                 var node_row = $("#node_template").clone();
-                node_row.attr("id", "real_node_" + group_idnex.toString() + "_" + node_index.toString());
+                node_row.attr("id", "real_node_" + group_index.toString() + "_" + node_index.toString());
                 node_row.attr("url", url);
+                node_row.addClass("group-" + group_index);
                 node_row.find(".node_index").html(node_index.toString());
                 node_row.find(".node_name").html(node_data["ps"]);
                 node_row.find(".node_addr").html(node_data["add"]);
@@ -156,10 +168,31 @@
                 }
 
                 tbody.append(node_row);
-                node_row.show();
+                // Initially hide all nodes
+                node_row.hide();
+                $(".group-" + group_index).hide();
+                $("#subscribe_group_" + group_index + " .group-toggle").text("expand_more");
             }
 
             function bind_node_row_event() {
+                // Bind toggle event
+                $(".toggle-row").off("click").on("click", function() {
+                    var $row = $(this);
+                    var $icon = $row.find(".group-toggle");
+                    var groupIndex = $row.closest("tr").attr("id").split("_")[2];
+                    var $nodes = $(".group-" + groupIndex);
+                    
+                    if ($nodes.first().is(":visible")) {
+                        $nodes.hide();
+                        $icon.text("expand_more");
+                    } else {
+                        $nodes.show();
+                        $icon.text("expand_less");
+                    }
+                    
+                    return false;
+                });
+
                 $(".update_subscribe").click(function () {
                     var url = $(this).closest("tr").find(".url").text();
                     update_subscribe(url);
@@ -199,18 +232,23 @@
                 })
             }
 
+            // Clear existing node groups
+            nodeGroups = {};
+            
             // main
             groups.forEach(function (group) {
                 var url = group["subscribe"];
                 var i = groups.indexOf(group);
-                make_group_head(url, i + 1);
-                make_node_head(i + 1);
+                var index = i + 1;
+                
+                make_group_head(url, index);
+                make_node_head(index);
 
                 var node_list = group["nodes"];
                 node_list.forEach(function(node_data){
                     var j = node_list.indexOf(node_data);
-                    make_node_row(url, node_data, i +1, j + 1);
-                } );
+                    make_node_row(url, node_data, index, j + 1);
+                });
             })
 
             make_manual_head();
@@ -223,8 +261,11 @@
                 })
             }
 
-            bind_node_row_event();
-            update_ping_result();
+            // Ensure events are bound after all DOM elements are created
+            setTimeout(function() {
+                bind_node_row_event();
+                update_ping_result();
+            }, 100);
         });
     }
     
