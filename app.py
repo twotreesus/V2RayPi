@@ -180,7 +180,12 @@ def apply_node_api():
     if CoreService.apply_node(url, index):
         result = K.ok
 
-    return jsonify({K.result: result})
+    # Get current running node info
+    status = CoreService.status()
+    return jsonify({
+        K.result: result,
+        K.ps: status.get(K.ps, None)
+    })
 
 @app.route('/get_node_link')
 def get_node_link_api():
