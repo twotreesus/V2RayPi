@@ -42,19 +42,22 @@
     </header>
     <!--menu-->
     <div class="mdui-drawer" id="main-drawer">
-        <div class="mdui-list" mdui-collapse="{accordion: true}">
-            <div class="mdui-collapse-item mdui-collapse-item-open">
-                <div class="mdui-collapse-item-header mdui-list-item mdui-ripple">
-                    <i class="mdui-list-item-icon mdui-icon material-icons mdui-text-color-blue">near_me</i>
-                    <div class="mdui-list-item-content">控制面板</div>
-                    <i class="mdui-collapse-item-arrow mdui-icon material-icons">keyboard_arrow_down</i>
-                </div>
-                <div class="mdui-collapse-item-body mdui-list">
-                    <div id="status" class="mdui-list-item mdui-ripple mdui-list-item-active">运行状态</div>
-                    <div id="subscribe" class="mdui-list-item mdui-ripple">订阅配置</div>
-                    <div id="advance" class="mdui-list-item mdui-ripple">高级配置</div>
-                    <div id="logs" class="mdui-list-item mdui-ripple ">运行日志</div>
-                </div>
+        <div class="mdui-list">
+            <div id="status" class="mdui-list-item mdui-ripple mdui-list-item-active">
+                <i class="mdui-list-item-icon mdui-icon material-icons">play_arrow</i>
+                <div class="mdui-list-item-content">运行状态</div>
+            </div>
+            <div id="subscribe" class="mdui-list-item mdui-ripple">
+                <i class="mdui-list-item-icon mdui-icon material-icons">links</i>
+                <div class="mdui-list-item-content">订阅配置</div>
+            </div>
+            <div id="advance" class="mdui-list-item mdui-ripple">
+                <i class="mdui-list-item-icon mdui-icon material-icons">tune</i>
+                <div class="mdui-list-item-content">高级配置</div>
+            </div>
+            <div id="logs" class="mdui-list-item mdui-ripple">
+                <i class="mdui-list-item-icon mdui-icon material-icons">edit</i>
+                <div class="mdui-list-item-content">运行日志</div>
             </div>
         </div>
     </div>
@@ -161,7 +164,7 @@
 
             var id = $(this).attr("id");
             if (id in menus) {
-                var title = $(this).text();
+                var title = $(this).find(".mdui-list-item-content").text();
                 $("#head_title").html(title);
                 $(".mdui-list-item").removeClass("mdui-list-item-active");
                 $(this).addClass("mdui-list-item-active");
