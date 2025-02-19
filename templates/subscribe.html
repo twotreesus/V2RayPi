@@ -35,7 +35,7 @@
                     <td colspan="5">
                         <div class="mdui-row" style="width: 100%;">
                             <div class="mdui-col-xs-1" style="width: 8%;">
-                                <strong class="mdui-typo">订阅地址</strong>
+                                <strong class="mdui-typo subscribe-index">订阅地址</strong>
                             </div>
                             <div class="mdui-col-xs-6" style="width: 60%;">
                                 <div class="mdui-row toggle-row" style="cursor: pointer; width: 100%;">
@@ -159,6 +159,7 @@
             function make_group_head(url, index) {
                 var url_row = $("#subscribe_template").clone();
                 url_row.find(".url").html(url);
+                url_row.find(".subscribe-index").html("订阅 " + index.toString());
                 url_row.attr("id", "real_subscribe_" + index.toString());
                 url_row.find(".group-toggle").attr("data-group", index);
                 tbody.append(url_row);
