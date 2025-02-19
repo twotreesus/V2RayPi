@@ -40,11 +40,14 @@
                                     <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">订阅地址</strong>
                                 </div>
                             </div>
-                            <div class="mdui-col-xs-6" style="width: 60%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-6" style="width: 52%; display: flex; align-items: center;">
                                 <strong class="url" style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></strong>
                             </div>
-                            <div class="mdui-col-xs-5" style="width: 15%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-5" style="width: 23%; display: flex; align-items: center;">
                                 <div style="display: flex; gap: 8px; justify-content: flex-start;">
+                                    <div>
+                                        <button class="copy_url mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" mdui-tooltip="{'content': '复制订阅地址'}">复制</button>
+                                    </div>
                                     <div>
                                         <button class="update_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple">更新</button>
                                     </div>
@@ -190,10 +193,10 @@
                 }
 
                 $("#node_list_body").append(node_row);
-                // Initially hide all nodes
-                node_row.hide();
-                $(".group-" + group_index).hide();
-                $("#subscribe_group_" + group_index + " .group-toggle").text("expand_more");
+                // Initially show all nodes
+                node_row.show();
+                $(".group-" + group_index).show();
+                $("#subscribe_group_" + group_index + " .group-toggle").text("expand_less");
             }
 
             function bind_node_row_event() {
@@ -223,6 +226,13 @@
                 $(".remove_subscribe").click(function () {
                     var url = $(this).closest("tr").find(".url").text();
                     remove_subscribe(url);
+                })
+
+                $(".copy_url").click(function () {
+                    var url = $(this).closest("tr").find(".url").text();
+                    if (copy_to_clipboard(url)) {
+                        message("订阅地址已复制");
+                    }
                 })
 
                 $(".apply_node").click(function () {
