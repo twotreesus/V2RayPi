@@ -147,6 +147,9 @@ sudo supervisorctl tail -f v2raypi
 # 重启 V2RayPi 服务
 sudo supervisorctl restart v2raypi
 
+# 手动强制更新 V2RayPi 服务
+sudo git reset --hard && sudo git pull && sudo supervisorctl restart v2raypi
+
 # 查看 v2ray-core 日志
 tail -f /var/log/v2ray/error.log
 ```
@@ -154,8 +157,9 @@ tail -f /var/log/v2ray/error.log
 ### 常见问题
 
 1. 网络无法访问
-   - 检查主路由的网关是否设置为 V2RayPi 的 IP
-   - 检查 V2RayPi 的网络设置是否正确（IP、网关、DNS）， 应该设置为主路由
+   - 检查主路由的 DHCP 网关是否设置为 V2RayPi 的 IP
+   - 检查 V2RayPi 旁路由的网络设置是否正确（IP、网关、DNS）
+   - 检查 v2ray-core 是否运行
    - 检查订阅节点是否可用（速度测试）
 
 2. 管理面板无法访问
@@ -170,8 +174,7 @@ tail -f /var/log/v2ray/error.log
 
 4. 系统更新失败
    - 检查网络连接
-   - 检查 git 仓库状态：`git status`
-   - 手动更新：`git reset --hard && git pull && sudo supervisorctl restart v2raypi`
+   - 手动更新V2RayPi
 
 5. 透明代理不生效
    - 确认系统是否支持 TPROXY（MacOS 不支持）
