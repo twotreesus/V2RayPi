@@ -6,9 +6,9 @@
   - [操作系统](#操作系统)
   - [硬件平台](#硬件平台)
 - [安装指南](#安装指南)
-  - [MacOS 安装](#macos-安装)
   - [Linux 安装](#linux-安装)
-  - [Docker 部署](#docker-部署)
+  - [MacOS 安装](#macos-安装)
+
 - [系统维护](#系统维护)
   - [卸载](#卸载)
   - [故障排除](#故障排除)
@@ -49,29 +49,6 @@ TG讨论组：[https://t.me/v2raypi](https://t.me/v2raypi)
 
 ## 安装指南
 
-### MacOS 安装
-> 注意：MacOS 版本不支持透明代理功能
-
-```bash
-# 1. 安装 Homebrew
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-
-# 2. 克隆项目
-cd ~/Documents/
-git clone https://github.com/twotreesus/V2RayPi.git
-cd V2RayPi
-
-# 3. 安装依赖
-./script/install_osx.sh
-
-# 4. 启动服务
-python3 app.py
-```
-
-安装完成后：
-1. 访问管理面板：浏览器输入 `127.0.0.1:1086`
-2. 配置代理：浏览器设置 SOCKS5 代理为 `127.0.0.1:1080`（Chrome 浏览器推荐使用 SwitchyOmega 插件）
-
 ### Linux 安装（支持透明代理）
 支持的发行版：Debian / Armbian / Ubuntu / CentOS
 
@@ -103,6 +80,29 @@ sudo reboot
 2. 将默认网关设置为 V2RayPi 的 IP 地址（如上述配置中的 192.168.66.200）
 
 完成配置后，浏览器输入 V2RayPi 的地址（如 `192.168.66.200:1086`）即可访问管理面板
+
+### MacOS 安装
+> 注意：MacOS 版本不支持透明代理功能
+
+```bash
+# 1. 安装 Homebrew
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+# 2. 克隆项目
+cd ~/Documents/
+git clone https://github.com/twotreesus/V2RayPi.git
+cd V2RayPi
+
+# 3. 安装依赖
+./script/install_osx.sh
+
+# 4. 启动服务
+python3 app.py
+```
+
+安装完成后：
+1. 访问管理面板：浏览器输入 `127.0.0.1:1086`
+2. 配置代理：浏览器设置 SOCKS5 代理为 `127.0.0.1:1080`（Chrome 浏览器推荐使用 SwitchyOmega 插件）
 
 ### 系统更新
 系统页面提供了一键更新功能，可以方便地将系统更新到最新版本：

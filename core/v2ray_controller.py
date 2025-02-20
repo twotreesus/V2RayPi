@@ -116,25 +116,6 @@ class V2rayController:
 
         self.restart()
 
-class DockerV2rayController(V2rayController):
-    def start(self) -> bool:
-        cmd = "supervisorctl start v2ray"
-        subprocess.check_output(cmd, shell=True).decode('utf-8')
-        return self.running()
-
-    def stop(self) -> bool:
-        cmd = "supervisorctl stop v2ray"
-        subprocess.check_output(cmd, shell=True).decode('utf-8')
-        return not self.running()
-
-    def restart(self) -> bool:
-        cmd = "supervisorctl restart v2ray"
-        subprocess.check_output(cmd, shell=True).decode('utf-8')
-        return self.running()
-
-    def enable_iptables(self):
-        return
-
 class MacOSV2rayController(V2rayController):
     def start(self) -> bool:
         cmd = "brew services start v2ray"
@@ -165,7 +146,5 @@ class MacOSV2rayController(V2rayController):
 def make_controller():
     if sys.platform == 'darwin':
         return MacOSV2rayController()
-    elif os.path.exists('/.dockerenv'):
-        return DockerV2rayController()
     else:
         return V2rayController()
