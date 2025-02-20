@@ -1,102 +1,110 @@
+## 目录
+
+- [简介](#简介)
+  - [主要特性](#主要特性)
+- [平台支持](#平台支持)
+  - [操作系统](#操作系统)
+  - [硬件平台](#硬件平台)
+- [安装指南](#安装指南)
+  - [MacOS 安装](#macos-安装)
+  - [Linux 安装](#linux-安装)
+  - [Docker 部署](#docker-部署)
+- [系统维护](#系统维护)
+  - [卸载](#卸载)
+  - [故障排除](#故障排除)
+
 ## 简介
 
-将树莓派配置为 V2Ray 透明代理旁路由，只需要主路由设置好网关，即可代理主路由器下所有设备透明科学上网，接入网络的终端不需要做任何设置，只需要连入主路由WiFi或有线即可。支持直连\智能分流\全局代理 三种模式，并能自动管理订阅和各种高级策略设置，原理参考 [透明代理(TPROXY)
-](https://guide.v2fly.org/app/tproxy.html)，TG讨论组:[https://t.me/v2raypi](https://t.me/v2raypi)
+V2RayPi 是一个基于 V2Ray 的透明代理系统，专为树莓派和其他单板计算机设计。它可以将设备配置为旁路由，实现整个网络的智能代理。
 
-### 特性
-- 支持透明代理，无需终端设置
-- 支持直连、智能分流、全局代理三种模式
-- 自动管理订阅和高级策略设置
-- 内置系统更新功能，一键更新到最新版本
-- 支持多种硬件平台和操作系统
+### 主要特性
+- **透明代理**：终端设备无需任何设置，只需连接到主路由即可
+- **多种代理模式**：支持直连、智能分流、全局代理
+- **自动化管理**：自动处理订阅更新和策略配置
+- **一键更新**：内置系统更新功能，轻松保持系统最新
+- **跨平台支持**：支持多种硬件平台和操作系统
+- **简单易用**：图形化管理界面，操作直观
 
-![1.png](pic/1.png)  
+原理参考：[透明代理(TPROXY)](https://guide.v2fly.org/app/tproxy.html)
 
-![2.png](pic/2.png)  
+TG讨论组：[https://t.me/v2raypi](https://t.me/v2raypi)
 
-![3.png](pic/3.png)  
+## 平台支持
 
-![4.png](pic/4.png)  
+### 操作系统
+- MacOS
+- Debian
+- Armbian
+- Raspberry Pi OS
+- Ubuntu
+- CentOS
+- Docker
 
-![5.png](pic/5.png)  
+### 硬件平台
+- [Raspberry Pi 4B](https://www.raspberrypi.com/products/raspberry-pi-4-model-b)
+- [ZeroPi](https://wiki.friendlyelec.com/wiki/index.php/ZeroPi)
+- [NanoPi NEO 2](https://wiki.friendlyelec.com/wiki/index.php/NanoPi_NEO2)
+- [NanoPi NEO 3](https://wiki.friendlyelec.com/wiki/index.php/NanoPi_NEO3)
+- [Orange Pi Zero2](http://www.orangepi.cn/Orange%20Pi%20Zero2/index_cn.html)
+- MacBook 及其他 MacOS 设备
+- 其他 ARM、x86、x64 设备（PC/软路由/电视盒子/开发板/虚拟机）
 
-## 系统支持
-MacOS  
-Debian  
-Armbian  
-Raspberry Pi OS  
-Ubuntu  
-CentOS  
-Docker  
+## 安装指南
 
-## 硬件支持
-MacBook 及其他所有能运行MacOS的硬件  
-[Raspberry Pi 4B](https://www.raspberrypi.com/products/raspberry-pi-4-model-b)  
-[ZeroPi](https://wiki.friendlyelec.com/wiki/index.php/ZeroPi)  
-[NanoPi NEO 2](https://wiki.friendlyelec.com/wiki/index.php/NanoPi_NEO2)  
-[NanoPi NEO 3](https://wiki.friendlyelec.com/wiki/index.php/NanoPi_NEO3)  
-[Orange Pi Zero2](http://www.orangepi.cn/Orange%20Pi%20Zero2/index_cn.html)  
-其他任何ARM、x86、x64 PC主机/软路由/电视盒子/开发板/虚拟机/Docker镜像  
+### MacOS 安装
+> 注意：MacOS 版本不支持透明代理功能
 
-![zeropi_1.jpg](pic/zeropi_1.jpg)  
-
-![zeropi_2.jpg](pic/zeropi_2.jpg)  
-
-## 安装方式
-### Mac，不支持透明代理
-```
-# 安装 brew
+```bash
+# 1. 安装 Homebrew
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 
-# clone 代码
+# 2. 克隆项目
 cd ~/Documents/
 git clone https://github.com/twotreesus/V2RayPi.git
 cd V2RayPi
 
-# 安装依赖
+# 3. 安装依赖
 ./script/install_osx.sh
 
-# 运行
+# 4. 启动服务
 python3 app.py
-
 ```
-浏览器输入127.0.0.1:1086，即可访问面板  
-浏览器设置 socks5 代理 127.0.0.1:1080，即可使用，Chrome 浏览器推荐使用 SwitchyOmega
 
-### Debian / Armbian / Ubuntu / CentOS，支持旁路由透明代理
-```
+安装完成后：
+1. 访问管理面板：浏览器输入 `127.0.0.1:1086`
+2. 配置代理：浏览器设置 SOCKS5 代理为 `127.0.0.1:1080`（Chrome 浏览器推荐使用 SwitchyOmega 插件）
+
+### Linux 安装（支持透明代理）
+支持的发行版：Debian / Armbian / Ubuntu / CentOS
+
+```bash
+# 1. 安装系统
 sudo su - root
 cd /usr/local
 git clone https://github.com/twotreesus/V2RayPi.git
 cd V2RayPi/script
-./install.sh #如果是 CentOS 请执行  ./install_centos.sh
-```
+./install.sh  # CentOS 用户请执行 ./install_centos.sh
 
-重启服务
-```
+# 2. 启动服务
 sudo supervisorctl restart v2raypi
-```
 
-设置树莓派为旁路由，树莓派修改为静态地址192.168.66.200，这里主路由是192.168.66.1
-```
+# 3. 配置静态 IP（以 192.168.66.0/24 网段为例）
 sudo nano /etc/dhcpcd.conf
 
-# Example static IP configuration:
 interface eth0
 static ip_address=192.168.66.200/24
 static routers=192.168.66.1
 static domain_name_servers=192.168.66.1
-```
 
-重启树莓派
-```
+# 4. 重启设备
 sudo reboot
 ```
 
-然后主路由设置的DHCP网关为 192.168.66.200，这里以梅林为例，其他系统类似
-![router.png](pic/router.png)
+配置主路由：
+1. 进入主路由器的 DHCP 设置
+2. 将默认网关设置为 V2RayPi 的 IP 地址（如上述配置中的 192.168.66.200）
 
-配置完成，浏览器输入192.168.66.200:1086，即可访问面板
+完成配置后，浏览器输入 V2RayPi 的地址（如 `192.168.66.200:1086`）即可访问管理面板
 
 ### 系统更新
 系统页面提供了一键更新功能，可以方便地将系统更新到最新版本：
