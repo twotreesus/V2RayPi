@@ -1,7 +1,0 @@
-{
-    "py/object": "core.app_config.AppConfig",
-    "user": "admin",
-    "password": "admin",
-    "port": 1086,
-    "inited": false
-}
