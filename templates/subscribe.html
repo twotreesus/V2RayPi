@@ -63,9 +63,15 @@
                     <td colspan="5">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-1" style="width: 8%; display: flex; align-items: center;">
-                                <strong class="mdui-typo" style="white-space: nowrap;">手动节点</strong>
+                                <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
+                                    <i class="mdui-icon material-icons group-toggle" data-group="manual">expand_more</i>
+                                    <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">手动节点</strong>
+                                </div>
                             </div>
-                            <div class="mdui-col" style="width: 92%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-6" style="width: 52%; display: flex; align-items: center;">
+                                <strong style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></strong>
+                            </div>
+                            <div class="mdui-col-xs-5" style="width: 23%; display: flex; align-items: center;">
                                 <div style="display: flex; gap: 8px; justify-content: flex-start;">
                                     <div>
                                         <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_manual_node()">添加</button>
@@ -253,7 +259,8 @@
                 $(".toggle-row").off("click").on("click", function() {
                     var $row = $(this);
                     var $icon = $row.find(".group-toggle");
-                    var groupIndex = $row.closest("tr").attr("id").split("_")[2];
+                    var group = $icon.attr("data-group");
+                    var groupIndex = group === "manual" ? (groups.length + 1).toString() : $row.closest("tr").attr("id").split("_")[2];
                     var $nodes = $(".group-" + groupIndex);
                     
                     if ($nodes.first().is(":visible")) {
@@ -338,7 +345,7 @@
                 make_node_head(groups.length + 1);
                 manuals.forEach(function (node_data) {
                     var j = manuals.indexOf(node_data);
-                    make_node_row('manual', node_data, groups.length + 1,  j + 1);
+                    make_node_row('manual', node_data, groups.length + 1, j + 1);
                 })
             }
 
@@ -352,10 +359,18 @@
                     var runningNode = $(".node_running");
                     if (runningNode.length > 0) {
                         var nodeUrl = runningNode.attr("url");
-                        var groupRow = $("tr[id^='real_subscribe_']").filter(function() {
-                            return $(this).find(".url").text() === nodeUrl;
-                        });
-                        groupRow.find(".subscribe-index").addClass("running");
+                        if (nodeUrl === 'manual') {
+                            $("#real_manual .subscribe-index").addClass("running");
+                        } else {
+                            var groupRow = $("tr[id^='real_subscribe_']").filter(function() {
+                                return $(this).find(".url").text() === nodeUrl;
+                            });
+                            if (groupRow.length > 0) {
+                                groupRow.find(".subscribe-index").addClass("running");
+                            } else {
+                                $("#real_manual .subscribe-index").addClass("running");
+                            }
+                        }
                     }
                 }
             }, 100);
@@ -379,10 +394,14 @@
                 current_node.find(".apply_node .mdui-icon").html("vpn_key");
                 
                 // Update group title
-                var groupRow = $("tr[id^='real_subscribe_']").filter(function() {
-                    return $(this).find(".url").text() === url;
-                });
-                groupRow.find(".subscribe-index").addClass("running");
+                if (url === "manual") {
+                    $("#real_manual .subscribe-index").addClass("running");
+                } else {
+                    var groupRow = $("tr[id^='real_subscribe_']").filter(function() {
+                        return $(this).find(".url").text() === url;
+                    });
+                    groupRow.find(".subscribe-index").addClass("running");
+                }
             }
             else {
                 update_toast("应用失败");

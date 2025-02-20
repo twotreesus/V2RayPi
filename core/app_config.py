@@ -9,8 +9,6 @@ from .base_data_item import BaseDataItem
 
 class AppConfig(BaseDataItem):
     def __init__(self):
-        self.user = "admin"
-        self.password = "admin"
         self.port = 1086
         self.inited = False
 

@@ -55,9 +55,9 @@
                 <i class="mdui-list-item-icon mdui-icon material-icons">tune</i>
                 <div class="mdui-list-item-content">高级配置</div>
             </div>
-            <div id="logs" class="mdui-list-item mdui-ripple">
-                <i class="mdui-list-item-icon mdui-icon material-icons">edit</i>
-                <div class="mdui-list-item-content">运行日志</div>
+            <div id="system" class="mdui-list-item mdui-ripple">
+                <i class="mdui-list-item-icon mdui-icon material-icons">settings</i>
+                <div class="mdui-list-item-content">系统维护</div>
             </div>
         </div>
     </div>
@@ -80,6 +80,13 @@
     var g_intervals = [];
     function add_interval(i) {
         g_intervals.push(i);
+    }
+
+    function remove_interval(i) {
+        if (i) {
+            clearInterval(i);
+            g_intervals = g_intervals.filter(item => item !== i);
+        }
     }
 
     function clear_intervals() {
@@ -156,7 +163,7 @@
             "status" : "status.html",
             "subscribe" : "subscribe.html",
             "advance" : "advance.html",
-            "logs" : "log.html"
+            "system" : "system.html"
         }
 
         $(".mdui-list-item").click(function () {

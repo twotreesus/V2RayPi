@@ -8,6 +8,8 @@ Desc:
 import psutil
 import os
 import os.path
+import platform
+import subprocess
 from .package import jsonpickle
 from typing import List
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -17,6 +19,7 @@ from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import random
 import time
+import threading
 
 from .app_config import AppConfig
 from .v2ray_controller import V2rayController, make_controller
@@ -63,6 +66,13 @@ class CoreService:
         node = cls.user_config.node.dump()
         result.update(node)
         return result
+
+    @classmethod
+    def update_and_restart(cls):
+        script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'script', 'update_and_restart.sh')
+        # Run script in a new session to ensure it survives service stop
+        os.system(f'setsid {script_path} > /dev/null 2>&1 < /dev/null &')
+
 
     @classmethod
     def performance(cls) -> dict:
@@ -214,6 +224,78 @@ class CoreService:
         policy.type = type.name
         policy.outbound = outbound.name
         return jsonpickle.encode(policy, indent=4)
+
+    @classmethod
+    def get_recent_commits(cls) -> List[str]:
+        try:
+            cmd = ["git", "--no-pager", "log", "-n", "5", "--pretty=format:%ad|%s", "--date=format:%Y-%m-%d"]
+            cwd = os.path.dirname(os.path.dirname(__file__))
+            result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            
+            if result.returncode != 0:
+                return []
+
+            commits = result.stdout.strip().split('\n')
+            return commits
+        except Exception:
+            return []
+
+    @classmethod
+    def get_last_update_time(cls) -> str:
+        try:
+            cmd = ["git", "--no-pager", "log", "-1", "--pretty=format:%ad", "--date=format:%Y-%m-%d %H:%M:%S"]
+            cwd = os.path.dirname(os.path.dirname(__file__))
+            result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            
+            if result.returncode != 0:
+                print(f'Failed to get last update time, git log returned {result.returncode}')
+                print(f'Error output: {result.stderr}')
+                return ""
+
+            output = result.stdout.strip()
+            if not output:
+                print('Git log output is empty')
+                return ""
+
+            return output
+        except Exception as e:
+            print(f'Exception in get_last_update_time: {str(e)}')
+            return ""
+
+    @classmethod
+    def check_v2raypi_updates(cls) -> List[str]:
+        try:
+            cwd = os.path.dirname(os.path.dirname(__file__))
+            
+            # First fetch from remote
+            fetch_cmd = ["git", "fetch"]
+            fetch_result = subprocess.run(fetch_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            if fetch_result.returncode != 0:
+                return []
+
+            # Get latest local commit date
+            local_cmd = ["git", "--no-pager", "log", "-1", "--pretty=format:%at"]
+            local_result = subprocess.run(local_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            if local_result.returncode != 0:
+                return []
+            local_timestamp = int(local_result.stdout.strip())
+
+            # Get commits that are in origin/dev but not in current branch
+            cmd = ["git", "--no-pager", "log", "HEAD..origin/dev", "--pretty=format:%at|%ad|%s", "--date=format:%Y-%m-%d"]
+            result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            
+            if result.returncode != 0:
+                return []
+
+            commits = []
+            if result.stdout.strip():
+                for commit in result.stdout.strip().split('\n'):
+                    timestamp, date, message = commit.split('|')
+                    if int(timestamp) > local_timestamp:
+                        commits.append(f"{date}|{message}")
+            return commits
+        except Exception:
+            return []
 
     @classmethod
     def auto_detect_start(cls):

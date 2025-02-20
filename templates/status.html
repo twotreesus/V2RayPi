@@ -15,7 +15,7 @@
                 <tbody>
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <h5>运行状态</h5>
+                        <h5 style="margin: 0;">运行状态</h5>
                     </td>
                 </tr>
                 <tr>
@@ -70,28 +70,11 @@
                         </div>
                     </td>
                 </tr>
-                <tr>
-                    <td>v2ray-core 当前版本</td>
-                    <td id="v2ray_current_ver"></td>
-                </tr>
-                <tr>
-                    <td>v2ray-core 最新版本</td>
-                    <td>
-                        <div class="mdui-row">
-                            <div id="v2ray_new_ver" class="mdui-col-sm-3 mdui-text-color-blue"></div>
-                            <div id="check_update" class="mdui-col-sm-3">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2ray_new_ver()">查询</button>
-                            </div>
-                            <div id="update" class="mdui-col-sm-3" style="display: none">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_v2ray()">升级</button>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
+
                 <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <h5>节点信息</h5>
+                        <h5 style="margin: 0;">节点信息</h5>
                     </td>
                 </tr>
                 <tr>
@@ -105,7 +88,7 @@
                 <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <h5>性能监控</h5>
+                        <h5 style="margin: 0;">性能监控</h5>
                     </td>
                 </tr>
                 <tr>
@@ -269,42 +252,7 @@
         });
     }
 
-    function check_v2ray_new_ver() {
-        message("正在查询...");
-        $.get("/check_v2ray_new_ver").done(function (data) {
-            window.g_new_version = data["version"];
-            $("#v2ray_new_ver").html(window.g_new_version)
-            var current_version = $("#v2ray_current_ver").html();
-            if (window.g_new_version === current_version) {
-                message("当前已是最新版本无需更新");
-                $("#check_update").show();
-                $("#update").hide();
-            }
-            else {
-                message("已发布新版本，点击升级按钮更新");
-                $("#check_update").hide();
-                $("#update").show();
-            }
-        }).fail(function () {
-            message("检查失败");
-        });
-    }
 
-    function update_v2ray() {
-        pop_toast("正在升级...");
-        $.get("/update_v2ray").done(function (data) {
-            if (check_result(data)) {
-                update_toast("升级成功")
-            }
-            else {
-                update_toast("升级失败")
-            }
-        }).always(function () {
-            close_toast();
-            refresh();
-            check_v2ray_new_ver();
-        });
-    }
 
     function start_service() {
         pop_toast("正在启动...");

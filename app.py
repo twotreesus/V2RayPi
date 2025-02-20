@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 import os
 
+import threading
+import time
 from flask import Flask, render_template, jsonify, request, Response
-from flask_basicauth import BasicAuth
 
 from core.core_service import CoreService
 from core.keys import Keyword as K
@@ -13,12 +14,8 @@ os.chdir(dir_path)
 CoreService.load()
 
 app = Flask(__name__, static_url_path='/static')
-app.config['BASIC_AUTH_USERNAME'] = CoreService.app_config.user
-app.config['BASIC_AUTH_PASSWORD'] = CoreService.app_config.password
-app.config['BASIC_AUTH_FORCE'] = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
-basic_auth = BasicAuth(app)
 
 @app.route('/')
 @app.route('/index.html')
@@ -40,6 +37,10 @@ def advance_page():
 @app.route('/log.html')
 def log_page():
     return render_template("log.html")
+
+@app.route('/system.html')
+def system_page():
+    return render_template("system.html")
 
 @app.route('/start_service')
 def start_service_api():
@@ -65,6 +66,12 @@ def restart_service_api():
 
 @app.route('/get_status')
 def get_status_api():
+    status = CoreService.status()
+    status.update({K.result: K.ok})
+    return jsonify(status)
+
+@app.route('/get_system_status')
+def get_system_status_api():
     status = CoreService.status()
     status.update({K.result: K.ok})
     return jsonify(status)
@@ -270,5 +277,30 @@ def get_access_log_api():
 @app.route('/get_error_log')
 def get_error_log_api():
     return CoreService.v2ray.error_log()
+
+@app.route('/update_and_restart')
+def update_and_restart_api():
+    try:
+        CoreService.update_and_restart()
+        return jsonify({K.result: K.ok})
+    except:
+        return jsonify({K.result: K.failed})
+
+@app.route('/get_recent_commits')
+def get_recent_commits_api():
+    try:
+        commits = CoreService.get_recent_commits()
+        last_update = CoreService.get_last_update_time()
+        return jsonify({K.result: K.ok, 'commits': commits, 'last_update': last_update})
+    except Exception:
+        return jsonify({K.result: K.failed})
+
+@app.route('/check_v2raypi_updates')
+def check_v2raypi_updates_api():
+    try:
+        commits = CoreService.check_v2raypi_updates()
+        return jsonify({K.result: K.ok, 'commits': commits})
+    except Exception:
+        return jsonify({K.result: K.failed})
 
 app.run(host='0.0.0.0', port=CoreService.app_config.port)

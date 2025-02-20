@@ -1,0 +1,292 @@
+<div id="system_page" class="mdui-container">
+    <div class="mdui-row">
+        <div class="mdui-table-fluid">
+            <table class="mdui-table">
+                <tbody>
+                <!-- V2Ray Core Update -->
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%;">
+                                <h5 style="margin: 0; white-space: nowrap;">V2Ray - Core</h5>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
+                                <span style="white-space: nowrap;">当前版本</span>
+                            </div>
+                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
+                                <span id="v2ray_current_ver"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
+                                <span style="white-space: nowrap;">最新版本</span>
+                            </div>
+                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <span id="v2ray_new_ver" class="mdui-text-color-blue" style="display: inline-block; min-width: 100px;"></span>
+                                    <div id="check_update">
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2ray_new_ver()">查询</button>
+                                    </div>
+                                    <div id="update" style="display: none">
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_v2ray()">升级</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
+                <!-- System Control -->
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%;">
+                                <h5 style="margin: 0; white-space: nowrap;">系统更新</h5>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
+                                <span style="white-space: nowrap;">最近更新</span>
+                            </div>
+                            <div class="mdui-col-xs-10" style="display: flex; align-items: center; gap: 64px;">
+                                <span id="lastUpdateTime" style="white-space: nowrap; font-size: 14px; color: rgba(0, 0, 0, 0.54);"></span>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <div>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2raypi_updates()">检查更新</button>
+                                    </div>
+                                    <div>
+                                        <button id="update_btn" class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="update_and_restart()" style="display: none">更新并重启</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
+                                <span style="white-space: nowrap;">更新记录</span>
+                            </div>
+                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
+                                <div id="recent_commits" style="display: flex; flex-direction: column; gap: 4px;">
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
+
+                <!-- System Logs -->
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-1" style="width: 8%;">
+                                <h5 style="margin: 0;">运行日志</h5>
+                            </div>
+                            <div class="mdui-col-xs-3" style="display: flex; align-items: center;">
+                                <label class="mdui-switch">
+                                    <input id="log-switch" type="checkbox"/>
+                                    <i class="mdui-switch-icon"></i>
+                                </label>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr id="log-content" style="display: none;">
+                    <td>访问日志</td>
+                    <td>
+                        <pre style="max-height: 200px; overflow-x: auto;"><code id="log-access-content" class="language-css"></code></pre>
+                    </td>
+                </tr>
+                <tr id="log-content2" style="display: none;">
+                    <td>错误日志</td>
+                    <td>
+                        <pre style="max-height: 200px; overflow-x: auto;"><code id="log-error-content" class="language-css"></code></pre>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    //# sourceURL=system.js
+    function check_result(data) {
+        return data && data["result"] === "ok";
+    }
+
+    function refresh() {
+        $.get("/get_system_status").done(function (data) {
+            if (check_result(data)) {
+                $("#v2ray_current_ver").html(data["version"]);
+            }
+        });
+        get_recent_commits();
+    }
+
+
+    function get_recent_commits() {
+        $.get('/get_recent_commits', function(response) {
+            if (check_result(response)) {
+                if (response.last_update) {
+                    $('#lastUpdateTime').text(response.last_update);
+                }
+
+                var container = $('#recent_commits');
+                container.empty();
+                response.commits.forEach(function(commit) {
+                    var parts = commit.split('|');
+                    var date = parts[0];
+                    var message = parts[1];
+                    var commitDiv = $('<div class="mdui-text-color-theme-text" style="font-family: monospace; display: flex;">' +
+                        '<span class="mdui-color-grey-500 mdui-text-color-white" style="padding: 2px 5px; margin-right: 8px; border-radius: 3px; flex-shrink: 0;">' + date + '</span>' +
+                        '<span style="border: 1px solid #e0e0e0; padding: 2px 8px; border-radius: 3px; flex-grow: 1;">' + message + '</span>' +
+                        '</div>');
+                    container.append(commitDiv);
+                });
+            }
+        });
+    }
+
+    function check_v2raypi_updates() {
+        var toast = pop_toast("正在检查更新...");
+        $.get("/check_v2raypi_updates", function(response) {
+            if (check_result(response)) {
+                var container = $('#recent_commits');
+                response.commits.forEach(function(commit) {
+                    var parts = commit.split('|');
+                    var date = parts[0];
+                    var message = parts[1];
+                    var commitDiv = $('<div class="mdui-text-color-theme-text" style="font-family: monospace; display: flex;">' +
+                        '<span class="mdui-color-green-300 mdui-text-color-white" style="padding: 2px 5px; margin-right: 8px; border-radius: 3px; flex-shrink: 0;">' + date + '</span>' +
+                        '<span style="border: 1px solid #e0e0e0; padding: 2px 8px; border-radius: 3px; flex-grow: 1;">' + message + '</span>' +
+                        '</div>');
+                    container.prepend(commitDiv);
+                });
+                if (response.commits.length > 0) {
+                    $('#update_btn').show();
+                    message("发现新的更新");
+                } else {
+                    $('#update_btn').hide();
+                    message("已是最新版本");
+                }
+            } else {
+                message("检查更新失败");
+            }
+            close_toast();
+        });
+    }
+
+    function check_v2ray_new_ver() {
+        message("正在查询...");
+        $.get("/check_v2ray_new_ver").done(function (data) {
+            window.g_new_version = data["version"];
+            $("#v2ray_new_ver").html(window.g_new_version)
+            var current_version = $("#v2ray_current_ver").html();
+            if (window.g_new_version === current_version) {
+                message("当前已是最新版本无需更新");
+                $("#check_update").show();
+                $("#update").hide();
+            }
+            else {
+                message("已发布新版本，点击升级按钮更新");
+                $("#check_update").hide();
+                $("#update").show();
+            }
+        }).fail(function () {
+            message("检查失败");
+        });
+    }
+
+    function update_v2ray() {
+        pop_toast("正在升级...");
+        $.get("/update_v2ray").done(function (data) {
+            if (check_result(data)) {
+                update_toast("升级成功")
+            }
+            else {
+                update_toast("升级失败")
+            }
+        }).always(function () {
+            close_toast();
+            refresh();
+            check_v2ray_new_ver();
+        });
+    }
+
+    function update_and_restart() {
+        mdui.confirm('确定要更新并重启服务吗？', '更新确认', function(){
+            mdui.confirm('警告：更新过程中服务将会重启，确定继续吗？', '再次确认', function() {
+                pop_toast("正在更新系统...");
+                $.get("/update_and_restart").done(function (data) {
+                    if (check_result(data)) {
+                        var countdown = 10;
+                        var timer = setInterval(function() {
+                            update_toast("更新成功，正在重启服务，" + countdown + " 秒后刷新页面");
+                            countdown--;
+                            if (countdown < 0) {
+                                clearInterval(timer);
+                                close_toast();
+                                window.location.reload();
+                            }
+                        }, 1000);
+                    }
+                    else {
+                        update_toast("更新失败");
+                        setTimeout(close_toast, 2000);
+                    }
+                }).fail(function () {
+                    update_toast("更新失败");
+                    setTimeout(close_toast, 2000);
+                });
+            });
+        });
+    }
+
+    var logInterval = null;
+    function toggle_log_display(enabled) {
+        if (enabled) {
+            $('#log-content, #log-content2').show();
+            logInterval = setInterval(function () {
+                $('#log-access-content').load('/get_access_log');
+                $('#log-error-content').load('/get_error_log');
+            }, 500);
+            add_interval(logInterval);
+        } else {
+            $('#log-content, #log-content2').hide();
+            if (logInterval) {
+                remove_interval(logInterval);
+                logInterval = null;
+            }
+        }
+    }
+
+    $(document).ready(function() {
+        refresh();
+
+        // Log switch handler
+        $('#log-switch').change(function() {
+            toggle_log_display($(this).is(':checked'));
+        });
+
+        mdui.mutation();
+    });
+</script>
+</body>
+</html>
