@@ -273,6 +273,13 @@ class CoreService:
             if fetch_result.returncode != 0:
                 return []
 
+            # Get current branch name
+            branch_cmd = ["git", "rev-parse", "--abbrev-ref", "HEAD"]
+            branch_result = subprocess.run(branch_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            if branch_result.returncode != 0:
+                return []
+            current_branch = branch_result.stdout.strip()
+
             # Get latest local commit date
             local_cmd = ["git", "--no-pager", "log", "-1", "--pretty=format:%at"]
             local_result = subprocess.run(local_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
@@ -280,8 +287,8 @@ class CoreService:
                 return []
             local_timestamp = int(local_result.stdout.strip())
 
-            # Get commits that are in origin/dev but not in current branch
-            cmd = ["git", "--no-pager", "log", "HEAD..origin/dev", "--pretty=format:%at|%ad|%s", "--date=format:%Y-%m-%d"]
+            # Get commits that are in origin/<current_branch> but not in current branch
+            cmd = ["git", "--no-pager", "log", f"HEAD..origin/{current_branch}", "--pretty=format:%at|%ad|%s", "--date=format:%Y-%m-%d"]
             result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
             
             if result.returncode != 0:
