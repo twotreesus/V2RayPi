@@ -37,8 +37,6 @@ TG讨论组：[https://t.me/v2raypi](https://t.me/v2raypi)
 - Armbian
 - Raspberry Pi OS
 - Ubuntu
-- CentOS
-- Docker
 
 ### 硬件平台
 - [Raspberry Pi 4B](https://www.raspberrypi.com/products/raspberry-pi-4-model-b)
@@ -83,7 +81,7 @@ sudo su - root
 cd /usr/local
 git clone https://github.com/twotreesus/V2RayPi.git
 cd V2RayPi/script
-./install.sh  # CentOS 用户请执行 ./install_centos.sh
+./install.sh
 
 # 2. 启动服务
 sudo supervisorctl restart v2raypi
@@ -127,16 +125,6 @@ git pull
 sudo systemctl restart v2raypi
 ```
 
-### Docker，不支持透明代理
-Docker镜像目前支持amd64和arm64平台，感谢[raydoom](https://github.com/raydoom)提供支持，镜像已上传到dockerhub，可直接拉取使用，如需要也可以用根目录下的Dockerfile自行编译镜像
-
-```
-docker run -d --restart=unless-stopped --name=v2ray-funpi -p 1080:1080 -p 1086:1086 raydoom/v2ray-funpi
-```
-
-浏览器输入DOCKER_HOST_IP:1086，即可访问面板  
-其中，DOCKER_HOST_IP为docker主机ip地址  
-浏览器设置 socks5 代理 DOCKER_HOST_IP:1080，即可使用，Chrome 浏览器推荐使用 SwitchyOmega  
 
 
 ## 卸载方式
