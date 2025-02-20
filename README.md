@@ -136,9 +136,9 @@ sudo reboot
 
 ## 故障排除
 
-### 维护操作 
+### 维护操作
 ```bash
-# 检查 V2RayPi 服务状态 
+# 检查 V2RayPi 服务状态
 sudo supervisorctl status v2raypi
 
 # 查看 V2RayPi 服务日志
@@ -149,6 +149,7 @@ sudo supervisorctl restart v2raypi
 
 # 查看 v2ray-core 日志
 tail -f /var/log/v2ray/error.log
+```
 
 ### 常见问题
 
