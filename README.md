@@ -132,5 +132,53 @@ sudo systemctl restart v2raypi
 ```
 sudo ./script/remove.sh
 sudo reboot
-
 ```
+
+## 故障排除
+
+### 维护操作 
+```bash
+# 检查 V2RayPi 服务状态 
+sudo supervisorctl status v2raypi
+
+# 查看 V2RayPi 服务日志
+sudo supervisorctl tail -f v2raypi
+
+# 重启 V2RayPi 服务
+sudo supervisorctl restart v2raypi
+
+# 查看 v2ray-core 日志
+tail -f /var/log/v2ray/error.log
+
+### 常见问题
+
+1. 网络无法访问
+   - 检查主路由的网关是否设置为 V2RayPi 的 IP
+   - 检查 V2RayPi 的网络设置是否正确（IP、网关、DNS）， 应该设置为主路由
+   - 检查订阅节点是否可用（速度测试）
+
+2. 管理面板无法访问
+   - 检查 V2RayPi 服务是否运行
+   - 重启服务
+   - 查看日志定位问题
+
+3. 节点更新失败
+   - 检查订阅地址是否可访问
+   - 检查订阅格式是否正确（支持 v2ray 标准订阅格式）
+   - 尝试手动添加节点
+
+4. 系统更新失败
+   - 检查网络连接
+   - 检查 git 仓库状态：`git status`
+   - 手动更新：`git reset --hard && git pull && sudo supervisorctl restart v2raypi`
+
+5. 透明代理不生效
+   - 确认系统是否支持 TPROXY（MacOS 不支持）
+   - 检查 iptables 规则：`sudo iptables -t mangle -L`
+   - 重启服务并检查日志
+
+### 其他问题
+如果遇到其他问题，可以：
+1. 查看详细日志定位问题
+2. 在 [GitHub Issues](https://github.com/twotreesus/V2RayPi/issues) 中搜索或提交问题
+3. 加入 [TG 讨论组](https://t.me/v2raypi) 寻求帮助
