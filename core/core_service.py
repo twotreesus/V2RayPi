@@ -68,11 +68,28 @@ class CoreService:
         return result
 
     @classmethod
-    def update_and_restart(cls):
+    def update_and_restart_v2raypi(cls):
         script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'script', 'update_and_restart.sh')
         # Run script in a new session to ensure it survives service stop
         os.system(f'setsid {script_path} > /dev/null 2>&1 < /dev/null &')
 
+    @classmethod
+    def reboot_host(cls) -> bool:
+        try:
+            # Run reboot command in a new session to ensure it survives service stop
+            os.system('setsid shutdown -r now > /dev/null 2>&1 < /dev/null &')
+            return True
+        except Exception:
+            return False
+
+    @classmethod
+    def shutdown_host(cls) -> bool:
+        try:
+            # Run shutdown command in a new session to ensure it survives service stop
+            os.system('setsid shutdown -h now > /dev/null 2>&1 < /dev/null &')
+            return True
+        except Exception:
+            return False
 
     @classmethod
     def performance(cls) -> dict:
@@ -226,7 +243,7 @@ class CoreService:
         return jsonpickle.encode(policy, indent=4)
 
     @classmethod
-    def get_recent_commits(cls) -> List[str]:
+    def get_v2raypi_recent_commits(cls) -> List[str]:
         try:
             cmd = ["git", "--no-pager", "log", "-n", "5", "--pretty=format:%ad|%s", "--date=format:%Y-%m-%d"]
             cwd = os.path.dirname(os.path.dirname(__file__))
@@ -241,7 +258,7 @@ class CoreService:
             return []
 
     @classmethod
-    def get_last_update_time(cls) -> str:
+    def get_v2raypi_last_update_time(cls) -> str:
         try:
             cmd = ["git", "--no-pager", "log", "-1", "--pretty=format:%ad", "--date=format:%Y-%m-%d %H:%M:%S"]
             cwd = os.path.dirname(os.path.dirname(__file__))

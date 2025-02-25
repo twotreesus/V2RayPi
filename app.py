@@ -278,19 +278,19 @@ def get_access_log_api():
 def get_error_log_api():
     return CoreService.v2ray.error_log()
 
-@app.route('/update_and_restart')
-def update_and_restart_api():
+@app.route('/update_and_restart_v2raypi')
+def update_and_restart_v2raypi_api():
     try:
-        CoreService.update_and_restart()
+        CoreService.update_and_restart_v2raypi()
         return jsonify({K.result: K.ok})
     except:
         return jsonify({K.result: K.failed})
 
-@app.route('/get_recent_commits')
-def get_recent_commits_api():
+@app.route('/get_v2raypi_recent_commits')
+def get_v2raypi_recent_commits_api():
     try:
-        commits = CoreService.get_recent_commits()
-        last_update = CoreService.get_last_update_time()
+        commits = CoreService.get_v2raypi_recent_commits()
+        last_update = CoreService.get_v2raypi_last_update_time()
         return jsonify({K.result: K.ok, 'commits': commits, 'last_update': last_update})
     except Exception:
         return jsonify({K.result: K.failed})
@@ -300,6 +300,22 @@ def check_v2raypi_updates_api():
     try:
         commits = CoreService.check_v2raypi_updates()
         return jsonify({K.result: K.ok, 'commits': commits})
+    except Exception:
+        return jsonify({K.result: K.failed})
+
+@app.route('/reboot_host')
+def reboot_host_api():
+    try:
+        CoreService.reboot_host()
+        return jsonify({K.result: K.ok})
+    except Exception:
+        return jsonify({K.result: K.failed})
+
+@app.route('/shutdown_host')
+def shutdown_host_api():
+    try:
+        CoreService.shutdown_host()
+        return jsonify({K.result: K.ok})
     except Exception:
         return jsonify({K.result: K.failed})
 

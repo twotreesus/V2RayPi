@@ -51,7 +51,7 @@
                     <td colspan="2" class="mdui-typo">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">系统更新</h5>
+                                <h5 style="margin: 0; white-space: nowrap;">更新 V2RayPi</h5>
                             </div>
                         </div>
                     </td>
@@ -69,7 +69,7 @@
                                         <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2raypi_updates()">检查更新</button>
                                     </div>
                                     <div>
-                                        <button id="update_btn" class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="update_and_restart()" style="display: none">更新并重启</button>
+                                        <button id="update_btn_v2raypi" class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="update_and_restart_v2raypi()" style="display: none">更新并重启</button>
                                     </div>
                                 </div>
                             </div>
@@ -85,6 +85,31 @@
                             <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
                                 <div id="recent_commits" style="display: flex; flex-direction: column; gap: 4px;">
                                 </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
+
+                <!-- Host Management -->
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%;">
+                                <h5 style="margin: 0; white-space: nowrap;">主机管理</h5>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
+                                <span style="white-space: nowrap;">电源管理</span>
+                            </div>
+                            <div class="mdui-col-xs-10" style="display: flex; gap: 8px; align-items: center;">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="reboot_host()">重启主机</button>
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red mdui-ripple" onclick="shutdown_host()">关闭主机</button>
                             </div>
                         </div>
                     </td>
@@ -137,12 +162,12 @@
                 $("#v2ray_current_ver").html(data["version"]);
             }
         });
-        get_recent_commits();
+        get_v2raypi_recent_commits();
     }
 
 
-    function get_recent_commits() {
-        $.get('/get_recent_commits', function(response) {
+    function get_v2raypi_recent_commits() {
+        $.get('/get_v2raypi_recent_commits', function(response) {
             if (check_result(response)) {
                 if (response.last_update) {
                     $('#lastUpdateTime').text(response.last_update);
@@ -230,11 +255,11 @@
         });
     }
 
-    function update_and_restart() {
+    function update_and_restart_v2raypi() {
         mdui.confirm('确定要更新并重启服务吗？', '更新确认', function(){
             mdui.confirm('警告：更新过程中服务将会重启，确定继续吗？', '再次确认', function() {
                 pop_toast("正在更新系统...");
-                $.get("/update_and_restart").done(function (data) {
+                $.get("/update_and_restart_v2raypi").done(function (data) {
                     if (check_result(data)) {
                         var countdown = 10;
                         var timer = setInterval(function() {
@@ -253,6 +278,48 @@
                     }
                 }).fail(function () {
                     update_toast("更新失败");
+                    setTimeout(close_toast, 2000);
+                });
+            });
+        });
+    }
+
+    function reboot_host() {
+        mdui.confirm('确定要重启主机吗？', '重启确认', function(){
+            mdui.confirm('警告：重启过程中服务将会停止，确定继续吗？', '再次确认', function() {
+                pop_toast("正在重启主机...");
+                $.get("/reboot_host").done(function (data) {
+                    if (check_result(data)) {
+                        update_toast("重启命令已发送，请等待主机重启完成");
+                        setTimeout(close_toast, 2000);
+                    }
+                    else {
+                        update_toast("重启失败");
+                        setTimeout(close_toast, 2000);
+                    }
+                }).fail(function () {
+                    update_toast("重启失败");
+                    setTimeout(close_toast, 2000);
+                });
+            });
+        });
+    }
+
+    function shutdown_host() {
+        mdui.confirm('确定要关闭主机吗？', '关机确认', function(){
+            mdui.confirm('警告：关机后需要手动开机才能恢复服务，确定继续吗？', '再次确认', function() {
+                pop_toast("正在关闭主机...");
+                $.get("/shutdown_host").done(function (data) {
+                    if (check_result(data)) {
+                        update_toast("关机命令已发送，请等待主机完全关闭");
+                        setTimeout(close_toast, 2000);
+                    }
+                    else {
+                        update_toast("关机失败");
+                        setTimeout(close_toast, 2000);
+                    }
+                }).fail(function () {
+                    update_toast("关机失败");
                     setTimeout(close_toast, 2000);
                 });
             });
