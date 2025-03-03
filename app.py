@@ -423,7 +423,7 @@ def login_api():
     
     # Create response with session cookie
     response = make_response(jsonify({ K.result: K.ok }))
-    response.set_cookie(K.session, session, max_age=3*24*60*60, httponly=True)
+    response.set_cookie(K.session, session, max_age=30*24*60*60, httponly=True)
     
     return response
 
