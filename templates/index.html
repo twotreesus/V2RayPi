@@ -324,7 +324,7 @@
         setup_login_handler();
 
         // Check session status before loading page
-        ajax_request({ url: '/api/ping' })
+        ajax_request({ url: '/api/refresh' })
             .done(function() {
                 $("#status").click();
             });

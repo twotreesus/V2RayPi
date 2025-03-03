@@ -391,10 +391,15 @@ def shutdown_host_api():
     except Exception:
         return jsonify({K.result: K.failed})
 
-# Session check API
-@app.route('/api/ping')
+# Session check and refresh API
+@app.route('/api/refresh')
 @require_auth
-def ping_api():
+def refresh_api():    
+    # Refresh session
+    session = request.cookies.get(K.session)
+    if not CoreService.refresh_session(session):
+        return jsonify({ K.result: K.session_error })
+    
     return jsonify({ K.result: K.ok })
 
 # Login API

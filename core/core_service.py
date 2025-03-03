@@ -181,9 +181,23 @@ class CoreService:
             if session_data["pwd_ver"] != cls.app_config.password_hash[:8]:
                 return False
                 
-            return True
+            # Return session ID for refresh
+            return session_id
         except Exception:
             return False
+                
+    @classmethod
+    def refresh_session(cls, session_token: str) -> bool:
+        # Verify
+        session_id = cls.verify_session(session_token)
+        if not session_id:
+            return False
+            
+        # Update expiry
+        expiry_date = datetime.now() + timedelta(days=3)
+        cls._sessions[session_id]["exp"] = expiry_date.timestamp()
+        return True
+        
             
     @classmethod
     def status(cls) -> dict:
