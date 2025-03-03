@@ -127,7 +127,7 @@
     });
 
     function refresh() {
-        $.get("/get_status", function (data) {
+        ajax_request({ url: "/get_status" }).then(function (data) {
             if (data["running"]) {
                 $("#running").show();
                 $("#stoped").hide();
@@ -210,7 +210,7 @@
     }
     
     function update_performance() {
-        $.get("/get_performance", function (data) {
+        ajax_request({ url: "/get_performance" }).then(function (data) {
             cpu_status = data["cpu"];
             if (!cpu_bar.inited) {
                 cpu_bar.data = {
@@ -256,7 +256,7 @@
 
     function start_service() {
         pop_toast("正在启动...");
-        $.get("/start_service").done(function (data) {
+        ajax_request({ url: "/start_service" }).then(function (data) {
             if (check_result(data)) {
                 update_toast("启动成功")
             }
@@ -271,7 +271,7 @@
 
     function stop_service() {
         pop_toast("正在停止...");
-        $.get("/stop_service").done(function (data) {
+        ajax_request({ url: "/stop_service" }).then(function (data) {
             if (check_result(data)) {
                 update_toast("停止成功")
             }
@@ -286,7 +286,7 @@
 
     function restart_service() {
         pop_toast("正在重启...");
-        $.get("/restart_service").done(function (data) {
+        ajax_request({ url: "/restart_service" }).then(function (data) {
             if (check_result(data)) {
                 update_toast("重启成功")
             }
@@ -302,8 +302,8 @@
     function switch_proxy_mode() {
         pop_toast("正在切换代理模式...");
         mode = $("#proxy_mode").prop('selectedIndex')
-        $.get("/switch_proxy_mode", { "mode": mode })
-            .done(function (data) {
+        ajax_request({ url: "/switch_proxy_mode", data: { "mode": mode } })
+            .then(function (data) {
                 if (check_result(data)) {
                     update_toast("切换成功")
                     $("#switch_mode").hide();

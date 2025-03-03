@@ -419,7 +419,7 @@
     var g_config_remote = null;
     var g_config_local = null;
     function refresh_remote() {
-        $.get("/get_advance_config", function (data) {
+        ajax_request({ url: "/get_advance_config" }).then(function (data) {
             g_config_remote = data["advance_config"];
             g_config_local = JSON.parse(JSON.stringify(g_config_remote));
             refresh_local();
@@ -665,13 +665,13 @@
 
     function apply_advance_config() {
         pop_toast("正在应用高级配置...");
-        $.ajax({
+        ajax_request({
             url: "/set_advance_config",
             type: "POST",
             dataType: "json",
             contentType: "application/json;charset=utf-8",
             data: JSON.stringify(g_config_local)
-        }).done(function (data) {
+        }).then(function (data) {
             if (check_result(data)) {
                 update_toast("应用成功")
             }
@@ -687,7 +687,7 @@
     function reset_advance_config() {
         mdui.confirm("确认重置高级配置为默认值？", function () {
             pop_toast("正在重置高级配置为默认值...");
-            $.get('/reset_advance_config').done(function (data) {
+            ajax_request({ url: '/reset_advance_config' }).then(function (data) {
                 if (check_result(data)) {
                     update_toast("重置成功")
                 }
@@ -834,7 +834,7 @@
         outbound = outbound_typs[outbound_index];
         var contents = $("#rule_contents").val();
 
-        $.get("/make_policy", {"type":type, "contents":contents, "outbound":outbound}).done(function (policy) {
+        ajax_request({ url: "/make_policy", data: {"type":type, "contents":contents, "outbound":outbound} }).then(function (policy) {
             g_config_local["policys"][g_rule_dialog.rule_index] = policy;
             refresh_local();
         }).always(function () {
@@ -849,7 +849,7 @@
         outbound = outbound_typs[outbound_index];
         var contents = $("#rule_contents").val();
 
-        $.get("/make_policy", {"type":type, "contents":contents, "outbound":outbound}).done(function (policy) {
+        ajax_request({ url: "/make_policy", data: {"type":type, "contents":contents, "outbound":outbound} }).then(function (policy) {
             g_config_local["policys"].push(policy);
             refresh_local();
         }).always(function () {
@@ -881,7 +881,7 @@
 
     function check_geo_data() {
         message("正在查询...");
-        $.get("/check_new_geo_data").done(function (data) {
+        ajax_request({ url: "/check_new_geo_data" }).then(function (data) {
             var new_version = data["version"];
             $("#geo_data_new_ver").html(new_version);
 
@@ -903,7 +903,7 @@
 
     function update_geo_data() {
         pop_toast("正在更新数据库...");
-        $.get("/update_geo_data").done(function (data) {
+        ajax_request({ url: "/update_geo_data" }).then(function (data) {
             if (check_result(data)) {
                 update_toast("数据库更新成功")
             }

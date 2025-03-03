@@ -91,6 +91,53 @@
                 </tr>
                 <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
 
+                <!-- Password Management -->
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%;">
+                                <h5 style="margin: 0; white-space: nowrap;">密码管理</h5>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
+                                <span style="white-space: nowrap;">当前密码</span>
+                            </div>
+                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <div class="mdui-textfield" style="padding: 0; margin: 0; position: relative;">
+                                        <input class="mdui-textfield-input" type="password" id="current_password" placeholder="请输入当前密码" style="font-size: inherit;"/>
+                                        <i class="mdui-icon material-icons" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center; height: 100%;" onclick="togglePasswordVisibility('current_password')">visibility_off</i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
+                                <span style="white-space: nowrap;">新密码</span>
+                            </div>
+                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <div class="mdui-textfield" style="padding: 0; margin: 0; position: relative;">
+                                        <input class="mdui-textfield-input" type="password" id="new_password" placeholder="请输入新密码" style="font-size: inherit;"/>
+                                        <i class="mdui-icon material-icons" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center; height: 100%;" onclick="togglePasswordVisibility('new_password')">visibility_off</i>
+                                    </div>
+                                    <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_password()">更新</button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
+
                 <!-- Host Management -->
                 <tr>
                     <td colspan="2" class="mdui-typo">
@@ -157,17 +204,19 @@
     }
 
     function refresh() {
-        $.get("/get_system_status").done(function (data) {
-            if (check_result(data)) {
-                $("#v2ray_current_ver").html(data["version"]);
-            }
-        });
+        ajax_request({ url: "/get_system_status" })
+            .done(function (data) {
+                if (check_result(data)) {
+                    $("#v2ray_current_ver").html(data["version"]);
+                }
+            });
         get_v2raypi_recent_commits();
     }
 
 
     function get_v2raypi_recent_commits() {
-        $.get('/get_v2raypi_recent_commits', function(response) {
+        ajax_request({ url: '/get_v2raypi_recent_commits' })
+            .done(function(response) {
             if (check_result(response)) {
                 if (response.last_update) {
                     $('#lastUpdateTime').text(response.last_update);
@@ -191,7 +240,8 @@
 
     function check_v2raypi_updates() {
         var toast = pop_toast("正在检查更新...");
-        $.get("/check_v2raypi_updates", function(response) {
+        ajax_request({ url: "/check_v2raypi_updates" })
+            .done(function(response) {
             if (check_result(response)) {
                 var container = $('#recent_commits');
                 response.commits.forEach(function(commit) {
@@ -220,7 +270,8 @@
 
     function check_v2ray_new_ver() {
         message("正在查询...");
-        $.get("/check_v2ray_new_ver").done(function (data) {
+        ajax_request({ url: "/check_v2ray_new_ver" })
+            .done(function (data) {
             window.g_new_version = data["version"];
             $("#v2ray_new_ver").html(window.g_new_version)
             var current_version = $("#v2ray_current_ver").html();
@@ -241,25 +292,28 @@
 
     function update_v2ray() {
         pop_toast("正在升级...");
-        $.get("/update_v2ray").done(function (data) {
-            if (check_result(data)) {
-                update_toast("升级成功")
-            }
-            else {
-                update_toast("升级失败")
-            }
-        }).always(function () {
-            close_toast();
-            refresh();
-            check_v2ray_new_ver();
-        });
+        ajax_request({ url: "/update_v2ray" })
+            .done(function (data) {
+                if (check_result(data)) {
+                    update_toast("升级成功")
+                }
+                else {
+                    update_toast("升级失败")
+                }
+            })
+            .always(function () {
+                close_toast();
+                refresh();
+                check_v2ray_new_ver();
+            });
     }
 
     function update_and_restart_v2raypi() {
         mdui.confirm('确定要更新并重启服务吗？', '更新确认', function(){
             mdui.confirm('警告：更新过程中服务将会重启，确定继续吗？', '再次确认', function() {
                 pop_toast("正在更新系统...");
-                $.get("/update_and_restart_v2raypi").done(function (data) {
+                ajax_request({ url: "/update_and_restart_v2raypi" })
+                    .done(function (data) {
                     if (check_result(data)) {
                         var countdown = 10;
                         var timer = setInterval(function() {
@@ -288,7 +342,8 @@
         mdui.confirm('确定要重启主机吗？', '重启确认', function(){
             mdui.confirm('警告：重启过程中服务将会停止，确定继续吗？', '再次确认', function() {
                 pop_toast("正在重启主机...");
-                $.get("/reboot_host").done(function (data) {
+                ajax_request({ url: "/reboot_host" })
+                    .done(function (data) {
                     if (check_result(data)) {
                         update_toast("重启命令已发送，请等待主机重启完成");
                         setTimeout(close_toast, 2000);
@@ -309,7 +364,8 @@
         mdui.confirm('确定要关闭主机吗？', '关机确认', function(){
             mdui.confirm('警告：关机后需要手动开机才能恢复服务，确定继续吗？', '再次确认', function() {
                 pop_toast("正在关闭主机...");
-                $.get("/shutdown_host").done(function (data) {
+                ajax_request({ url: "/shutdown_host" })
+                    .done(function (data) {
                     if (check_result(data)) {
                         update_toast("关机命令已发送，请等待主机完全关闭");
                         setTimeout(close_toast, 2000);
@@ -331,8 +387,14 @@
         if (enabled) {
             $('#log-content, #log-content2').show();
             logInterval = setInterval(function () {
-                $('#log-access-content').load('/get_access_log');
-                $('#log-error-content').load('/get_error_log');
+                ajax_request({ url: '/get_access_log', dataType: 'text', skipDefaultError: true })
+                    .done(function(data) {
+                        $('#log-access-content').html(data);
+                    });
+                ajax_request({ url: '/get_error_log', dataType: 'text', skipDefaultError: true })
+                    .done(function(data) {
+                        $('#log-error-content').html(data);
+                    });
             }, 500);
             add_interval(logInterval);
         } else {
@@ -344,7 +406,73 @@
         }
     }
 
-    $(document).ready(function() {
+    function togglePasswordVisibility(inputId) {
+        var input = document.getElementById(inputId);
+        var icon = input.nextElementSibling;
+        
+        if (input.type === "password") {
+            input.type = "text";
+            icon.textContent = "visibility";
+        } else {
+            input.type = "password";
+            icon.textContent = "visibility_off";
+        }
+    }
+    
+    function update_password() {
+    var current_password = $('#current_password').val();
+    var new_password = $('#new_password').val();
+    
+    if (!current_password) {
+        message('请输入当前密码');
+        return;
+    }
+    
+    if (!new_password) {
+        message('请输入新密码');
+        return;
+    }
+    
+    if (new_password.indexOf(' ') !== -1) {
+        message('新密码不能包含空格');
+        return;
+    }
+    
+    if (new_password.length < 5) {
+        message('新密码长度必须大于等于5位');
+        return;
+    }
+
+    ajax_request({
+        url: '/api/update_password',
+        type: 'POST',
+        data: JSON.stringify({
+            current_password: current_password,
+            new_password: new_password
+        })
+    })
+        .done(function(response) {
+            if (response.result === 'ok') {
+                message('密码更新成功');
+                $('#current_password').val('');
+                $('#new_password').val('');
+                
+                // Handle session update
+                if (response.relogin) {
+                    setTimeout(function() {
+                        message('密码已更新，需要重新登录');
+                        setTimeout(function() {
+                            show_login_dialog('密码已更改，请使用新密码登录');
+                        }, 1000);
+                    }, 500);
+                }
+            } else {
+                message(response.message || '密码更新失败');
+            }
+        });
+}
+
+$(document).ready(function() {
         refresh();
 
         // Log switch handler

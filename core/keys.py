@@ -32,3 +32,9 @@ class Keyword:
     outbound = 'outbound'
     auto_detect = 'auto_detect'
     ps = 'ps'
+    
+    # Auth related keywords
+    session = 'session'
+    session_error = 'session_error'
+    auth_error = 'auth_error'
+    password = 'password'

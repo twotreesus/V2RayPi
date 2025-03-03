@@ -61,6 +61,24 @@
             </div>
         </div>
     </div>
+    <!--login dialog-->
+    <div id="login_dialog" class="mdui-dialog">
+        <div class="mdui-dialog-title">请登录以继续</div>
+        <div class="mdui-dialog-content">
+            <div class="mdui-row mdui-valign" style="margin-top: 20px">
+                <div class="mdui-col-xs-2 mdui-valign">
+                    <div class="mdui-typo-subheading" style="line-height: 36px">管理密码</div>
+                </div>
+                <div class="mdui-col-xs-10">
+                    <input id="login_password" class="mdui-textfield-input" type="password" />
+                </div>
+            </div>
+        </div>
+        <div class="mdui-dialog-actions">
+            <button id="login_button" class="mdui-btn mdui-ripple mdui-color-theme" mdui-dialog-close>登录</button>
+        </div>
+    </div>
+    
     <!--content page-->
     <div id="content_page"></div>
     <!--toast-->
@@ -126,10 +144,79 @@
             timeout: 1000
         })
     }
+    
+    // login
+    function show_login_dialog() {
+        $("#login_password").val("");
+        if (!g_login_dialog) {
+            g_login_dialog = new mdui.Dialog('#login_dialog', { modal: true, closeOnEsc: false });
+        }
+        g_login_dialog.open();
+        mdui.mutation();
+        $("#login_password").focus();
+    }
+
+    function close_login_dialog() {
+        if (!g_login_dialog) {
+            return;
+        }
+        g_login_dialog.close();
+    }
+    
+    function login(password, callback) {
+        $.ajax({
+            url: "/api/login",
+            type: "POST",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({ "password": password })
+        })
+            .done(function(data) {
+                if (data["result"] === "ok") {
+                    if (callback) callback(true);
+                } else {
+                    message("密码错误，请重试");
+                    setTimeout(show_login_dialog, 1000);
+                }
+            })
+            .fail(function() {
+                message("登录失败，请重试");
+                setTimeout(show_login_dialog, 1000);
+            });
+    }
 
     // utility
     function check_result(data) {
+        if (data["result"] === "session_error") {
+            return false;
+        }
         return data["result"] === "ok";
+    }
+    
+    // Unified AJAX request wrapper with Promise chain support
+    function ajax_request(options) {
+        var defaults = {
+            type: "GET",
+            contentType: "application/json",
+            dataType: "json"
+        };
+        
+        // Merge default options with user options
+        var settings = $.extend({}, defaults, options);
+        
+        // Create a new Promise to handle the request
+        return $.ajax(settings)
+            .then(function(data) {
+                // Handle session expiration
+                if (data && data["result"] === "session_error") {
+                    // Clear all intervals to prevent repeated login dialogs
+                    clear_intervals();
+                    show_login_dialog();
+                    // Return rejected promise with original data
+                    return Promise.reject(data);
+                }
+                return data;
+            });
     }
 
     function copy_to_clipboard(text) {
@@ -157,8 +244,11 @@
         }
     }
 
-    // main
-    $(document).ready(function () {
+    var g_login_dialog = null;
+
+    // Initialize all event handlers
+    function init_events() {
+        
         var menus = {
             "status" : "status.html",
             "subscribe" : "subscribe.html",
@@ -177,13 +267,67 @@
                 $(this).addClass("mdui-list-item-active");
 
                 var url = menus[id];
-                $.get(url, function(data) {
-                    $("#content_page").empty().html(data);
+                ajax_request({
+                    url: url,
+                    dataType: "html",
+                    success: function(data) {
+                        $("#content_page").empty().html(data);
+                    }
                 })
             }
-        })
+        });
+    }
 
-        $("#status").click();
-    })
+    // Handle login submit
+    function handle_login_submit() {
+        var password = $("#login_password").val();
+        if (!password) {
+            $("#login_error").text("请输入密码").show();
+            return;
+        }
+        
+        login(password, function(success) {
+            if (success) {
+                // Show UI elements after successful login
+                close_login_dialog();
+                $("#status").click();
+            }
+        });
+    }
+    
+    // Setup login handlers
+    function setup_login_handler() {
+        // Handle button click
+        $("#login_button").click(function() {
+            // Only handle login if it's a real click event
+            if (event.isTrusted) {
+                handle_login_submit();
+            }
+        });
+        
+        // Handle enter key in password input
+        $("#login_password").keypress(function(e) {
+            if (e.which === 13) { // Enter key
+                handle_login_submit();
+                // Close dialog without triggering click handler
+                g_login_dialog.close();
+            }
+        });
+    }
+
+    // Hide all content until session is verified
+    $(document).ready(function() {
+        // Initialize event handlers        
+        init_events();
+        
+        // Setup login handlers
+        setup_login_handler();
+
+        // Check session status before loading page
+        ajax_request({ url: '/api/ping' })
+            .done(function() {
+                $("#status").click();
+            });
+    });
 </script>
 </html>

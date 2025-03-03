@@ -187,7 +187,7 @@
     });
 
     function refresh() {
-        $.get("/subscribe_list", function (subscribe) {
+        ajax_request({ url: "/subscribe_list" }).then(function (subscribe) {
             $("#last_subscribe").html(subscribe["last_subscribe"]);
             var groups = Object.values(subscribe["subscribes"]);
             if (groups.length === 0) {
@@ -379,7 +379,7 @@
     
     function apply_node(url, index) {
         pop_toast("正在应用节点...")
-        $.get("/apply_node", {subscribe:url, node_index:index}).done(function (data) {
+        ajax_request({ url: "/apply_node", data: {subscribe:url, node_index:index} }).then(function (data) {
             if (check_result(data)) {
                 update_toast("应用成功");
                 // Update node status
@@ -412,7 +412,7 @@
     }
     
     function get_node_link(url, index) {
-        $.get("/get_node_link", {subscribe:url, node_index:index}).done(function (data) {
+        ajax_request({ url: "/get_node_link", data: {subscribe:url, node_index:index} }).then(function (data) {
             if (check_result(data)) {
                 link = data["node_link"];
                 copy_to_clipboard(link);
@@ -422,7 +422,7 @@
     }
 
     function get_node_qr(url, index) {
-        $.get("/get_node_link", {subscribe:url, node_index:index}).done(function (data) {
+        ajax_request({ url: "/get_node_link", data: {subscribe:url, node_index:index} }).then(function (data) {
             if (check_result(data)) {
                 link = data["node_link"];
 
@@ -436,7 +436,7 @@
 
     function delete_node(url, index) {
         mdui.confirm("确认删除？", function () {
-            $.get("/delete_node", {subscribe:url, node_index:index}).done(function (data) {
+            ajax_request({ url: "/delete_node", data: {subscribe:url, node_index:index} }).then(function (data) {
                 if (check_result(data)) {
                     message("节点已删除");
                     refresh();
@@ -447,7 +447,7 @@
 
     function update_subscribe(url) {
         pop_toast("正在更新订阅节点...")
-        $.get("/update_subscribe", {subscribe:url}).done(function (data) {
+        ajax_request({ url: "/update_subscribe", data: {subscribe:url} }).then(function (data) {
             if (check_result(data)) {
                 update_toast("更新成功");
             }
@@ -462,7 +462,7 @@
 
     function update_all_subscribe() {
         pop_toast("正在更新订阅节点...")
-        $.get("/update_all_subscribe").done(function (data) {
+        ajax_request({ url: "/update_all_subscribe" }).then(function (data) {
             if (check_result(data)) {
                 update_toast("更新成功");
             }
@@ -481,7 +481,7 @@
                 return;
             }
             pop_toast("正在订阅新的节点列表...");
-            $.get("/add_subscribe", {subscribe:url}).done(function (data) {
+            ajax_request({ url: "/add_subscribe", data: {subscribe:url} }).then(function (data) {
                 if (check_result(data)) {
                     update_toast("订阅成功");
                 }
@@ -501,7 +501,7 @@
                 return;
             }
             message("正在添加新的节点列表...");
-            $.get("/add_manual_node", {url:url}).done(function (data) {
+            ajax_request({ url: "/add_manual_node", data: {url:url} }).then(function (data) {
                 if (check_result(data)) {
                     message("添加成功");
                 }
@@ -516,7 +516,7 @@
 
     function remove_subscribe(url) {
         mdui.confirm("确认删除？", function () {
-            $.get("/remove_subscribe", {subscribe:url}).done(function (data) {
+            ajax_request({ url: "/remove_subscribe", data: {subscribe:url} }).then(function (data) {
                 if (check_result(data)) {
                     message("订阅已删除");
                     refresh();
@@ -527,7 +527,7 @@
 
     function ping_test() {
         message("正在测试，请稍候...")
-        $.get("/subscribe_ping_all", function (data) {
+        ajax_request({ url: "/subscribe_ping_all" }).then(function (data) {
             window.g_ping_cache = data["groups"];
             update_ping_result();
             message("测试完成")
