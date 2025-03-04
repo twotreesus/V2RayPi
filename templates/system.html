@@ -244,7 +244,7 @@
             .done(function(response) {
             if (check_result(response)) {
                 var container = $('#recent_commits');
-                response.commits.forEach(function(commit) {
+                response.commits.slice().reverse().forEach(function(commit) {
                     var parts = commit.split('|');
                     var date = parts[0];
                     var message = parts[1];
