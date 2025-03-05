@@ -6,7 +6,7 @@
   - [操作系统](#操作系统)
   - [硬件平台](#硬件平台)
 - [安装指南](#安装指南)
-  - [Linux 安装](#linux-安装)
+  - [Linux 安装](#linux-安装支持透明代理)
   - [MacOS 安装](#macos-安装)
   - [管理员密码](#管理员密码)
 
@@ -88,12 +88,29 @@ cd V2RayPi/script
 sudo supervisorctl restart v2raypi
 
 # 3. 配置静态 IP 和网关，这里假设主路由 IP 是 192.168.66.1
-sudo nano /etc/dhcpcd.conf
 
-interface eth0
-static ip_address=192.168.66.200/24
-static routers=192.168.66.1
-static domain_name_servers=192.168.66.1
+# 由于系统版本繁多，推荐使用系统自带的配置工具：
+# - Raspberry Pi OS: 使用 raspi-config
+# - Orange Pi: 使用 orangepi-config
+# - Armbian: 使用 armbian-config
+# - 其他系统: 可手动配置
+
+# 手动配置示例（使用 NetworkManager）：
+
+# 查看网络连接列表
+$ nmcli connection show
+
+# 创建新的静态 IP 连接（假设网络接口为 eth0）
+$ sudo nmcli connection add con-name "static-eth0" ifname eth0 type ethernet ip4 192.168.66.200/24 gw4 192.168.66.1
+
+# 设置 DNS
+$ sudo nmcli connection modify static-eth0 ipv4.dns "192.168.66.1"
+
+# 启用连接
+$ sudo nmcli connection up static-eth0
+
+# 设置为开机自动连接
+$ sudo nmcli connection modify static-eth0 connection.autoconnect yes
 
 # 4. 重启设备
 sudo reboot
