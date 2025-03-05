@@ -7,6 +7,7 @@
   - [硬件平台](#硬件平台)
 - [安装指南](#安装指南)
   - [Linux 安装](#linux-安装)
+  - [管理员密码](#管理员密码)
   - [MacOS 安装](#macos-安装)
 
 - [系统维护](#系统维护)
@@ -127,6 +128,24 @@ python3 app.py
 安装完成后：
 1. 访问管理面板：浏览器输入 `127.0.0.1:1086`
 2. 配置代理：浏览器设置 SOCKS5 代理为 `127.0.0.1:1080`（Chrome 浏览器推荐使用 SwitchyOmega 插件）
+
+### 管理员密码
+系统首次安装后，默认管理员密码为 `admin`。出于安全考虑，强烈建议在首次登录后立即修改密码：
+1. 在管理面板中点击「系统维护」选项卡
+2. 在「密码管理」区域输入新密码
+3. 点击「更新」按钮完成修改
+
+注意：密码修改后将立即生效，请妥善保管新密码。如果忘记密码，可以通过以下方式重置：
+```bash
+# 进入项目目录
+cd /usr/local/V2RayPi
+
+# 删除密码哈希，重置为默认密码 admin
+python3 -c "import json; config = json.load(open('config/app_config.json')); config.pop('password_hash', None); json.dump(config, open('config/app_config.json', 'w'), indent=4)"
+
+# 重启服务
+sudo supervisorctl restart v2raypi
+```
 
 ### 系统更新
 系统页面提供了一键更新功能，可以方便地将系统更新到最新版本：
