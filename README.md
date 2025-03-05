@@ -20,25 +20,45 @@ V2RayPi 是一个基于 V2Ray 的透明代理系统，专为树莓派和其他�
 
 ### 工作原理
 
-V2RayPi 采用旁路由模式工作：
-1. **网络拓扑**
-   ```
-                                    节点服务器
-                                         ^
-                                         |
-   终端设备 -> 主路由(DHCP) <-> V2RayPi(TPROXY) <-> 互联网
-   (WiFi/有线)     (网关重定向)   (智能分流)
-   ```
+V2RayPi 采用旁路由模式工作，下面是数据流的时序图和网络设置说明：
 
-2. **数据流向**
-   - 终端设备连接到主路由的 WiFi 网络
-   - 主路由通过 DHCP 设置，将终端设备的数据重定向到旁路由
-   - 旁路由将终端数据通过 TPROXY 转发给 V2RayPi
-   - V2RayPi 根据规则决定是直连还是代理，最终通过主路由访问网络出口
+```mermaid
+sequenceDiagram
+    participant Client as 终端设备
+    participant Router as 主路由(DHCP)
+    participant V2RayPi as V2RayPi(TPROXY)
+    participant DomesticNet as 和谐网络
+    participant Server as 节点服务器
+    participant ForeignNet as 科学网络
+    
+    Client->>Router: 1. 发送网络请求
+    Router->>V2RayPi: 2. 通过DHCP网关重定向请求
+    
+    alt 智能分流 - 国内网站
+        V2RayPi->>DomesticNet: 3a. 直连国内流量
+        DomesticNet-->>V2RayPi: 4a. 直连响应
+    else 智能分流 - 国外网站
+        V2RayPi->>Server: 3b. 加密代理请求
+        Server->>ForeignNet: 4b. 转发请求
+        ForeignNet-->>Server: 5b. 返回响应
+        Server-->>V2RayPi: 6b. 加密代理响应
+    end
+    
+    V2RayPi-->>Router: 7. 返回数据
+    Router-->>Client: 8. 转发响应给终端
+```
 
-3. **网络设置**
-   - 主路由：保持原有的上网配置，仅需设置 DHCP 网关为 V2RayPi 的 IP
-   - V2RayPi：配置为与主路由同网段的静态 IP，网关指向主路由
+**网络设置说明：**
+
+1. **主路由配置**
+   - 保持原有的上网配置
+   - 在 DHCP 设置中将默认网关指向 V2RayPi 的 IP 地址
+   - 可选：将 DNS 服务器也设置为 V2RayPi 的 IP 地址，可防止本地 DNS 污染
+
+2. **V2RayPi 配置**
+   - 配置与主路由同网段的静态 IP 地址
+   - 网关指向主路由 IP
+   - DNS 服务器使用主路由 IP
    - 终端设备：无需任何设置，通过 DHCP 自动配置
 
 ### 主要特性
