@@ -882,19 +882,23 @@
     function check_geo_data() {
         message("正在查询...");
         ajax_request({ url: "/check_new_geo_data" }).then(function (data) {
-            var new_version = data["version"];
-            $("#geo_data_new_ver").html(new_version);
+            if (check_result(data)) {
+                var new_version = data["version"];
+                $("#geo_data_new_ver").html(new_version);
 
-            var current_version = $("#geo_data_current_ver").html();
-            if (new_version === current_version) {
-                message("当前已是最新版本无需更新");
-                $("#check_geo_data").show();
-                $("#update_geo_data").hide();
-            }
-            else {
-                message("已发布新版本，可更新");
-                $("#check_geo_data").hide();
-                $("#update_geo_data").show();
+                var current_version = $("#geo_data_current_ver").html();
+                if (new_version === current_version) {
+                    message("当前已是最新版本无需更新");
+                    $("#check_geo_data").show();
+                    $("#update_geo_data").hide();
+                }
+                else {
+                    message("已发布新版本，可更新");
+                    $("#check_geo_data").hide();
+                    $("#update_geo_data").show();
+                }
+            } else {
+                message("检查失败");
             }
         }).fail(function () {
             message("检查失败");
