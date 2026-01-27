@@ -3,13 +3,17 @@
 brew update
 brew install wget curl python3 v2ray
 
-# pip force args
-if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 11 ]; then
-    PIP_ARGS="--break-system-packages"
-else
-    PIP_ARGS=""
-fi
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-pip3 install -r requirements.txt $PIP_ARGS
+# setup venv and install pip packages
+VENV_DIR="$PROJECT_DIR/venv"
+python3 -m venv "$VENV_DIR"
+source "$VENV_DIR/bin/activate"
+pip install --upgrade pip setuptools wheel
+pip install -r $SCRIPT_DIR/requirements.txt
+deactivate
+
 mkdir -p ~/Library/Logs/v2ray/
 brew services start v2ray

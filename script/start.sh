@@ -6,4 +6,4 @@ export PATH
 [ $(id -u) != "0" ] && { echo "${CFAILURE}Error: You must be root to run this script${CEND}"; exit 1; }
 
 cd /usr/local/V2RayPi
-python3 /usr/local/V2RayPi/app.py
+/usr/local/V2RayPi/venv/bin/python /usr/local/V2RayPi/app.py

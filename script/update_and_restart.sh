@@ -10,6 +10,14 @@ cd "$PROJECT_DIR"
 # Pull latest code
 git pull
 
+# Update venv dependencies
+VENV_DIR="$PROJECT_DIR/venv"
+if [ -d "$VENV_DIR" ]; then
+    source "$VENV_DIR/bin/activate"
+    pip install -r "$SCRIPT_DIR/requirements.txt"
+    deactivate
+fi
+
 # Restart service via supervisor
 SUPERVISOR_CONFIG="/etc/supervisor/supervisord.conf"
 supervisorctl -c "$SUPERVISOR_CONFIG" restart v2raypi
