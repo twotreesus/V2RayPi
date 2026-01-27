@@ -98,7 +98,7 @@ TG讨论组：[https://t.me/v2raypi](https://t.me/v2raypi)
 
 ```bash
 # 1. 安装系统
-sudo su - root
+sudo su root - 
 cd /usr/local
 git clone https://github.com/twotreesus/V2RayPi.git
 cd V2RayPi/script
