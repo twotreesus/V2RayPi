@@ -14,6 +14,7 @@ class Keyword:
     version = 'version'
     subscribe = 'subscribe'
     last_subscribe = 'last_subscribe'
+    subscribe_user_agent = 'v2rayN/6.0.0'
     proxy_mode = 'proxy_mode'
     nodes = 'nodes'
     node_link = 'node_link'
