@@ -200,7 +200,6 @@ class StreamSettings(DontPickleNone):
             self.show: typing.Optional[bool] = None
             self.dest: typing.Optional[str] = None
             self.serverNames: List[str] = []
-            self.privateKey: str = ''
             self.publicKey: str = ''
             self.shortId: str = ''
             self.fingerprint: str = 'chrome'
@@ -547,7 +546,6 @@ class V2RayConfig(DontPickleNone):
             reality.publicKey = node.pbk
             reality.shortId = getattr(node, 'sid', None) or ''
             reality.fingerprint = getattr(node, 'fp', None) or 'chrome'
-            reality.privateKey = cls._x25519_private_key()
             stream_settings.realitySettings = reality
         elif node.tls == StreamSettings.Security.tls.value:
             stream_settings.security = StreamSettings.Security.tls.value
