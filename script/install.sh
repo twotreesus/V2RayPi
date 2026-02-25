@@ -69,8 +69,8 @@ stopasgroup=true
 killasgroup=true
 EOF
 
-supervisord -c /etc/supervisor/supervisord.conf
-supervisorctl restart v2raypi
+systemctl restart supervisor
+supervisorctl -c /etc/supervisor/supervisord.conf restart v2raypi
 
 # ip table
 echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf && sysctl -p
