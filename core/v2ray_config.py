@@ -394,8 +394,10 @@ class V2RayConfig(DontPickleNone):
             node = user_config.node
             if (getattr(node, 'protocol', None) == 'vless' and
                     getattr(node, 'tls', None) == 'reality' and getattr(node, 'pbk', None)):
-                remote_dns_addr = 'https://{}/dns-query'.format(
-                    remote_dns_addr if ':' not in remote_dns_addr else remote_dns_addr.split(':')[0])
+                doh_ip = remote_dns_addr.split(':')[0] if ':' in remote_dns_addr else remote_dns_addr
+                remote_dns_addr = 'https://dns.google/dns-query'
+                config.dns.hosts = {}
+                config.dns.add_static_host('dns.google', doh_ip)
             config.dns.add_simple_server(remote_dns_addr)
 
             local_server = DNS.Server()
