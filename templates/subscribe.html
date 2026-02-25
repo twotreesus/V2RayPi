@@ -496,7 +496,7 @@
     }
 
     function add_manual_node() {
-        mdui.prompt("请输入节点链接（vmess://...）：", function (url) {
+        mdui.prompt("请输入节点链接（vmess:// 或 vless://）：", function (url) {
             if (!url.length) {
                 return;
             }

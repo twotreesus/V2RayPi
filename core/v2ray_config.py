@@ -73,6 +73,7 @@ class ProtocolType(Enum):
     freedom = 'freedom'
     socks = 'socks'
     vmess = 'vmess'
+    vless = 'vless'
     dns = 'dns'
 
 class NetworkType(Enum):
@@ -151,6 +152,30 @@ class ProtocolVMess:
         def add_server(self, server:Server):
             self.vnext.append(server)
 
+class ProtocolVLess:
+    type = ProtocolType.vless.value
+    class Settings:
+        class Server:
+            class User(DontPickleNone):
+                def __init__(self):
+                    self.id: str = ''
+                    self.encryption: str = 'none'
+                    self.flow: typing.Optional[str] = None
+
+            def __init__(self):
+                self.address: str = ''
+                self.port: int = 0
+                self.users: list = []
+
+            def add_user(self, user: User):
+                self.users.append(user)
+
+        def __init__(self):
+            self.vnext: List[ProtocolVLess.Settings.Server] = []
+
+        def add_server(self, server: Server):
+            self.vnext.append(server)
+
 class ProtocolDNS:
     type = ProtocolType.dns.value
     class Settings:
@@ -168,6 +193,19 @@ class StreamSettings(DontPickleNone):
     class Security(Enum):
         none = 'none'
         tls = 'tls'
+        reality = 'reality'
+
+    class Reality(DontPickleNone):
+        def __init__(self):
+            self.show: typing.Optional[bool] = None
+            self.dest: typing.Optional[str] = None
+            self.serverName: str = ''
+            self.publicKey: str = ''
+            self.shortId: str = ''
+            self.fingerprint: str = 'chrome'
+            self.spiderX: typing.Optional[str] = None
+            self.xver: typing.Optional[int] = None
+
     class TCP:
         def __init__(self):
             self.header = { }
@@ -210,6 +248,7 @@ class StreamSettings(DontPickleNone):
         self.tcpSettings:typing.Optional[StreamSettings.TCP] = None
         self.wsSettings:typing.Optional[StreamSettings.WebSocket] = None
         self.tlsSettings:typing.Optional[StreamSettings.TLS] = None
+        self.realitySettings: typing.Optional[StreamSettings.Reality] = None
         self.sockopt:typing.Optional[StreamSettings.SockOpt] = None
 
 class Inbound(DontPickleNone):
@@ -454,13 +493,79 @@ class V2RayConfig(DontPickleNone):
         return direct
 
     @classmethod
-    def _make_outbound_proxy(cls, node:Node, enable_mux:bool) -> Outbound:
+    def _make_outbound_proxy(cls, node: Node, enable_mux: bool) -> Outbound:
+        protocol = getattr(node, 'protocol', None) or 'vmess'
+        if protocol == 'vless':
+            return cls._make_outbound_proxy_vless(node, enable_mux)
+        return cls._make_outbound_proxy_vmess(node, enable_mux)
+
+    @classmethod
+    def _make_outbound_proxy_vless(cls, node: Node, enable_mux: bool) -> Outbound:
+        proxy = Outbound()
+        proxy.tag = Tags.proxy.value
+        proxy.protocol = ProtocolVLess.type
+
+        user = ProtocolVLess.Settings.Server.User()
+        user.id = node.id
+        user.encryption = 'none'
+        if getattr(node, 'flow', None):
+            user.flow = node.flow
+
+        server = ProtocolVLess.Settings.Server()
+        server.add_user(user)
+        server.address = node.add
+        server.port = int(node.port)
+
+        settings = ProtocolVLess.Settings()
+        settings.add_server(server)
+        proxy.settings = settings
+
+        stream_settings = proxy.streamSettings
+        stream_settings.network = node.net or 'tcp'
+
+        if getattr(node, 'tls', None) == 'reality' and getattr(node, 'pbk', None):
+            stream_settings.security = StreamSettings.Security.reality.value
+            reality = StreamSettings.Reality()
+            reality.serverName = node.sni or node.add
+            reality.publicKey = node.pbk
+            reality.shortId = getattr(node, 'sid', None) or ''
+            reality.fingerprint = getattr(node, 'fp', None) or 'chrome'
+            stream_settings.realitySettings = reality
+        elif node.tls == StreamSettings.Security.tls.value:
+            stream_settings.security = StreamSettings.Security.tls.value
+            tls = StreamSettings.TLS()
+            if node.alpn:
+                tls.alpn = [node.alpn]
+            tls.serverName = node.sni or node.host or node.add
+            stream_settings.tlsSettings = tls
+        else:
+            stream_settings.security = StreamSettings.Security.none.value
+
+        if stream_settings.network == StreamSettings.Network.tcp.value:
+            if getattr(node, 'type', None) and node.type != 'none':
+                stream_settings.tcpSettings = StreamSettings.TCP()
+                stream_settings.tcpSettings.setHeaderType(node.type)
+                stream_settings.tcpSettings.setHost(node.host or node.add)
+                stream_settings.tcpSettings.setPath(node.path or '/')
+        elif stream_settings.network == StreamSettings.Network.ws.value:
+            stream_settings.wsSettings = StreamSettings.WebSocket()
+            stream_settings.wsSettings.path = node.path or '/'
+            stream_settings.wsSettings.setHost(node.host or node.add)
+
+        use_mux = enable_mux and not getattr(node, 'flow', None)
+        proxy.mux = Outbound.Mux()
+        proxy.mux.enabled = use_mux
+
+        return proxy
+
+    @classmethod
+    def _make_outbound_proxy_vmess(cls, node: Node, enable_mux: bool) -> Outbound:
         proxy = Outbound()
         proxy.tag = Tags.proxy.value
         proxy.protocol = ProtocolVMess.type
 
         user = ProtocolVMess.Settings.Server.User()
-        user.alterId = int(node.aid)
+        user.alterId = int(node.aid or 0)
         user.id = node.id
         if node.scy:
             user.security = node.scy
@@ -474,16 +579,14 @@ class V2RayConfig(DontPickleNone):
         settings.add_server(server)
         proxy.settings = settings
 
-        # stream settings
         stream_settings = proxy.streamSettings
         if node.tls != StreamSettings.Security.tls.value:
             stream_settings.security = StreamSettings.Security.none.value
         else:
             stream_settings.security = StreamSettings.Security.tls.value
-
             tls = StreamSettings.TLS()
             if node.alpn:
-                tls.alpn = [ node.alpn, ]
+                tls.alpn = [node.alpn]
             if node.sni:
                 tls.serverName = node.sni
             else:

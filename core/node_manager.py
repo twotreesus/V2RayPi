@@ -41,10 +41,19 @@ class NodeManager(BaseDataItem):
 
         group.nodes.clear()
         for line in list.splitlines():
-            if line.startswith(K.vmess_scheme):
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith(K.vless_scheme):
+                data = Node.vless_uri_to_data(line)
+                if data:
+                    node = Node().load_data(data)
+                    group.nodes.append(node)
+            elif line.startswith(K.vmess_scheme):
                 line = line[len(K.vmess_scheme):]
                 line = base64.b64decode(line).decode('utf8')
                 data = json.loads(line)
+                data['protocol'] = 'vmess'
                 node = Node().load_data(data)
                 group.nodes.append(node)
 
@@ -83,10 +92,18 @@ class NodeManager(BaseDataItem):
         self.save()
 
     def add_manual_node(self, url):
-        if url.startswith(K.vmess_scheme):
+        url = url.strip()
+        if url.startswith(K.vless_scheme):
+            data = Node.vless_uri_to_data(url)
+            if data:
+                node = Node().load_data(data)
+                self.manual_nodes.append(node)
+                self.save()
+        elif url.startswith(K.vmess_scheme):
             line = url[len(K.vmess_scheme):]
             line = base64.b64decode(line).decode('utf8')
             data = json.loads(line)
+            data['protocol'] = 'vmess'
             node = Node().load_data(data)
             self.manual_nodes.append(node)
             self.save()
