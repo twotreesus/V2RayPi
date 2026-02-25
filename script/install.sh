@@ -46,7 +46,7 @@ mkdir -p /usr/local/etc/xray/
 touch /usr/local/etc/xray/config.json
 chmod 644 /usr/local/etc/xray/config.json
 mkdir -p /var/log/xray/
-bash $SCRIPT_DIR/update_xray.sh install
+bash $SCRIPT_DIR/update_xray.sh install -u root
 
 #configure Supervisor
 mkdir /etc/supervisor

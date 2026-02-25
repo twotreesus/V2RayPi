@@ -56,7 +56,7 @@ class V2rayController:
         return version
 
     def update(self) -> bool:
-        update_log = subprocess.check_output("bash ./script/update_xray.sh install", shell=True).decode('utf-8')
+        update_log = subprocess.check_output("bash ./script/update_xray.sh install -u root", shell=True).decode('utf-8')
         ret = update_log.find('installed')
         if ret:
             ret = self.restart()
