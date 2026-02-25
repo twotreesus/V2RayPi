@@ -6,21 +6,31 @@ import sys
 from typing import List
 from typing import Dict
 from .package import jsonpickle
+from .package.jsonpickle import handlers as jsonpickle_handlers
 from .v2ray_user_config import V2RayUserConfig
 from .node import Node
 from .v2ray_default_path import V2rayDefaultPath
 
+
 class DontPickleNone:
     def __getstate__(self):
         state = self.__dict__.copy()
-        bad_keys =[]
-        for key in state.keys():
+        for key in list(state.keys()):
             if state[key] is None:
-                bad_keys.append(key)
-
-        for key in bad_keys:
-            state.pop(key)
+                state.pop(key)
         return state
+
+
+class _DontPickleNoneHandler(jsonpickle_handlers.BaseHandler):
+    def flatten(self, obj, data):
+        state = obj.__getstate__()
+        for k, v in state.items():
+            data[k] = self.context._flatten(v)
+        return data
+
+
+jsonpickle_handlers.register(DontPickleNone, _DontPickleNoneHandler, base=True)
+
 
 class Log:
     class Level(Enum):
