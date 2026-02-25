@@ -496,10 +496,16 @@ class V2RayConfig(DontPickleNone):
     @classmethod
     def _x25519_private_key(cls) -> str:
         try:
-            from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
             import base64
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
             key = X25519PrivateKey.generate()
-            return base64.b64encode(key.private_bytes_raw()).decode()
+            raw = key.private_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+            return base64.b64encode(raw).decode()
         except Exception:
             return ''
 
