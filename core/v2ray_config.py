@@ -431,7 +431,7 @@ class V2RayConfig(DontPickleNone):
             private = cls._make_private_rule()
             remote_dns = cls._make_ip_remote_dns_rule(user_config.advance_config.dns.remote_dns())
             local_dns = cls._make_ip_local_dns_rule(user_config.advance_config.dns.local_dns())
-            config.routing.rules.extend((dnsout, ntp, remote_dns, bt, private, local_dns))
+            config.routing.rules.extend((dnsout, ntp, bt, private, local_dns, remote_dns))
 
             if user_config.advance_config.block_ad :
                 adblock = cls._make_adblock_rule()
