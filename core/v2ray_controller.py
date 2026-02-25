@@ -20,22 +20,22 @@ from .node import Node
 
 class V2rayController:
     def start(self) -> bool:
-        cmd = "systemctl start v2ray.service"
+        cmd = "systemctl start xray.service"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return self.running()
 
     def stop(self) -> bool:
-        cmd = "systemctl stop v2ray.service"
+        cmd = "systemctl stop xray.service"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return not self.running()
 
     def restart(self) -> bool:
-        cmd = "systemctl restart v2ray.service"
+        cmd = "systemctl restart xray.service"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return self.running()
 
     def running(self) -> bool:
-        cmd = """ps -ef | grep "v2ray" | grep -v grep | awk '{print $2}'"""
+        cmd = """ps -ef | grep "xray" | grep -v grep | awk '{print $2}'"""
         output = subprocess.check_output(cmd, shell=True).decode('utf-8')
         if output == "":
             return False
@@ -43,20 +43,20 @@ class V2rayController:
             return True
 
     def version(self) -> str:
-        v2ray_path = 'v2ray'
-        cmd_get_current_ver = """echo `{0} version 2>/dev/null` | head -n 1 | cut -d " " -f2""".format(v2ray_path)
+        xray_path = 'xray'
+        cmd_get_current_ver = """echo `{0} -version 2>/dev/null` | head -n 1 | cut -d " " -f2""".format(xray_path)
         current_ver = 'v' + subprocess.check_output(cmd_get_current_ver, shell=True).decode('utf-8').replace('\n', '')
 
         return current_ver
 
     def check_new_version(self) -> str:
-        r = requests.get('https://api.github.com/repos/v2fly/v2ray-core/releases/latest')
+        r = requests.get('https://api.github.com/repos/XTLS/Xray-core/releases/latest')
         r = r.json()
         version = r['tag_name']
         return version
 
     def update(self) -> bool:
-        update_log = subprocess.check_output("bash ./script/update_v2ray.sh", shell=True).decode('utf-8')
+        update_log = subprocess.check_output("bash ./script/update_xray.sh install", shell=True).decode('utf-8')
         ret = update_log.find('installed')
         if ret:
             ret = self.restart()
@@ -88,7 +88,7 @@ class V2rayController:
 
     def enable_iptables(self):
         subprocess.check_output("bash ./script/config_iptable.sh", shell=True)
-        subprocess.check_output("systemctl enable v2ray_iptable.service", shell=True)
+        subprocess.check_output("systemctl enable xray_iptable.service", shell=True)
 
     def check_new_geo_data(self, url) -> str:
         headers = requests.head(url + '/latest').headers
@@ -118,22 +118,22 @@ class V2rayController:
 
 class MacOSV2rayController(V2rayController):
     def start(self) -> bool:
-        cmd = "brew services start v2ray"
+        cmd = "brew services start xray"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return self.running()
 
     def stop(self) -> bool:
-        cmd = "brew services stop v2ray"
+        cmd = "brew services stop xray"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return not self.running()
 
     def restart(self) -> bool:
-        cmd = "brew services restart v2ray"
+        cmd = "brew services restart xray"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return self.running()
 
     def update(self) -> bool:
-        update_log = subprocess.check_output("brew upgrade v2ray", shell=True).decode('utf-8')
+        update_log = subprocess.check_output("brew upgrade xray", shell=True).decode('utf-8')
         ret = update_log.find('built in')
         if ret:
             ret = self.restart()

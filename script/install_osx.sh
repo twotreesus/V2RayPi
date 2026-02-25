@@ -1,7 +1,7 @@
 #!/bin/bash
 
 brew update
-brew install wget curl python3 v2ray
+brew install wget curl python3 xray
 
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -15,5 +15,5 @@ pip install --upgrade pip setuptools wheel
 pip install -r $SCRIPT_DIR/requirements.txt
 deactivate
 
-mkdir -p ~/Library/Logs/v2ray/
-brew services start v2ray
+mkdir -p ~/Library/Logs/xray/
+brew services start xray

@@ -16,20 +16,22 @@ rm -rf /usr/local/V2RayPi/
 rm /var/log/v2raypi
 
 # remove iptable service
-systemctl stop v2ray_iptable.service
-systemctl disable v2ray_iptable.service
-rm /etc/systemd/system/v2ray_iptable.service
+systemctl stop xray_iptable.service
+systemctl disable xray_iptable.service
+rm /etc/systemd/system/xray_iptable.service
 
-# remove v2ray
-systemctl stop v2ray.service
-systemctl disable v2ray.service
-rm /etc/systemd/system/v2ray.service
+# remove xray
+systemctl stop xray.service
+systemctl disable xray.service
+rm -f /etc/systemd/system/xray.service
+rm -f /etc/systemd/system/xray@.service
+rm -rf /etc/systemd/system/xray.service.d
+rm -rf /etc/systemd/system/xray@.service.d
 
-rm /usr/local/bin/v2ray
-rm /usr/local/bin/v2ctl
-rm -rf /etc/v2ray/
-rm -rf /var/log/v2ray/
-rm -rf /usr/local/share/v2ray/
+rm -f /usr/local/bin/xray
+rm -rf /usr/local/etc/xray/
+rm -rf /var/log/xray/
+rm -rf /usr/local/share/xray/
 
 #
 systemctl daemon-reload

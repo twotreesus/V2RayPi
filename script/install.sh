@@ -35,18 +35,18 @@ cat>/etc/rc.local<<-EOF
 # bits.
 #
 # By default this script does nothing.
-if [ ! -d "/var/log/v2ray" ]; then
-    mkdir /var/log/v2ray
+if [ ! -d "/var/log/xray" ]; then
+    mkdir /var/log/xray
 fi
 exit 0
 EOF
 
-# install v2ray
-mkdir -p /etc/v2ray/
-touch /etc/v2ray/config.json
-chmod 644 /etc/v2ray/config.json
-mkdir -p /var/log/v2ray/
-bash $SCRIPT_DIR/update_v2ray.sh
+# install xray
+mkdir -p /usr/local/etc/xray/
+touch /usr/local/etc/xray/config.json
+chmod 644 /usr/local/etc/xray/config.json
+mkdir -p /var/log/xray/
+bash $SCRIPT_DIR/update_xray.sh install
 
 #configure Supervisor
 mkdir /etc/supervisor
@@ -74,7 +74,7 @@ supervisorctl restart v2raypi
 
 # ip table
 echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf && sysctl -p
-cat>/etc/systemd/system/v2ray_iptable.service<<-EOF
+cat>/etc/systemd/system/xray_iptable.service<<-EOF
 [Unit]
 Description=Tproxy rule
 After=network-online.target
@@ -90,8 +90,8 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable v2ray.service
-systemctl disable v2ray_iptable.service
+systemctl enable xray.service
+systemctl disable xray_iptable.service
 
 # 
 chmod +x /etc/rc.local
