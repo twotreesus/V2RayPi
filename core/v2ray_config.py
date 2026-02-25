@@ -6,21 +6,31 @@ import sys
 from typing import List
 from typing import Dict
 from .package import jsonpickle
+from .package.jsonpickle import handlers as jsonpickle_handlers
 from .v2ray_user_config import V2RayUserConfig
 from .node import Node
 from .v2ray_default_path import V2rayDefaultPath
 
+
 class DontPickleNone:
     def __getstate__(self):
         state = self.__dict__.copy()
-        bad_keys =[]
-        for key in state.keys():
+        for key in list(state.keys()):
             if state[key] is None:
-                bad_keys.append(key)
-
-        for key in bad_keys:
-            state.pop(key)
+                state.pop(key)
         return state
+
+
+class _DontPickleNoneHandler(jsonpickle_handlers.BaseHandler):
+    def flatten(self, obj, data):
+        state = obj.__getstate__()
+        for k, v in state.items():
+            data[k] = self.context._flatten(v)
+        return data
+
+
+jsonpickle_handlers.register(DontPickleNone, _DontPickleNoneHandler, base=True)
+
 
 class Log:
     class Level(Enum):
@@ -205,6 +215,7 @@ class StreamSettings(DontPickleNone):
             self.shortId: str = ''
             self.fingerprint: str = 'chrome'
             self.spiderX: typing.Optional[str] = None
+            self.mldsa65Verify: str = ''
             self.xver: typing.Optional[int] = None
 
     class TCP:
@@ -451,8 +462,7 @@ class V2RayConfig(DontPickleNone):
                         site_not_cn = cls._make_site_not_cn_rule()
                         config.routing.rules.extend((ip_not_cn, site_not_cn))
 
-        raw_config = jsonpickle.encode(config, unpicklable=False, indent=4)
-        return raw_config
+        return jsonpickle.encode(config, unpicklable=False, indent=4)
 
     @classmethod
     def _make_inbound_dokodemo_door(self) -> Inbound :
@@ -547,6 +557,8 @@ class V2RayConfig(DontPickleNone):
             reality.publicKey = node.pbk
             reality.shortId = getattr(node, 'sid', None) or ''
             reality.fingerprint = getattr(node, 'fp', None) or 'chrome'
+            reality.spiderX = '/'
+            reality.mldsa65Verify = ''
             del reality.dest
             del reality.show
             del reality.serverNames
@@ -575,6 +587,7 @@ class V2RayConfig(DontPickleNone):
         use_mux = enable_mux and not getattr(node, 'flow', None)
         proxy.mux = Outbound.Mux()
         proxy.mux.enabled = use_mux
+        proxy.mux.concurrency = -1
 
         return proxy
 
@@ -627,6 +640,7 @@ class V2RayConfig(DontPickleNone):
 
         proxy.mux = Outbound.Mux()
         proxy.mux.enabled = enable_mux
+        proxy.mux.concurrency = -1
 
         return proxy
 
