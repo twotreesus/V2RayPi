@@ -35,7 +35,7 @@ class NodeManager(BaseDataItem):
 
     def update_group(self, group: NodeGroup):
         url = group.subscribe
-        r = requests.get(url)
+        r = requests.get(url, headers={'User-Agent': K.subscribe_user_agent})
         list = r.text
         list = base64.b64decode(list).decode('utf8')
 
