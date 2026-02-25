@@ -390,7 +390,13 @@ class V2RayConfig(DontPickleNone):
         # dns
         if user_config.proxy_mode != V2RayUserConfig.ProxyMode.Direct.value:
             config.dns = DNS()
-            config.dns.add_simple_server(user_config.advance_config.dns.remote_dns())
+            remote_dns_addr = user_config.advance_config.dns.remote_dns()
+            node = user_config.node
+            if (getattr(node, 'protocol', None) == 'vless' and
+                    getattr(node, 'tls', None) == 'reality' and getattr(node, 'pbk', None)):
+                remote_dns_addr = 'https://{}/dns-query'.format(
+                    remote_dns_addr if ':' not in remote_dns_addr else remote_dns_addr.split(':')[0])
+            config.dns.add_simple_server(remote_dns_addr)
 
             local_server = DNS.Server()
             local_server.address = user_config.advance_config.dns.local_dns()
@@ -423,7 +429,7 @@ class V2RayConfig(DontPickleNone):
             private = cls._make_private_rule()
             remote_dns = cls._make_ip_remote_dns_rule(user_config.advance_config.dns.remote_dns())
             local_dns = cls._make_ip_local_dns_rule(user_config.advance_config.dns.local_dns())
-            config.routing.rules.extend((dnsout, ntp, bt, private, local_dns, remote_dns))
+            config.routing.rules.extend((dnsout, ntp, remote_dns, bt, private, local_dns))
 
             if user_config.advance_config.block_ad :
                 adblock = cls._make_adblock_rule()
