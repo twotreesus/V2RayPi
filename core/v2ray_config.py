@@ -3,7 +3,9 @@ from enum import Enum
 import typing
 import socket
 import sys
+import os
 import subprocess
+import shutil
 from typing import List
 from typing import Dict
 from .package import jsonpickle
@@ -496,12 +498,17 @@ class V2RayConfig(DontPickleNone):
 
     @classmethod
     def _x25519_private_key(cls) -> str:
-        out = subprocess.check_output(
-            ['xray', 'x25519'],
-            stderr=subprocess.DEVNULL,
-            timeout=5,
-            text=True,
-        )
+        xray_bin = shutil.which('xray') or '/usr/local/bin/xray'
+        try:
+            out = subprocess.check_output(
+                [xray_bin, 'x25519'],
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+                text=True,
+                env={**os.environ, 'PATH': '/usr/local/bin:/usr/bin:' + os.environ.get('PATH', '')},
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+            return ''
         for line in out.splitlines():
             line = line.strip()
             if line.lower().startswith('private key:'):
