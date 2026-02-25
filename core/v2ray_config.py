@@ -199,7 +199,7 @@ class StreamSettings(DontPickleNone):
         def __init__(self):
             self.show: typing.Optional[bool] = None
             self.dest: typing.Optional[str] = None
-            self.serverName: str = ''
+            self.serverNames: List[str] = []
             self.publicKey: str = ''
             self.shortId: str = ''
             self.fingerprint: str = 'chrome'
@@ -526,7 +526,7 @@ class V2RayConfig(DontPickleNone):
         if getattr(node, 'tls', None) == 'reality' and getattr(node, 'pbk', None):
             stream_settings.security = StreamSettings.Security.reality.value
             reality = StreamSettings.Reality()
-            reality.serverName = node.sni or node.add
+            reality.serverNames = [node.sni or node.add]
             reality.publicKey = node.pbk
             reality.shortId = getattr(node, 'sid', None) or ''
             reality.fingerprint = getattr(node, 'fp', None) or 'chrome'
