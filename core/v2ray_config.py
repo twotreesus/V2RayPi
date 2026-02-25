@@ -3,6 +3,7 @@ from enum import Enum
 import typing
 import socket
 import sys
+import subprocess
 from typing import List
 from typing import Dict
 from .package import jsonpickle
@@ -200,6 +201,7 @@ class StreamSettings(DontPickleNone):
             self.show: typing.Optional[bool] = None
             self.dest: typing.Optional[str] = None
             self.serverNames: List[str] = []
+            self.privateKey: str = ''
             self.publicKey: str = ''
             self.shortId: str = ''
             self.fingerprint: str = 'chrome'
@@ -493,6 +495,20 @@ class V2RayConfig(DontPickleNone):
         return direct
 
     @classmethod
+    def _x25519_private_key(cls) -> str:
+        out = subprocess.check_output(
+            ['xray', 'x25519'],
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            text=True,
+        )
+        for line in out.splitlines():
+            line = line.strip()
+            if line.lower().startswith('private key:'):
+                return line.split(':', 1)[1].strip()
+        return ''
+
+    @classmethod
     def _make_outbound_proxy(cls, node: Node, enable_mux: bool) -> Outbound:
         protocol = getattr(node, 'protocol', None) or 'vmess'
         if protocol == 'vless':
@@ -530,6 +546,7 @@ class V2RayConfig(DontPickleNone):
             reality.publicKey = node.pbk
             reality.shortId = getattr(node, 'sid', None) or ''
             reality.fingerprint = getattr(node, 'fp', None) or 'chrome'
+            reality.privateKey = cls._x25519_private_key()
             stream_settings.realitySettings = reality
         elif node.tls == StreamSettings.Security.tls.value:
             stream_settings.security = StreamSettings.Security.tls.value
