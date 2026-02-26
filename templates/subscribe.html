@@ -147,7 +147,7 @@
     .node_running td.node_name {
         text-align: left;
     }
-    .node_running .node_name span {
+    .node_running .node_name .node-name-text {
         display: inline-block;
         background-color: #4CAF50;
         color: white;
@@ -172,6 +172,27 @@
     }
     .url {
         margin-left: 24px;
+    }
+    .node-type-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1;
+        padding: 1px 4px;
+        border-radius: 3px;
+        border: 1px solid;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+    .node-type-vmess {
+        color: #1976d2;
+        border-color: #1976d2;
+        background-color: rgba(25, 118, 210, 0.08);
+    }
+    .node-type-vless {
+        color: #7b1fa2;
+        border-color: #7b1fa2;
+        background-color: rgba(123, 31, 162, 0.08);
     }
 </style>
 
@@ -240,7 +261,9 @@
                 node_row.attr("data-index", node_index - 1);
                 node_row.addClass("group-" + group_index);
                 node_row.find(".node_index").html(node_index.toString());
-                node_row.find(".node_name").html('<span>' + node_data["ps"] + '</span>');
+                var protocol = (node_data["protocol"] || "vmess").toLowerCase();
+                var typeBadge = '<span class="node-type-badge node-type-' + protocol + '">' + protocol + '</span>';
+                node_row.find(".node_name").attr("data-ps", node_data["ps"]).html(typeBadge + ' <span class="node-name-text">' + node_data["ps"] + '</span>');
                 node_row.find(".node_addr").html(node_data["add"]);
                 if (node_data["ps"] === node_running) {
                     node_row.addClass("node_running");
@@ -541,7 +564,7 @@
             list = group["nodes"];
             url = group["subscribe"];
             $("tbody").find(`tr[url='${url}']`).each(function (index, row) {
-                node_name = $(row).find(".node_name").text();
+                node_name = $(row).find(".node_name").attr("data-ps");
                 delay = list[node_name];
 
                 td = $(row).find(".node_delay");

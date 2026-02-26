@@ -6,6 +6,27 @@
         padding: 2px 8px;
         border-radius: 4px;
     }
+    .node-type-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1;
+        padding: 1px 4px;
+        border-radius: 3px;
+        border: 1px solid;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+    .node-type-vmess {
+        color: #1976d2;
+        border-color: #1976d2;
+        background-color: rgba(25, 118, 210, 0.08);
+    }
+    .node-type-vless {
+        color: #7b1fa2;
+        border-color: #7b1fa2;
+        background-color: rgba(123, 31, 162, 0.08);
+    }
 </style>
 <div id="status_page" class="mdui-container">
     <p></p>
@@ -147,7 +168,9 @@
             $("#proxy_mode").prop("selectedIndex", mode);
             $("#v2ray_current_ver").html(data["version"]);
             $("#v2ray_new_ver").html(window.g_new_version);
-            $("#remark").html('<span class="node-name">' + data["ps"] + '</span>');
+            var protocol = (data["protocol"] || "vmess").toLowerCase();
+            var typeBadge = '<span class="node-type-badge node-type-' + protocol + '">' + protocol + '</span>';
+            $("#remark").html(typeBadge + ' <span class="node-name">' + data["ps"] + '</span>');
             $("#host").html(data["add"]);
 
 
