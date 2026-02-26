@@ -374,10 +374,11 @@ class V2RayConfig(DontPickleNone):
             socks = cls._make_inbound_socks(user_config.advance_config.inbound.socks_port())
             config.add_inbound(socks)
 
-        # outbonds
+        # outbounds
         direct = cls._make_outbound_direct()
         if user_config.proxy_mode == V2RayUserConfig.ProxyMode.Direct.value:
-            config.add_outbound(direct)
+            dnsout = cls._make_outbound_dnsout()
+            config.outbounds.extend((direct, dnsout))
         else:
             proxy = cls._make_outbound_proxy(user_config.node, user_config.advance_config.enable_mux)
             block = cls._make_outbound_block()
@@ -415,6 +416,10 @@ class V2RayConfig(DontPickleNone):
                         local_server.add_domain(domain)
 
             config.dns.add_server(local_server)
+        else:
+            # Direct mode: internal DNS so V2Ray can resolve domains (e.g. under tproxy)
+            config.dns = DNS()
+            config.dns.add_simple_server(user_config.advance_config.dns.local_dns())
 
         # routing
         if user_config.proxy_mode != V2RayUserConfig.ProxyMode.Direct.value:
@@ -462,6 +467,9 @@ class V2RayConfig(DontPickleNone):
                         ip_not_cn = cls._make_ip_not_cn_rule()
                         site_not_cn = cls._make_site_not_cn_rule()
                         config.routing.rules.extend((ip_not_cn, site_not_cn))
+        else:
+            # Direct mode: dns-out rule so DNS works under tproxy
+            config.routing.rules.append(cls._make_dnsout_rule())
 
         return jsonpickle.encode(config, unpicklable=False, indent=4)
 
