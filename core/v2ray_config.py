@@ -333,7 +333,7 @@ class V2RayConfig(DontPickleNone):
             socks = cls._make_inbound_socks(user_config.advance_config.inbound.socks_port())
             config.add_inbound(socks)
 
-        # outbonds
+        # outbounds
         direct = cls._make_outbound_direct()
         if user_config.proxy_mode == V2RayUserConfig.ProxyMode.Direct.value:
             config.add_outbound(direct)
@@ -373,6 +373,10 @@ class V2RayConfig(DontPickleNone):
                         local_server.add_domain(domain)
 
             config.dns.add_server(local_server)
+        else:
+            # Direct mode: internal DNS so V2Ray can resolve domains (e.g. under tproxy)
+            config.dns = DNS()
+            config.dns.add_simple_server(user_config.advance_config.dns.local_dns())
 
         # routing
         if user_config.proxy_mode != V2RayUserConfig.ProxyMode.Direct.value:
