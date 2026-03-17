@@ -474,7 +474,7 @@ class V2RayConfig(DontPickleNone):
         return jsonpickle.encode(config, unpicklable=False, indent=4)
 
     @classmethod
-    def _make_inbound_dokodemo_door(self) -> Inbound :
+    def _make_inbound_dokodemo_door(cls) -> Inbound :
         dokodemo_door = Inbound()
         dokodemo_door.tag = Tags.transparent.value
         dokodemo_door.protocol = ProtocolDokodemoDoor.type
@@ -530,8 +530,7 @@ class V2RayConfig(DontPickleNone):
 
     @classmethod
     def _make_outbound_proxy(cls, node: Node, enable_mux: bool) -> Outbound:
-        protocol = getattr(node, 'protocol', None) or 'vmess'
-        if protocol == 'vless':
+        if node.protocol == 'vless':
             return cls._make_outbound_proxy_vless(node, enable_mux)
         return cls._make_outbound_proxy_vmess(node, enable_mux)
 

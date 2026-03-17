@@ -12,9 +12,6 @@ import base64
 from urllib.parse import urlparse, parse_qs, unquote
 from .keys import Keyword as K
 
-def _node_protocol(node):
-    return getattr(node, 'protocol', None) or 'vmess'
-
 class Node(BaseDataItem):
     def __init__(self):
         self.add = None
@@ -31,7 +28,7 @@ class Node(BaseDataItem):
         self.scy = None
         self.sni = None
         self.alpn = None
-        self.protocol = None
+        self.protocol = 'vmess'
         self.flow = None
         self.pbk = None
         self.sid = None
@@ -39,7 +36,7 @@ class Node(BaseDataItem):
 
     @property
     def link(self):
-        if _node_protocol(self) == 'vless':
+        if self.protocol == 'vless':
             return self._vless_link()
         data = self.dump()
         content = json.dumps(data)
