@@ -1,5 +1,6 @@
 .vscode/
 .idea/
+.claude/
 config/
 **/__pycache__/
 **/*.pyc
