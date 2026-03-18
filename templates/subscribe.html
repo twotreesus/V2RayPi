@@ -504,7 +504,7 @@
     }
 
     function add_subscribe() {
-        mdui.prompt("请输入订阅地址：", function (url) {
+        mdui.prompt("请输入订阅地址：<br><small style='color:#888'>支持 V2rayN base64 格式和 Clash YAML 格式</small>", function (url) {
             if (!url.length) {
                 return;
             }
@@ -524,7 +524,7 @@
     }
 
     function add_manual_node() {
-        mdui.prompt("请输入节点链接（vmess:// 或 vless://）：", function (url) {
+        mdui.prompt("请输入节点链接：<br><small style='color:#888'>支持 vmess://, vless://, anytls://</small>", function (url) {
             if (!url.length) {
                 return;
             }
