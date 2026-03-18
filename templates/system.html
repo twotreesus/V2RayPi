@@ -8,7 +8,7 @@
                     <td colspan="2" class="mdui-typo">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">Xray - Core</h5>
+                                <h5 style="margin: 0; white-space: nowrap;">xray-core</h5>
                             </div>
                         </div>
                     </td>
@@ -39,6 +39,49 @@
                                     </div>
                                     <div id="update" style="display: none">
                                         <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_v2ray()">升级</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
+                <!-- sing-box Update -->
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%;">
+                                <h5 style="margin: 0; white-space: nowrap;">sing-box</h5>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
+                                <span style="white-space: nowrap;">当前版本</span>
+                            </div>
+                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
+                                <span id="singbox_current_ver"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
+                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
+                                <span style="white-space: nowrap;">最新版本</span>
+                            </div>
+                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <span id="singbox_new_ver" class="mdui-text-color-blue" style="display: inline-block; min-width: 100px;"></span>
+                                    <div id="singbox_check_update">
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_singbox_new_ver()">查询</button>
+                                    </div>
+                                    <div id="singbox_update" style="display: none">
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_singbox()">升级</button>
                                     </div>
                                 </div>
                             </div>
@@ -208,6 +251,7 @@
             .done(function (data) {
                 if (check_result(data)) {
                     $("#v2ray_current_ver").html(data["version"]);
+                    $("#singbox_current_ver").html(data["singbox_version"]);
                 }
             });
         get_v2raypi_recent_commits();
@@ -236,6 +280,44 @@
                 });
             }
         });
+    }
+
+    function check_singbox_new_ver() {
+        message("正在查询...");
+        ajax_request({ url: "/check_singbox_new_ver" })
+            .done(function (data) {
+            window.g_singbox_new_version = data["version"];
+            $("#singbox_new_ver").html(window.g_singbox_new_version);
+            var current = $("#singbox_current_ver").html();
+            if (window.g_singbox_new_version === current) {
+                message("当前已是最新版本无需更新");
+                $("#singbox_check_update").show();
+                $("#singbox_update").hide();
+            } else {
+                message("已发布新版本，点击升级按钮更新");
+                $("#singbox_check_update").hide();
+                $("#singbox_update").show();
+            }
+        }).fail(function () {
+            message("检查失败");
+        });
+    }
+
+    function update_singbox() {
+        pop_toast("正在升级...");
+        ajax_request({ url: "/update_singbox" })
+            .done(function (data) {
+                if (check_result(data)) {
+                    update_toast("升级成功");
+                } else {
+                    update_toast("升级失败");
+                }
+            })
+            .always(function () {
+                close_toast();
+                refresh();
+                check_singbox_new_ver();
+            });
     }
 
     function check_v2raypi_updates() {

@@ -207,6 +207,7 @@ class CoreService:
         result = {
             K.running: running,
             K.version: version,
+            'singbox_version': cls.v2ray.singbox_version(),
             K.proxy_mode: cls.user_config.proxy_mode,
         }
 
@@ -344,6 +345,10 @@ class CoreService:
                 cls.update_geo_data()
 
         return result
+
+    @classmethod
+    def update_singbox(cls) -> bool:
+        return cls.v2ray.update_singbox()
 
     @classmethod
     def check_new_geo_data(cls) -> str:

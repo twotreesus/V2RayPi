@@ -29,6 +29,7 @@ rm -rf /etc/systemd/system/xray.service.d
 rm -rf /etc/systemd/system/xray@.service.d
 
 rm -f /usr/local/bin/xray
+rm -f /usr/local/bin/sing-box
 rm -rf /usr/local/etc/xray/
 rm -rf /var/log/xray/
 rm -rf /usr/local/share/xray/

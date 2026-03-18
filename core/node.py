@@ -33,15 +33,64 @@ class Node(BaseDataItem):
         self.pbk = None
         self.sid = None
         self.fp = None
+        self.password = None
+        self.skip_cert_verify = False
 
     @property
     def link(self):
+        if self.protocol == 'anytls':
+            return self._anytls_link()
         if self.protocol == 'vless':
             return self._vless_link()
         data = self.dump()
         content = json.dumps(data)
         content = base64.b64encode(content.encode('utf8')).decode('utf8')
         return K.vmess_scheme + content
+
+    def _anytls_link(self):
+        from urllib.parse import urlencode, quote
+        netloc = '{}@{}:{}'.format(self.password or '', self.add, self.port)
+        q = []
+        if self.sni:
+            q.append(('sni', self.sni))
+        if self.skip_cert_verify:
+            q.append(('allowInsecure', '1'))
+        frag = quote(self.ps or '', safe='')
+        query = ('?' + urlencode(q)) if q else '/'
+        return '{}://{}{}#{}'.format(K.anytls_scheme.rstrip('://'), netloc, query, frag)
+
+    @classmethod
+    def anytls_uri_to_data(cls, url: str):
+        """Parse anytls:// URI into a dict suitable for Node().load_data(). Returns None if invalid."""
+        if not url or not url.strip().startswith(K.anytls_scheme):
+            return None
+        url = url.strip()
+        parsed = urlparse(url)
+        netloc = parsed.netloc
+        if '@' not in netloc:
+            return None
+        password, hostport = netloc.rsplit('@', 1)
+        if ':' in hostport:
+            host, port_str = hostport.rsplit(':', 1)
+            try:
+                port = int(port_str)
+            except ValueError:
+                return None
+        else:
+            host = hostport
+            port = 443
+        query = parse_qs(parsed.query, keep_blank_values=True)
+        def first(k, default=None):
+            return query.get(k, [default])[0] if query.get(k) else default
+        return {
+            'protocol': 'anytls',
+            'password': password,
+            'add': host,
+            'port': port,
+            'sni': first('sni') or host,
+            'skip_cert_verify': first('allowInsecure') == '1',
+            'ps': unquote(parsed.fragment) if parsed.fragment else '{}:{}'.format(host, port),
+        }
 
     def _vless_link(self):
         from urllib.parse import urlencode

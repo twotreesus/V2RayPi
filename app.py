@@ -146,6 +146,18 @@ def update_v2ray_api():
         result = K.ok
     return jsonify({K.result:result})
 
+@app.route('/check_singbox_new_ver')
+@require_auth
+def check_singbox_new_ver_api():
+    version = CoreService.v2ray.singbox_check_new_version()
+    return jsonify({K.result: K.ok, K.version: version})
+
+@app.route('/update_singbox')
+@require_auth
+def update_singbox_api():
+    success = CoreService.update_singbox()
+    return jsonify({K.result: K.ok if success else K.failed})
+
 @app.route('/switch_proxy_mode')
 @require_auth
 def switch_proxy_mode_api():

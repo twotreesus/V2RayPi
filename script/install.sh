@@ -41,6 +41,9 @@ fi
 exit 0
 EOF
 
+# install sing-box
+curl -fsSL https://sing-box.app/install.sh | sh
+
 # install xray
 mkdir -p /usr/local/etc/xray/
 touch /usr/local/etc/xray/config.json

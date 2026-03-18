@@ -20,6 +20,7 @@ class Keyword:
     node_link = 'node_link'
     vmess_scheme = 'vmess://'
     vless_scheme = 'vless://'
+    anytls_scheme = 'anytls://'
     node_index = 'node_index'
     groups = 'groups'
     dns = 'dns'

@@ -130,6 +130,15 @@ class ProtocolSocks:
                 self.udp:typing.Optional[bool] = True
             self.ip:typing.Optional[str] = None
             self.userLevel:typing.Optional[int] = None
+    class OutboundSettings(DontPickleNone):
+        class Server(DontPickleNone):
+            def __init__(self):
+                self.address: str = '127.0.0.1'
+                self.port: int = 0
+        def __init__(self):
+            self.servers: list = []
+        def add_server(self, server):
+            self.servers.append(server)
 
 class ProtocolVMess:
     type = ProtocolType.vmess.value
@@ -526,9 +535,25 @@ class V2RayConfig(DontPickleNone):
             return ''
 
     @classmethod
+    def _make_outbound_proxy_socks(cls, port: int) -> Outbound:
+        proxy = Outbound()
+        proxy.tag = Tags.proxy.value
+        proxy.protocol = ProtocolSocks.type
+        server = ProtocolSocks.OutboundSettings.Server()
+        server.port = port
+        settings = ProtocolSocks.OutboundSettings()
+        settings.add_server(server)
+        proxy.settings = settings
+        proxy.streamSettings = None
+        return proxy
+
+    @classmethod
     def _make_outbound_proxy(cls, node: Node, enable_mux: bool) -> Outbound:
         if node.protocol == 'vless':
             return cls._make_outbound_proxy_vless(node, enable_mux)
+        if node.protocol == 'anytls':
+            from .singbox_controller import SINGBOX_SOCKS_PORT
+            return cls._make_outbound_proxy_socks(SINGBOX_SOCKS_PORT)
         return cls._make_outbound_proxy_vmess(node, enable_mux)
 
     @classmethod

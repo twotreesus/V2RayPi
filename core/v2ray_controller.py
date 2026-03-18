@@ -17,14 +17,18 @@ from .v2ray_user_config import V2RayUserConfig
 from .v2ray_config import V2RayConfig
 from .v2ray_default_path import V2rayDefaultPath
 from .node import Node
+from .singbox_controller import SingboxController
 
 class V2rayController:
+    def __init__(self):
+        self._singbox = SingboxController()
     def start(self) -> bool:
         cmd = "systemctl start xray.service"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return self.running()
 
     def stop(self) -> bool:
+        self._singbox.stop()
         cmd = "systemctl stop xray.service"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return not self.running()
@@ -75,7 +79,21 @@ class V2rayController:
         lines = subprocess.check_output("tail -n {0} {1}".format(count, file), shell=True).decode('utf-8')
         return  lines
 
+    def singbox_version(self) -> str:
+        return self._singbox.version()
+
+    def singbox_check_new_version(self) -> str:
+        return self._singbox.check_new_version()
+
+    def update_singbox(self) -> bool:
+        return self._singbox.update()
+
     def apply_node(self, user_config:V2RayUserConfig, all_nodes: List[Node]) -> bool:
+        node = user_config.node
+        if node.protocol == 'anytls':
+            self._singbox.apply_node(node)
+        else:
+            self._singbox.stop()
         config = V2RayConfig.gen_config(user_config, all_nodes)
         return self.apply_config(config)
 

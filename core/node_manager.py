@@ -6,13 +6,13 @@ Date:       2020年7月29日  31周星期三 21:57
 Desc:
 """
 
-from typing import List
-from typing import Dict
+from typing import List, Dict, Optional
 from datetime import datetime
 import time
 import json
 import requests
 import base64
+import yaml
 from tcp_latency import measure_latency
 from concurrent import futures
 from .keys import Keyword as K
@@ -27,35 +27,101 @@ class NodeGroup:
 class NodeManager(BaseDataItem):
     def __init__(self):
         self.last_subscribe = ''
-        self.subscribes: Dict= {}
-        self.manual_nodes:List[Node] = []
+        self.subscribes: Dict = {}
+        self.manual_nodes: List[Node] = []
 
     def filename(self):
         return 'config/nodes.json'
 
+    def _parse_node_uri(self, line: str) -> Optional[Node]:
+        if line.startswith(K.anytls_scheme):
+            data = Node.anytls_uri_to_data(line)
+            return Node().load_data(data) if data else None
+        if line.startswith(K.vless_scheme):
+            data = Node.vless_uri_to_data(line)
+            return Node().load_data(data) if data else None
+        if line.startswith(K.vmess_scheme):
+            try:
+                data = json.loads(base64.b64decode(line[len(K.vmess_scheme):]).decode('utf8'))
+                data['protocol'] = 'vmess'
+                return Node().load_data(data)
+            except Exception:
+                return None
+        return None
+
+    def _clash_proxy_to_node(self, proxy: dict) -> Optional[Node]:
+        ptype = proxy.get('type', '')
+        node = Node()
+        node.ps = proxy.get('name', '')
+        node.add = proxy.get('server', '')
+        node.port = proxy.get('port', 0)
+
+        if ptype == 'anytls':
+            node.protocol = 'anytls'
+            node.password = proxy.get('password', '')
+            node.sni = proxy.get('sni', '') or node.add
+            node.skip_cert_verify = proxy.get('skip-cert-verify', False)
+
+        elif ptype == 'vmess':
+            node.protocol = 'vmess'
+            node.id = proxy.get('uuid', '')
+            node.aid = proxy.get('alterId', 0)
+            node.scy = proxy.get('cipher', 'auto')
+            node.net = proxy.get('network', 'tcp')
+            node.tls = 'tls' if proxy.get('tls') else None
+            node.sni = proxy.get('servername', '') or node.add
+            ws_opts = proxy.get('ws-opts', {})
+            node.path = ws_opts.get('path', '')
+            node.host = (ws_opts.get('headers') or {}).get('Host', '')
+
+        elif ptype == 'vless':
+            node.protocol = 'vless'
+            node.id = proxy.get('uuid', '')
+            node.net = proxy.get('network', 'tcp')
+            node.flow = proxy.get('flow', None)
+            node.tls = proxy.get('tls', None)
+            node.sni = proxy.get('servername', '') or node.add
+            node.fp = proxy.get('client-fingerprint', 'chrome')
+            reality_opts = proxy.get('reality-opts', {})
+            node.pbk = reality_opts.get('public-key', '')
+            node.sid = reality_opts.get('short-id', '')
+
+        else:
+            return None
+
+        return node
+
+    def _parse_clash_content(self, group: NodeGroup, content: str):
+        try:
+            clash = yaml.safe_load(content)
+        except Exception:
+            return
+        proxies = clash.get('proxies') or []
+        for proxy in proxies:
+            node = self._clash_proxy_to_node(proxy)
+            if node:
+                group.nodes.append(node)
+
     def update_group(self, group: NodeGroup):
         url = group.subscribe
         r = requests.get(url, headers={'User-Agent': K.subscribe_user_agent})
-        list = r.text
-        list = base64.b64decode(list).decode('utf8')
+        content = r.text
 
         group.nodes.clear()
-        for line in list.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith(K.vless_scheme):
-                data = Node.vless_uri_to_data(line)
-                if data:
-                    node = Node().load_data(data)
+        if 'proxies:' in content:
+            self._parse_clash_content(group, content)
+        else:
+            try:
+                decoded = base64.b64decode(content).decode('utf8')
+            except Exception:
+                return
+            for line in decoded.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                node = self._parse_node_uri(line)
+                if node:
                     group.nodes.append(node)
-            elif line.startswith(K.vmess_scheme):
-                line = line[len(K.vmess_scheme):]
-                line = base64.b64decode(line).decode('utf8')
-                data = json.loads(line)
-                data['protocol'] = 'vmess'
-                node = Node().load_data(data)
-                group.nodes.append(node)
 
     def update(self, url):
         group = self.subscribes[url]
@@ -92,23 +158,12 @@ class NodeManager(BaseDataItem):
         self.save()
 
     def add_manual_node(self, url):
-        url = url.strip()
-        if url.startswith(K.vless_scheme):
-            data = Node.vless_uri_to_data(url)
-            if data:
-                node = Node().load_data(data)
-                self.manual_nodes.append(node)
-                self.save()
-        elif url.startswith(K.vmess_scheme):
-            line = url[len(K.vmess_scheme):]
-            line = base64.b64decode(line).decode('utf8')
-            data = json.loads(line)
-            data['protocol'] = 'vmess'
-            node = Node().load_data(data)
+        node = self._parse_node_uri(url.strip())
+        if node:
             self.manual_nodes.append(node)
             self.save()
 
-    def find_node(self, url:str, index:int) -> Node:
+    def find_node(self, url: str, index: int) -> Node:
         node = None
         if url == K.manual:
             node = self.manual_nodes[index]
@@ -116,7 +171,7 @@ class NodeManager(BaseDataItem):
             node = self.subscribes[url].nodes[index]
         return node
 
-    def find_node_index(self, url:str, node_ps:str):
+    def find_node_index(self, url: str, node_ps: str):
         node_list = None
         if url == K.manual:
             node_list = self.manual_nodes
@@ -128,7 +183,7 @@ class NodeManager(BaseDataItem):
 
         return -1
 
-    def all_nodes(self) ->list :
+    def all_nodes(self) -> list:
         nodes = []
         for url in self.subscribes.keys():
             group = self.subscribes[url]
@@ -139,7 +194,7 @@ class NodeManager(BaseDataItem):
     def refresh_update_time(self):
         self.last_subscribe = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
 
-    def ping_test_all(self) -> list :
+    def ping_test_all(self) -> list:
         results = []
 
         for url in self.subscribes.keys():
@@ -149,8 +204,8 @@ class NodeManager(BaseDataItem):
 
             node_results = self.ping_test_group(group.nodes)
             group_result = {
-                K.subscribe : url,
-                K.nodes : node_results
+                K.subscribe: url,
+                K.nodes: node_results
             }
 
             results.append(group_result)
@@ -180,7 +235,7 @@ class NodeManager(BaseDataItem):
             node_results = {}
             for future in futures_to_hosts.keys():
                 delay = future.result()
-                if delay == None:
+                if delay is None:
                     delay = -1
                 node_results[futures_to_hosts[future]] = int(delay)
 
