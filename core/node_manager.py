@@ -68,6 +68,7 @@ class NodeManager(BaseDataItem):
             node.aid = proxy.get('alterId', 0)
             node.scy = proxy.get('cipher', 'auto')
             node.net = proxy.get('network', 'tcp')
+            node.type = 'none'
             node.tls = 'tls' if proxy.get('tls') else None
             node.sni = proxy.get('servername', '') or node.add
             ws_opts = proxy.get('ws-opts', {})
@@ -78,13 +79,19 @@ class NodeManager(BaseDataItem):
             node.protocol = 'vless'
             node.id = proxy.get('uuid', '')
             node.net = proxy.get('network', 'tcp')
+            node.type = 'none'
+            node.path = ''
             node.flow = proxy.get('flow', None)
-            node.tls = proxy.get('tls', None)
-            node.sni = proxy.get('servername', '') or node.add
             node.fp = proxy.get('client-fingerprint', 'chrome')
             reality_opts = proxy.get('reality-opts', {})
             node.pbk = reality_opts.get('public-key', '')
             node.sid = reality_opts.get('short-id', '')
+            if proxy.get('tls'):
+                node.tls = 'reality' if node.pbk else 'tls'
+            else:
+                node.tls = None
+            node.sni = proxy.get('servername', '') or node.add
+            node.host = node.sni
 
         else:
             return None
