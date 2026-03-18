@@ -64,8 +64,10 @@ sequenceDiagram
 ### 主要特性
 - **透明代理**：终端设备无需任何设置，只需连接到主路由即可
 - **多种代理模式**：支持直连、智能分流、全局代理
+- **多协议支持**：支持 VMess、VLESS（含 Reality）、AnyTLS
+- **双订阅格式**：兼容 v2rayN base64 订阅和 Clash YAML 订阅
 - **自动化管理**：自动处理订阅更新和策略配置
-- **一键更新**：内置系统更新功能，轻松保持系统最新
+- **一键更新**：内置 xray-core / sing-box 及系统更新功能
 - **跨平台支持**：支持多种硬件平台和操作系统
 - **简单易用**：图形化管理界面，操作直观
 
@@ -185,13 +187,15 @@ sudo supervisorctl restart v2raypi
 ```
 
 ### 系统更新
-系统页面提供了一键更新功能，可以方便地将系统更新到最新版本：
-1. 在系统页面可以看到最近的更新记录
-2. 点击“检查更新”按钮检查是否有新版本
-3. 如果有新版本，点击“更新并重启”按钮进行更新
-4. 更新完成后，服务会自动重启
+系统页面提供了一键更新功能：
 
-注意：更新过程中只会重启 V2RayPi 管理服务，不会影响 v2ray-core 的运行，因此代理服务不会中断
+**更新 V2RayPi**
+1. 在系统页面查看最近更新记录，点击「检查更新」
+2. 有新版本时点击「更新并重启」；更新过程中代理服务不中断
+
+**更新 xray-core / sing-box**
+1. 在系统页面对应区块点击「查询」获取最新版本
+2. 版本不一致时点击「升级」即可；升级后服务自动重启
 
 手动更新方式（可选）：
 ```bash
@@ -230,8 +234,11 @@ sudo supervisorctl restart v2raypi
 # 手动强制更新 V2RayPi 服务
 sudo git reset --hard && sudo git pull && sudo supervisorctl restart v2raypi
 
-# 查看 v2ray-core 日志
-tail -f /var/log/v2ray/error.log
+# 查看 xray-core 日志
+tail -f /var/log/xray/error.log
+
+# 查看 sing-box 服务状态（AnyTLS 节点时运行）
+sudo systemctl status sing-box
 ```
 
 ### 常见问题
@@ -249,8 +256,8 @@ tail -f /var/log/v2ray/error.log
 
 3. 节点更新失败
    - 检查订阅地址是否可访问
-   - 检查订阅格式是否正确（支持 v2ray 标准订阅格式）
-   - 尝试手动添加节点
+   - 检查订阅格式是否正确（支持 v2rayN base64 格式和 Clash YAML 格式）
+   - 尝试手动添加节点（支持 vmess:// / vless:// / anytls://）
 
 4. 系统更新失败
    - 检查网络连接
