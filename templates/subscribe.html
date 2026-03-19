@@ -8,14 +8,13 @@
                 <tr>
                     <td colspan="5">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-1" style="width: 8%; display: flex; align-items: center;">
-                                <strong class="mdui-typo" style="white-space: nowrap;">最近订阅</strong>
+                            <div style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                                <strong class="mdui-typo">最近订阅</strong>
+                                <span id="last_subscribe" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;"></span>
                             </div>
-                            <div class="mdui-col-xs-3" style="width: 30%; display: flex; align-items: center;">
-                                <span id="last_subscribe" style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                            </div>
-                            <div class="mdui-col-xs-5" style="display: flex; align-items: center;">
-                                <div style="display: flex; gap: 8px; justify-content: flex-start;">
+                            <div style="flex: 1;"></div>
+                            <div style="display: flex; align-items: center;">
+                                <div style="display: flex; gap: 8px; justify-content: flex-end; padding-right: 8px;">
                                     <div id="update_all_subscribe" style="display: none">
                                         <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_all_subscribe()">全部更新</button>
                                     </div>
@@ -61,22 +60,14 @@
                 </tr>
                 <tr id="manual_template" class="mdui-color-light-blue-50" style="display: none">
                     <td colspan="5">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-1" style="width: 8%; display: flex; align-items: center;">
-                                <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
-                                    <i class="mdui-icon material-icons group-toggle">expand_more</i>
-                                    <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">收藏</strong>
-                                </div>
+                        <div style="width: 100%; display: flex; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
+                                <i class="mdui-icon material-icons group-toggle">expand_more</i>
+                                <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">收藏</strong>
                             </div>
-                            <div class="mdui-col-xs-6" style="width: 52%; display: flex; align-items: center;">
-                                <strong style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></strong>
-                            </div>
-                            <div class="mdui-col-xs-5" style="width: 23%; display: flex; align-items: center;">
-                                <div style="display: flex; gap: 8px; justify-content: flex-start;">
-                                    <div>
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_manual_node()">添加</button>
-                                    </div>
-                                </div>
+                            <div style="flex: 1;"></div>
+                            <div style="flex-shrink: 0; padding-right: 8px;">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_manual_node()">添加</button>
                             </div>
                         </div>
                     </td>
