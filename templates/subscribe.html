@@ -240,6 +240,19 @@
             apply_node(row.data("url"), row.data("index"));
         });
 
+        $("#node_list_body").on("click", "tr[data-url]", function(e) {
+            if ($(e.target).closest(".mdui-chip").length) return;
+            if ($(this).data("index") === undefined) return;
+            if ($(this).hasClass("node_running")) return;
+            var row = $(this);
+            var url = row.data("url");
+            var index = row.data("index");
+            var nodeName = row.find(".node-name-text").text();
+            mdui.confirm("切换到节点：" + nodeName + " ？", function() {
+                apply_node(url, index);
+            }, function() {}, { title: "切换节点", confirmText: "确认", cancelText: "取消" });
+        });
+
         $("#node_list_body").on("click", ".get_node_link", function() {
             var row = $(this).closest("tr");
             get_node_link(row.data("url"), row.data("index"));
