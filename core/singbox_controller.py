@@ -50,16 +50,9 @@ class SingboxController:
         return result.stdout.strip() == 'active'
 
     def version(self) -> str:
-        binary = self._binary()
         try:
-            result = subprocess.run(
-                [binary, 'version'],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-            )
-            # first line: "sing-box version 1.10.0"
-            output = result.stdout.strip() or result.stderr.strip()
-            first_line = output.splitlines()[0]
-            ver = first_line.split()[-1]
+            cmd = r"""{0} version 2>/dev/null | head -n 1 | awk '{{print $NF}}'""".format(self._binary())
+            ver = subprocess.check_output(cmd, shell=True).decode('utf-8').strip()
             return ver if ver.startswith('v') else 'v' + ver
         except Exception:
             return ''
