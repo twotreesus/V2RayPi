@@ -51,8 +51,10 @@ class SingboxController:
 
     def version(self) -> str:
         try:
-            cmd = r"""{0} version 2>/dev/null | head -n 1 | awk '{{print $NF}}'""".format(self._binary())
-            ver = subprocess.check_output(cmd, shell=True).decode('utf-8').strip()
+            ver = subprocess.check_output(
+                "sing-box version 2>/dev/null | head -n 1 | awk '{print $NF}'",
+                shell=True
+            ).decode('utf-8').strip()
             return ver if ver.startswith('v') else 'v' + ver
         except Exception:
             return ''
