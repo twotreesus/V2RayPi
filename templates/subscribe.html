@@ -205,10 +205,60 @@
 <script src="/static/js/jquery.qrcode.js"></script>
 <script type="text/javascript">
     //# sourceURL=subscribe.js
-    var nodeGroups = {};
-    
+
     $(document).ready(function () {
         mdui.mutation();
+
+        // All dynamic rows (subscribe heads, manual head, node rows) live in #node_list_body
+        $("#node_list_body").on("click", ".toggle-row", function() {
+            var groupIndex = $(this).closest("tr").data("group");
+            var $nodes = $(".group-" + groupIndex);
+            var $icon = $(this).find(".group-toggle");
+            if ($nodes.first().is(":visible")) {
+                $nodes.hide();
+                $icon.text("expand_more");
+            } else {
+                $nodes.show();
+                $icon.text("expand_less");
+            }
+            return false;
+        });
+
+        $("#node_list_body").on("click", ".update_subscribe", function() {
+            update_subscribe($(this).closest("tr").data("url"));
+        });
+
+        $("#node_list_body").on("click", ".remove_subscribe", function() {
+            remove_subscribe($(this).closest("tr").data("url"));
+        });
+
+        $("#node_list_body").on("click", ".copy_url", function() {
+            var url = $(this).closest("tr").data("url");
+            if (copy_to_clipboard(url)) {
+                message("订阅地址已复制");
+            }
+        });
+
+        $("#node_list_body").on("click", ".apply_node", function() {
+            var row = $(this).closest("tr");
+            apply_node(row.data("url"), row.data("index"));
+        });
+
+        $("#node_list_body").on("click", ".get_node_link", function() {
+            var row = $(this).closest("tr");
+            get_node_link(row.data("url"), row.data("index"));
+        });
+
+        $("#node_list_body").on("click", ".get_node_qr", function() {
+            var row = $(this).closest("tr");
+            get_node_qr(row.data("url"), row.data("index"));
+        });
+
+        $("#node_list_body").on("click", ".delete_node", function() {
+            var row = $(this).closest("tr");
+            delete_node(row.data("url"), row.data("index"));
+        });
+
         refresh();
     });
 
@@ -219,8 +269,7 @@
             if (groups.length === 0) {
                 $("#update_all_subscribe").hide();
                 $("#ping_test").hide();
-            }
-            else {
+            } else {
                 $("#update_all_subscribe").show();
                 $("#ping_test").show();
             }
@@ -231,41 +280,42 @@
             $("tr[id^='real_manual']").remove();
 
             var node_running = subscribe["ps"];
-            var tbody = $("tbody");
+            var nodeListBody = $("#node_list_body");
 
             function make_group_head(url, index) {
                 var url_row = $("#subscribe_template").clone();
+                url_row.attr("id", "real_subscribe_" + index);
+                url_row.attr("data-url", url);
+                url_row.attr("data-group", index);
                 url_row.find(".url").html(url);
-                url_row.find(".subscribe-index").html("订阅 " + index.toString());
-                url_row.attr("id", "real_subscribe_" + index.toString());
-                url_row.find(".group-toggle").attr("data-group", index);
-                tbody.append(url_row);
+                url_row.find(".subscribe-index").html("订阅 " + index);
+                nodeListBody.append(url_row);
                 url_row.show();
             }
 
-            function make_manual_head() {
+            function make_manual_head(groupIndex) {
                 var manual_head = $("#manual_template").clone();
                 manual_head.attr("id", "real_manual");
-                tbody.append(manual_head);
+                manual_head.attr("data-group", groupIndex);
+                nodeListBody.append(manual_head);
                 manual_head.show();
             }
 
-            function make_node_head(index) {
+            function make_node_head(groupIndex) {
                 var node_head_row = $("#node_header_template").clone();
-                node_head_row.attr("id", "real_header_" + index.toString());
-                node_head_row.addClass("group-" + index);
+                node_head_row.attr("id", "real_header_" + groupIndex);
+                node_head_row.addClass("group-" + groupIndex);
                 $("#node_list_body").append(node_head_row);
                 node_head_row.hide();
             }
-            
-            function make_node_row(url, node_data, group_index, node_index) {
+
+            function make_node_row(url, node_data, groupIndex, nodeIndex) {
                 var node_row = $("#node_template").clone();
-                node_row.attr("id", "real_node_" + group_index.toString() + "_" + node_index.toString());
-                node_row.attr("url", url);
+                node_row.attr("id", "real_node_" + groupIndex + "_" + nodeIndex);
                 node_row.attr("data-url", url);
-                node_row.attr("data-index", node_index - 1);
-                node_row.addClass("group-" + group_index);
-                node_row.find(".node_index").html(node_index.toString());
+                node_row.attr("data-index", nodeIndex);
+                node_row.addClass("group-" + groupIndex);
+                node_row.find(".node_index").html(nodeIndex + 1);
                 var protocol = (node_data["protocol"] || "vmess").toLowerCase();
                 var typeBadge = '<span class="node-type-badge node-type-' + protocol + '">' + protocol + '</span>';
                 node_row.find(".node_name").attr("data-ps", node_data["ps"]).html(typeBadge + ' <span class="node-name-text">' + node_data["ps"] + '</span>');
@@ -274,167 +324,74 @@
                     node_row.addClass("node_running");
                     node_row.find(".apply_node .mdui-icon").html("vpn_key");
                 }
-
                 $("#node_list_body").append(node_row);
-                // Initially show all nodes
                 node_row.show();
-                $(".group-" + group_index).show();
-                $("#subscribe_group_" + group_index + " .group-toggle").text("expand_less");
+                $(".group-" + groupIndex).show();
             }
 
-            function bind_node_row_event() {
-                // Bind toggle event
-                $(".toggle-row").off("click").on("click", function() {
-                    var $row = $(this);
-                    var $icon = $row.find(".group-toggle");
-                    var group = $icon.attr("data-group");
-                    var groupIndex = group === "manual" ? (groups.length + 1).toString() : $row.closest("tr").attr("id").split("_")[2];
-                    var $nodes = $(".group-" + groupIndex);
-                    
-                    if ($nodes.first().is(":visible")) {
-                        $nodes.hide();
-                        $icon.text("expand_more");
-                    } else {
-                        $nodes.show();
-                        $icon.text("expand_less");
-                    }
-                    
-                    return false;
-                });
-
-                $(".update_subscribe").click(function () {
-                    var url = $(this).closest("tr").find(".url").text();
-                    update_subscribe(url);
-                })
-
-                $(".remove_subscribe").click(function () {
-                    var url = $(this).closest("tr").find(".url").text();
-                    remove_subscribe(url);
-                })
-
-                $(".copy_url").click(function () {
-                    var url = $(this).closest("tr").find(".url").text();
-                    if (copy_to_clipboard(url)) {
-                        message("订阅地址已复制");
-                    }
-                })
-
-                $(".apply_node").click(function () {
-                    var row = $(this).closest("tr");
-                    var url = row.attr("url");
-                    var node_index = parseInt(row.find(".node_index").text()) - 1;
-                    apply_node(url, node_index);
-                });
-
-                $(".get_node_link").click(function () {
-                    var row = $(this).closest("tr");
-                    var url = row.attr("url");
-                    var node_index = parseInt(row.find(".node_index").text()) - 1;
-                    get_node_link(url, node_index);
-                })
-
-                $(".get_node_qr").click(function () {
-                    var row = $(this).closest("tr");
-                    var url = row.attr("url");
-                    var node_index = parseInt(row.find(".node_index").text()) - 1;
-                    get_node_qr(url, node_index);
-                })
-
-                $(".delete_node").click(function () {
-                    var row = $(this).closest("tr");
-                    var url = row.attr("url");
-                    var node_index = parseInt(row.find(".node_index").text()) - 1;
-                    delete_node(url, node_index);
-                })
-            }
-
-            // Clear existing node groups
-            nodeGroups = {};
-            
-            // main
-            groups.forEach(function (group) {
+            groups.forEach(function(group, i) {
                 var url = group["subscribe"];
-                var i = groups.indexOf(group);
                 var index = i + 1;
-                
                 make_group_head(url, index);
                 make_node_head(index);
-
-                var node_list = group["nodes"];
-                node_list.forEach(function(node_data){
-                    var j = node_list.indexOf(node_data);
-                    make_node_row(url, node_data, index, j + 1);
+                group["nodes"].forEach(function(node_data, j) {
+                    make_node_row(url, node_data, index, j);
                 });
-            })
+            });
 
-            make_manual_head();
+            var manualGroup = groups.length + 1;
+            make_manual_head(manualGroup);
             var manuals = subscribe["manual_nodes"];
             if (manuals.length > 0) {
-                make_node_head(groups.length + 1);
-                manuals.forEach(function (node_data) {
-                    var j = manuals.indexOf(node_data);
-                    make_node_row('manual', node_data, groups.length + 1, j + 1);
-                })
+                make_node_head(manualGroup);
+                manuals.forEach(function(node_data, j) {
+                    make_node_row('manual', node_data, manualGroup, j);
+                });
             }
 
-            // Ensure events are bound after all DOM elements are created
-            setTimeout(function() {
-                bind_node_row_event();
-                update_ping_result();
-                
-                // Update group title style
-                if (node_running) {
-                    var runningNode = $(".node_running");
-                    if (runningNode.length > 0) {
-                        var nodeUrl = runningNode.attr("url");
-                        if (nodeUrl === 'manual') {
-                            $("#real_manual .subscribe-index").addClass("running");
-                        } else {
-                            var groupRow = $("tr[id^='real_subscribe_']").filter(function() {
-                                return $(this).find(".url").text() === nodeUrl;
-                            });
-                            if (groupRow.length > 0) {
-                                groupRow.find(".subscribe-index").addClass("running");
-                            } else {
-                                $("#real_manual .subscribe-index").addClass("running");
-                            }
-                        }
+            update_ping_result();
+
+            if (node_running) {
+                var runningRow = $(".node_running");
+                if (runningRow.length > 0) {
+                    var nodeUrl = runningRow.data("url");
+                    if (nodeUrl === 'manual') {
+                        $("#real_manual .subscribe-index").addClass("running");
+                    } else {
+                        $("#node_list_body tr").filter(function() {
+                            return $(this).data("url") === nodeUrl;
+                        }).find(".subscribe-index").addClass("running");
                     }
                 }
-            }, 100);
+            }
         });
     }
-    
+
     function apply_node(url, index) {
-        pop_toast("正在应用节点...")
-        ajax_request({ url: "/apply_node", data: {subscribe:url, node_index:index} }).then(function (data) {
+        pop_toast("正在应用节点...");
+        ajax_request({ url: "/apply_node", data: {subscribe: url, node_index: index} }).then(function(data) {
             if (check_result(data)) {
                 update_toast("应用成功");
-                // Update node status
-                var prev_running = $(".node_running");
-                prev_running.removeClass("node_running");
-                prev_running.find(".apply_node .mdui-icon").html("check");
+                $(".node_running").removeClass("node_running").find(".apply_node .mdui-icon").html("check");
                 $(".subscribe-index").removeClass("running");
-                
-                // Update current node
-                var current_node = $("tr[data-url='"+url+"'][data-index='"+index+"']");
+
+                var current_node = $("#node_list_body tr").filter(function() {
+                    return $(this).data("url") === url && $(this).data("index") === index;
+                });
                 current_node.addClass("node_running");
                 current_node.find(".apply_node .mdui-icon").html("vpn_key");
-                
-                // Update group title
+
                 if (url === "manual") {
                     $("#real_manual .subscribe-index").addClass("running");
                 } else {
-                    var groupRow = $("tr[id^='real_subscribe_']").filter(function() {
-                        return $(this).find(".url").text() === url;
-                    });
-                    groupRow.find(".subscribe-index").addClass("running");
+                    $("#node_list_body tr").filter(function() {
+                        return $(this).data("url") === url;
+                    }).find(".subscribe-index").addClass("running");
                 }
-            }
-            else {
+            } else {
                 update_toast("应用失败");
             }
-        }).always(function () {
+        }).always(function() {
             close_toast();
         });
     }
@@ -568,7 +525,9 @@
         window.g_ping_cache.forEach(function (group) {
             list = group["nodes"];
             url = group["subscribe"];
-            $("tbody").find(`tr[url='${url}']`).each(function (index, row) {
+            $("#node_list_body tr").filter(function() {
+                return $(this).data("url") === url;
+            }).each(function (index, row) {
                 node_name = $(row).find(".node_name").attr("data-ps");
                 delay = list[node_name];
 
