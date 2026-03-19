@@ -347,9 +347,10 @@
         
         login(password, function(success) {
             if (success) {
-                // Show UI elements after successful login
                 close_login_dialog();
                 $("#status").click();
+                refresh_header_status();
+                add_interval(setInterval(refresh_header_status, 1000));
             }
         });
     }
