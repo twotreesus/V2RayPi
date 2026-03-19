@@ -2,6 +2,7 @@
 import json
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import requests
@@ -56,7 +57,8 @@ class SingboxController:
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
             # first line: "sing-box version 1.10.0"
-            first_line = result.stdout.strip().splitlines()[0]
+            output = result.stdout.strip() or result.stderr.strip()
+            first_line = output.splitlines()[0]
             ver = first_line.split()[-1]
             return ver if ver.startswith('v') else 'v' + ver
         except Exception:
@@ -82,11 +84,11 @@ class SingboxController:
         if sys.platform == 'darwin':
             candidates = ['/opt/homebrew/bin/sing-box', '/usr/local/bin/sing-box']
         else:
-            candidates = ['/usr/local/bin/sing-box', '/usr/bin/sing-box']
+            candidates = ['/usr/local/bin/sing-box', '/usr/bin/sing-box', '/usr/local/sbin/sing-box']
         for p in candidates:
             if os.path.exists(p):
                 return p
-        return 'sing-box'
+        return shutil.which('sing-box') or 'sing-box'
 
     def _service(self, action: str) -> bool:
         if sys.platform == 'darwin':
