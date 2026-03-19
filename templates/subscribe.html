@@ -40,11 +40,11 @@
                                     <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">订阅地址</strong>
                                 </div>
                             </div>
-                            <div class="mdui-col-xs-6" style="width: 52%; display: flex; align-items: center;">
+                            <div style="flex: 1; min-width: 0; display: flex; align-items: center;">
                                 <strong class="url" style="display: block; max-width: 64ch; word-break: break-all; white-space: normal;"></strong>
                             </div>
-                            <div class="mdui-col-xs-5" style="width: 23%; display: flex; align-items: center;">
-                                <div style="display: flex; gap: 8px; justify-content: flex-start;">
+                            <div style="flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;">
+                                <div style="display: flex; gap: 8px;">
                                     <div>
                                         <button class="copy_url mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" mdui-tooltip="{'content': '复制订阅地址'}">复制</button>
                                     </div>
@@ -96,7 +96,7 @@
                 </tr>
                 <tr id="node_template" style="display: none">
                     <td class="node_index"></td>
-                    <td class="node_name"></td>
+                    <td class="node_name" style="white-space: nowrap;"></td>
                     <td class="node_addr"></td>
                     <td class="node_delay"></td>
                     <td>
@@ -143,7 +143,7 @@
         left: 4px;
         right: 4px;
         bottom: 4px;
-        background: rgba(76, 175, 80, 0.15);
+        background: rgba(16, 196, 105, 0.15);
         border-radius: 8px;
         pointer-events: none;
     }
@@ -152,7 +152,7 @@
     }
     .node_running .node_name .node-name-text {
         display: inline-block;
-        background-color: #4CAF50;
+        background-color: #10c469;
         color: white;
         padding: 4px 8px;
         margin-left: -8px;
@@ -170,7 +170,7 @@
         transition: all 0.3s ease;
     }
     .subscribe-index.running {
-        background-color: #4CAF50;
+        background-color: #10c469;
         color: white !important;
     }
     .url {
@@ -184,7 +184,7 @@
         padding: 1px 4px;
         border-radius: 3px;
         border: 1px solid;
-        margin-right: 6px;
+        margin-right: 10px;
         vertical-align: middle;
     }
     .node-type-vmess {
