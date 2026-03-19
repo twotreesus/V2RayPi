@@ -33,20 +33,9 @@ class SingboxController:
         return True
 
     def running(self) -> bool:
-        if sys.platform == 'darwin':
-            result = subprocess.run(
-                ['brew', 'services', 'list'],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
-            )
-            for line in result.stdout.splitlines():
-                if line.startswith('sing-box') and 'started' in line:
-                    return True
-            return False
-        result = subprocess.run(
-            ['systemctl', 'is-active', 'sing-box'],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
-        )
-        return result.stdout.strip() == 'active'
+        cmd = """ps -ef | grep "sing-box" | grep -v grep | awk '{print $2}'"""
+        output = subprocess.check_output(cmd, shell=True).decode('utf-8')
+        return output.strip() != ''
 
     def version(self) -> str:
         try:
