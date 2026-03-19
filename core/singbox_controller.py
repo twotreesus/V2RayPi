@@ -2,7 +2,6 @@
 import json
 import os
 import platform
-import shutil
 import subprocess
 import sys
 import requests
@@ -74,16 +73,6 @@ class SingboxController:
         if was_running:
             self._service('restart')
         return True
-
-    def _binary(self) -> str:
-        if sys.platform == 'darwin':
-            candidates = ['/opt/homebrew/bin/sing-box', '/usr/local/bin/sing-box']
-        else:
-            candidates = ['/usr/local/bin/sing-box', '/usr/bin/sing-box', '/usr/local/sbin/sing-box']
-        for p in candidates:
-            if os.path.exists(p):
-                return p
-        return shutil.which('sing-box') or 'sing-box'
 
     def _service(self, action: str) -> bool:
         if sys.platform == 'darwin':
