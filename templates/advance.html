@@ -1,14 +1,16 @@
 <link rel="stylesheet" href="/static/css/Chart.css">
 <div id="advance_page" class="mdui-container">
-    <div id="action_bar" style="position: fixed; top: 64px; right: 24px; z-index: 99; background: #fff; border: 1px solid rgba(0,0,0,0.12); border-radius: 4px; padding: 12px 16px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
-        <div id="discard" style="display: none">
-            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="discard_config()">放弃</button>
-        </div>
-        <div id="apply" style="display: none">
-            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="apply_advance_config()">应用</button>
-        </div>
-        <div id="reset">
-            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple" onclick="reset_advance_config()">重置</button>
+    <div id="action_bar_wrapper" style="position: fixed; top: 64px; z-index: 99; pointer-events: none; display: flex; justify-content: flex-end;">
+        <div id="action_bar" style="pointer-events: all; background: #e3f2fd; border: 1px solid rgba(0,0,0,0.12); border-radius: 4px; padding: 12px 16px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
+            <div id="discard" style="display: none">
+                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="discard_config()">放弃</button>
+            </div>
+            <div id="apply" style="display: none">
+                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="apply_advance_config()">应用</button>
+            </div>
+            <div id="reset">
+                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple" onclick="reset_advance_config()">重置</button>
+            </div>
         </div>
     </div>
     <p></p>
@@ -192,7 +194,7 @@
                     <td>规则</td>
                     <td>
                         <div id="add_rule" class="mdui-col-sm-3">
-                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="create_rule()">创建</button>
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="create_rule()">添加</button>
                         </div>
                     </td>
                     <td>
@@ -407,7 +409,16 @@
 <script src="/static/js/Chart.js"></script>
 <script type="text/javascript">
     //# sourceURL=advance.js
+    function update_action_bar_position() {
+        var rect = document.getElementById('advance_page').getBoundingClientRect();
+        var wrapper = document.getElementById('action_bar_wrapper');
+        wrapper.style.left = rect.left + 'px';
+        wrapper.style.width = rect.width + 'px';
+    }
+
     $(document).ready(function () {
+        update_action_bar_position();
+        $(window).on('resize', update_action_bar_position);
         refresh_remote();
 
         $("#advance_table").on("click", ".delete_rule", function() {
