@@ -1,5 +1,16 @@
 <link rel="stylesheet" href="/static/css/Chart.css">
 <div id="advance_page" class="mdui-container">
+    <div id="action_bar" style="position: fixed; top: 64px; right: 24px; z-index: 99; background: #fff; border: 1px solid rgba(0,0,0,0.12); border-radius: 4px; padding: 12px 16px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
+        <div id="discard" style="display: none">
+            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="discard_config()">放弃</button>
+        </div>
+        <div id="apply" style="display: none">
+            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="apply_advance_config()">应用</button>
+        </div>
+        <div id="reset">
+            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple" onclick="reset_advance_config()">重置</button>
+        </div>
+    </div>
     <p></p>
     <div class="mdui-row">
         <div class="mdui-table-fluid">
@@ -307,22 +318,6 @@
                     </td>
                 </tr>
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
-                <tr class="mdui-color-light-blue-50">
-                    <td class="mdui-typo-caption-opacity">提交</td>
-                    <td colspan="5">
-                        <div class="mdui-row">
-                            <div id="discard" class="mdui-col-sm-2" style="display: none">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="discard_config()">放弃</button>
-                            </div>
-                            <div id="apply" class="mdui-col-sm-2" style="display: none">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="apply_advance_config()">应用</button>
-                            </div>
-                            <div id="reset" class="mdui-col-sm-2">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple" onclick="reset_advance_config()">重置</button>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
                 </tbody>
             </table>
         </div>
@@ -413,7 +408,46 @@
 <script type="text/javascript">
     //# sourceURL=advance.js
     $(document).ready(function () {
-        refresh_remote()
+        refresh_remote();
+
+        $("#advance_table").on("click", ".delete_rule", function() {
+            var index = $(this).closest("tr").data("index");
+            g_config_local["policys"].splice(index, 1);
+            refresh_local();
+        });
+
+        $("#advance_table").on("click", ".edit_rule", function() {
+            var index = $(this).closest("tr").data("index");
+            edit_rule(index, g_config_local["policys"][index]);
+        });
+
+        $("#advance_table").on("click", ".up_rule", function() {
+            var index = $(this).closest("tr").data("index");
+            if (index > 0) {
+                var policies = g_config_local['policys'];
+                var rule = policies[index];
+                policies[index] = policies[index - 1];
+                policies[index - 1] = rule;
+                refresh_local();
+            }
+        });
+
+        $("#advance_table").on("click", ".down_rule", function() {
+            var index = $(this).closest("tr").data("index");
+            if (index < g_config_local['policys'].length - 1) {
+                var policies = g_config_local['policys'];
+                var rule = policies[index];
+                policies[index] = policies[index + 1];
+                policies[index + 1] = rule;
+                refresh_local();
+            }
+        });
+
+        $("#advance_table").on("change", ".rule_enable", function() {
+            var index = $(this).closest("tr").data("index");
+            g_config_local["policys"][index]['enable'] = $(this).prop('checked');
+            setTimeout(function() { refresh_local(); }, 300);
+        });
     });
 
     var g_config_remote = null;
@@ -502,10 +536,13 @@
         var proxy_preferred = g_config_local['proxy_preferred'];
         $("#proxy_preferred").prop('checked', proxy_preferred);
 
+        var block_ad = g_config_local['block_ad'];
+        $("#block_ad").prop('checked', block_ad);
+
         $("tr[id^='real_rule']").remove();
         var base_policy_index = $("#rule_template").index();
         var policys = g_config_local["policys"];
-        policys.forEach(function (policy) {
+        policys.forEach(function (policy, index) {
             var type_dic = {
                 ip:'IP',
                 domain:'域名'
@@ -526,8 +563,8 @@
             var outbound = outbound_dic[policy['outbound']];
 
             var rule_row = $("#rule_template").clone();
-            var index = policys.indexOf(policy);
             rule_row.attr('id', 'real_rule' + index);
+            rule_row.attr('data-index', index);
             rule_row.find('.rule_index').html((index + 1).toString());
             rule_row.find('.rule_type').html(type);
             rule_row.find('.rule_contents').html(contents_html);
@@ -536,60 +573,6 @@
 
             $("#advance_table > tbody > tr").eq(base_policy_index + index).after(rule_row);
             rule_row.show();
-        });
-
-        $(".delete_rule").click(function () {
-            var row = $(this).closest("tr");
-            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
-            var policys = g_config_local["policys"];
-
-            policys.splice(rule_index, 1);
-            refresh_local();
-        })
-
-        $(".edit_rule").click(function () {
-            var row = $(this).closest("tr");
-            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
-            var rule = g_config_local["policys"][rule_index];
-            edit_rule(rule_index, rule);
-        })
-
-        $(".up_rule").click(function () {
-            var row = $(this).closest("tr");
-            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
-            if (rule_index > 0) {
-                rule = g_config_local['policys'][rule_index];
-                previous_rule = g_config_local['policys'][rule_index - 1];
-
-                g_config_local['policys'][rule_index - 1] = rule;
-                g_config_local['policys'][rule_index] = previous_rule;
-
-                refresh_local();
-            }
-        });
-
-        $(".down_rule").click(function () {
-            var row = $(this).closest("tr");
-            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
-            if (rule_index < (g_config_local['policys'].length - 1)) {
-                rule = g_config_local['policys'][rule_index];
-                next_rule = g_config_local['policys'][rule_index + 1];
-
-                g_config_local['policys'][rule_index + 1] = rule;
-                g_config_local['policys'][rule_index] = next_rule;
-
-                refresh_local();
-            }
-        });
-
-        $(".rule_enable").change(function () {
-            var row = $(this).closest("tr");
-            var rule_index = parseInt(row.find(".rule_index").text()) - 1;
-            var rule = g_config_local["policys"][rule_index];
-            rule['enable'] = $(this).prop('checked');
-            setTimeout(function () {
-                refresh_local();
-            }, 300);
         });
 
         // geo data
@@ -791,7 +774,7 @@
     ];
 
     function create_rule() {
-        g_rule_dialog = new mdui.Dialog("#rule_dialog", { modal:true, closeOnEsc:false});
+        g_rule_dialog = new mdui.Dialog("#rule_dialog", { modal:true, closeOnEsc:false, history: false});
         $("#rule_dialog_title").text('创建路由规则');
         $("#create_rule").show();
         $("#update_rule").hide();
@@ -807,7 +790,7 @@
     }
 
     function edit_rule(rule_index, rule) {
-        g_rule_dialog = new mdui.Dialog("#rule_dialog", { modal:true, closeOnEsc:false});
+        g_rule_dialog = new mdui.Dialog("#rule_dialog", { modal:true, closeOnEsc:false, history: false});
         $("#rule_dialog_title").text('编辑路由规则');
         $("#create_rule").hide();
         $("#update_rule").show();
