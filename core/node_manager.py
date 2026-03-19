@@ -8,6 +8,7 @@ Desc:
 
 from typing import List, Dict, Optional
 from datetime import datetime
+import copy
 import time
 import json
 import requests
@@ -169,6 +170,14 @@ class NodeManager(BaseDataItem):
         if node:
             self.manual_nodes.append(node)
             self.save()
+
+    def favorite_node(self, url: str, index: int) -> bool:
+        node = self.find_node(url, index)
+        if any(n.ps == node.ps for n in self.manual_nodes):
+            return False
+        self.manual_nodes.append(copy.deepcopy(node))
+        self.save()
+        return True
 
     def find_node(self, url: str, index: int) -> Node:
         node = None

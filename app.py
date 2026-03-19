@@ -182,6 +182,19 @@ def add_subscribe_api():
 
     return jsonify({K.result : result})
 
+@app.route('/favorite_node')
+@require_auth
+def favorite_node_api():
+    result = K.failed
+    try:
+        url = request.args.get(K.subscribe)
+        index = int(request.args.get(K.node_index, 0))
+        added = CoreService.node_manager.favorite_node(url, index)
+        result = K.ok if added else K.failed
+    except:
+        pass
+    return jsonify({K.result: result})
+
 @app.route('/add_manual_node')
 @require_auth
 def add_manual_node_api():

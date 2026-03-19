@@ -75,7 +75,7 @@
             </div>
         </div>
         <div class="mdui-dialog-actions">
-            <button id="login_button" class="mdui-btn mdui-ripple mdui-color-theme" mdui-dialog-close>登录</button>
+            <button id="login_button" type="button" class="mdui-btn mdui-ripple mdui-color-theme">登录</button>
         </div>
     </div>
     
@@ -118,7 +118,7 @@
     var g_toast = null;
     function pop_toast(message) {
         $("#toast_message").html(message);
-        g_toast = new mdui.Dialog("#toast", { modal:true, closeOnEsc:false});
+        g_toast = new mdui.Dialog("#toast", { modal:true, closeOnEsc:false, history: false});
         g_toast.open();
         mdui.mutation();
         return g_toast;
@@ -149,7 +149,7 @@
     function show_login_dialog() {
         $("#login_password").val("");
         if (!g_login_dialog) {
-            g_login_dialog = new mdui.Dialog('#login_dialog', { modal: true, closeOnEsc: false });
+            g_login_dialog = new mdui.Dialog('#login_dialog', { modal: true, closeOnEsc: false, history: false });
         }
         g_login_dialog.open();
         mdui.mutation();
@@ -307,10 +307,8 @@
         
         // Handle enter key in password input
         $("#login_password").keypress(function(e) {
-            if (e.which === 13) { // Enter key
+            if (e.which === 13) {
                 handle_login_submit();
-                // Close dialog without triggering click handler
-                g_login_dialog.close();
             }
         });
     }
