@@ -6,6 +6,7 @@ Date:       2020年7月30日  31周星期四 10:55
 Desc:
 """
 import psutil
+import time
 import os
 import os.path
 import platform
@@ -37,6 +38,8 @@ class CoreService:
     user_config: V2RayUserConfig = V2RayUserConfig()
     v2ray:V2rayController = make_controller()
     node_manager:NodeManager = NodeManager()
+    _last_net_io = None
+    _last_net_time = None
     scheduler:BackgroundScheduler = BackgroundScheduler(
         {
             'apscheduler.executors.default': {
@@ -256,6 +259,23 @@ class CoreService:
             "total" : int(memory_usage.total / (1024 * 1024)),
             "used" : int((memory_usage.total - memory_usage.available) / (1024 * 1024))
         }
+
+        now = time.time()
+        net_io = psutil.net_io_counters()
+        if cls._last_net_io is not None and cls._last_net_time is not None:
+            elapsed = now - cls._last_net_time
+            upload = (net_io.bytes_sent - cls._last_net_io.bytes_sent) / elapsed
+            download = (net_io.bytes_recv - cls._last_net_io.bytes_recv) / elapsed
+        else:
+            upload = 0.0
+            download = 0.0
+        cls._last_net_io = net_io
+        cls._last_net_time = now
+        result['network'] = {
+            "upload": round(upload / 1024, 2),
+            "download": round(download / 1024, 2)
+        }
+
         return result
 
     @classmethod

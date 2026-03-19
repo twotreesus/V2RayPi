@@ -59,11 +59,19 @@
             <a href="./" class="mdui-typo-headline mdui-hidden-xs">V2RayPi</a>
             <a id="head_title" href="" class="mdui-typo-title"></a>
             <div class="mdui-toolbar-spacer"></div>
-            <div id="header_status" style="display: none; align-items: center; gap: 6px; font-size: 12px; color: rgba(0,0,0,0.75); white-space: nowrap; overflow: hidden; max-width: 320px; margin-right: 8px; background: #fff; border-radius: 10px; padding: 0 10px; height: 26px; align-self: center;">
-                <span id="hs_dot" style="font-size: 24px; flex-shrink: 0; line-height: 12px; position: relative; top: -1px;">●</span>
-                <span id="hs_mode" style="flex-shrink: 0;"></span>
-                <span style="opacity: 0.4; flex-shrink: 0;">|</span>
-                <span id="hs_node" style="overflow: hidden; text-overflow: ellipsis;"></span>
+            <div id="header_status" style="display: none; align-items: center; font-size: 12px; white-space: nowrap; margin-right: 8px; border-radius: 10px; height: 26px; align-self: center; overflow: hidden;">
+                <div style="display: flex; align-items: center; gap: 6px; padding: 0 10px; height: 100%; background: #4a6572; color: rgba(255,255,255,0.9); min-width: 160px;">
+                    <span id="hs_dot" style="font-size: 24px; flex-shrink: 0; line-height: 12px; position: relative; top: -1px;">●</span>
+                    <span id="hs_mode" style="flex-shrink: 0; font-weight: 600;"></span>
+                    <span style="opacity: 0.4; flex-shrink: 0;">|</span>
+                    <span id="hs_node" style="font-weight: 600;"></span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; padding: 0 10px; height: 100%; background: #FF9800; color: #fff; width: 100px; flex-shrink: 0;">
+                    <i class="mdui-icon material-icons" style="font-size: 14px; margin-right: 2px;">arrow_upward</i><span id="hs_upload" style="font-size: 11px; font-weight: 600;">-</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; padding: 0 10px; height: 100%; background: #07c160; color: #fff; width: 100px; flex-shrink: 0;">
+                    <i class="mdui-icon material-icons" style="font-size: 14px; margin-right: 2px;">arrow_downward</i><span id="hs_download" style="font-size: 11px; font-weight: 600;">-</span>
+                </div>
             </div>
             <a href="https://github.com/twotreesus/V2RayPi" target="_blank" class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white" mdui-tooltip="{content: 'Github'}">
                 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 36 36" enable-background="new 0 0 36 36" xml:space="preserve" class="mdui-icon" style="width: 24px;height:24px;">
@@ -363,11 +371,21 @@
             .done(function() {
                 $("#status").click();
                 refresh_header_status();
-                setInterval(refresh_header_status, 5000);
+                setInterval(refresh_header_status, 1000);
             });
     });
 
     var g_proxy_modes = ['直连', '分流', '全局'];
+
+    function hs_format_speed(kb) {
+        if (kb >= 1024) return (kb / 1024).toFixed(2) + ' MB/s';
+        if (kb >= 1) return kb.toFixed(1) + ' KB/s';
+        return Math.round(kb * 1024) + ' B/s';
+    }
+
+    var g_hs_up_samples = [];
+    var g_hs_down_samples = [];
+
     function refresh_header_status() {
         $.ajax({ url: '/get_status', dataType: 'json' })
             .done(function(data) {
@@ -376,6 +394,19 @@
                 $('#hs_mode').text(g_proxy_modes[data['proxy_mode']] || '');
                 $('#hs_node').text(data['ps'] || '');
                 $('#header_status').css('display', 'flex');
+            });
+        $.ajax({ url: '/get_performance', dataType: 'json' })
+            .done(function(data) {
+                var net = data['network'];
+                if (!net) return;
+                g_hs_up_samples.push(net['upload']);
+                g_hs_down_samples.push(net['download']);
+                if (g_hs_up_samples.length > 3) g_hs_up_samples.shift();
+                if (g_hs_down_samples.length > 3) g_hs_down_samples.shift();
+                var up = g_hs_up_samples.reduce(function(a, b) { return a + b; }, 0) / g_hs_up_samples.length;
+                var down = g_hs_down_samples.reduce(function(a, b) { return a + b; }, 0) / g_hs_down_samples.length;
+                $('#hs_upload').text(hs_format_speed(up));
+                $('#hs_download').text(hs_format_speed(down));
             });
     }
 </script>
