@@ -84,47 +84,50 @@
                 </tbody>
             </table>
             
-            <!-- 节点列表表格 -->
-            <table class="mdui-table" style="margin-top: 8px;">
-                <tbody id="node_list_body">
-                <tr id="node_header_template" class="mdui-typo-caption-opacity" style="display: none">
-                    <td style="width: 8%;">序号</td>
-                    <td style="width: 37%;">名称</td>
-                    <td style="width: 30%;">地址</td>
-                    <td style="width: 10%;">延迟</td>
-                    <td style="width: 15%;">操作</td>
-                </tr>
-                <tr id="node_template" style="display: none">
-                    <td class="node_index"></td>
-                    <td class="node_name" style="white-space: nowrap;"></td>
-                    <td class="node_addr"></td>
-                    <td class="node_delay"></td>
-                    <td>
-                        <div style="display: flex; gap: 8px; justify-content: flex-start;">
-                            <div class="mdui-chip apply_node" title="应用节点">
-                                <span class="mdui-chip-icon mdui-color-green-500"><i class="mdui-icon material-icons">check</i></span>
-                            </div>
-                            <div class="mdui-chip favorite_node" title="添加到收藏">
-                                <span class="mdui-chip-icon mdui-color-grey-400"><i class="mdui-icon material-icons">star_border</i></span>
-                            </div>
-                            <div class="mdui-chip get_node_link" title="拷贝链接">
-                                <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">links</i></span>
-                            </div>
-                            <div class="mdui-chip get_node_qr" title="获取二维码">
-                                <span class="mdui-chip-icon mdui-color-grey-500"><i class="mdui-icon material-icons">border_outer</i></span>
-                            </div>
-                            <div class="mdui-chip delete_node" title="删除节点">
-                                <span class="mdui-chip-icon mdui-color-red-500"><i class="mdui-icon material-icons">delete</i></span>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+            <!-- Node list container: each group renders its own independent table -->
+            <div id="node_list_body" style="margin-top: 8px;"></div>
         </div>
     </div>
     <p></p>
 </div>
+
+<!-- Hidden node row templates -->
+<table id="node_row_templates" style="display: none;">
+    <tbody>
+    <tr id="node_header_template" class="mdui-typo-caption-opacity">
+        <td style="width: 8%;">序号</td>
+        <td style="width: 37%;">名称</td>
+        <td style="width: 30%;">地址</td>
+        <td style="width: 10%;">延迟</td>
+        <td style="width: 15%;">操作</td>
+    </tr>
+    <tr id="node_template">
+        <td class="node_index"></td>
+        <td class="node_name" style="white-space: nowrap;"></td>
+        <td class="node_addr"></td>
+        <td class="node_delay"></td>
+        <td>
+            <div style="display: flex; gap: 8px; justify-content: flex-start;">
+                <div class="mdui-chip apply_node" title="应用节点">
+                    <span class="mdui-chip-icon mdui-color-green-500"><i class="mdui-icon material-icons">check</i></span>
+                </div>
+                <div class="mdui-chip favorite_node" title="添加到收藏">
+                    <span class="mdui-chip-icon mdui-color-grey-400"><i class="mdui-icon material-icons">star_border</i></span>
+                </div>
+                <div class="mdui-chip get_node_link" title="拷贝链接">
+                    <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">links</i></span>
+                </div>
+                <div class="mdui-chip get_node_qr" title="获取二维码">
+                    <span class="mdui-chip-icon mdui-color-grey-500"><i class="mdui-icon material-icons">crop_free</i></span>
+                </div>
+                <div class="mdui-chip delete_node" title="删除节点">
+                    <span class="mdui-chip-icon mdui-color-red-500"><i class="mdui-icon material-icons">delete</i></span>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
 
 <div id="qr_toast" class="mdui-dialog">
     <div class="mdui-dialog-content">
@@ -133,6 +136,13 @@
 </div>
 
 <style>
+    .group-toggle {
+        display: inline-block;
+        transition: transform 0.25s ease;
+    }
+    .group-toggle.expanded {
+        transform: rotate(180deg);
+    }
     .node_running {
         position: relative;
     }
@@ -143,7 +153,7 @@
         left: 4px;
         right: 4px;
         bottom: 4px;
-        background: rgba(16, 196, 105, 0.15);
+        background: rgba(255, 152, 0, 0.15);
         border-radius: 8px;
         pointer-events: none;
     }
@@ -152,7 +162,7 @@
     }
     .node_running .node_name .node-name-text {
         display: inline-block;
-        background-color: #10c469;
+        background-color: #FF9800;
         color: white;
         padding: 4px 8px;
         margin-left: -8px;
@@ -170,7 +180,7 @@
         transition: all 0.3s ease;
     }
     .subscribe-index.running {
-        background-color: #10c469;
+        background-color: #FF9800;
         color: white !important;
     }
     .url {
@@ -215,14 +225,14 @@
         // All dynamic rows (subscribe heads, manual head, node rows) live in #node_list_body
         $("#node_list_body").on("click", ".toggle-row", function() {
             var groupIndex = $(this).closest("tr").data("group");
-            var $nodes = $(".group-" + groupIndex);
+            var $nodesBody = $(".group-" + groupIndex);
             var $icon = $(this).find(".group-toggle");
-            if ($nodes.first().is(":visible")) {
-                $nodes.hide();
-                $icon.text("expand_more");
+            if ($nodesBody.is(":visible")) {
+                $nodesBody.slideUp(200);
+                $icon.removeClass("expanded");
             } else {
-                $nodes.show();
-                $icon.text("expand_less");
+                $nodesBody.slideDown(200);
+                $icon.addClass("expanded");
             }
             return false;
         });
@@ -282,14 +292,12 @@
                 $("#ping_test").show();
             }
 
-            $("tr[id^='real_subscribe']").remove();
-            $("tr[id^='real_header']").remove();
-            $("tr[id^='real_node']").remove();
-            $("tr[id^='real_manual']").remove();
-
             var node_running = subscribe["ps"];
             var favoriteNames = (subscribe["manual_nodes"] || []).map(function(n) { return n["ps"]; });
             var nodeListBody = $("#node_list_body");
+            nodeListBody.empty();
+            var currentNodesDiv = null;
+            var currentNodesTbody = null;
 
             function make_group_head(url, index) {
                 var url_row = $("#subscribe_template").clone();
@@ -298,24 +306,36 @@
                 url_row.attr("data-group", index);
                 url_row.find(".url").html(url);
                 url_row.find(".subscribe-index").html("订阅 " + index);
-                nodeListBody.append(url_row);
+                url_row.find(".group-toggle").addClass("expanded");
                 url_row.show();
+                var headerTable = $('<table class="mdui-table" style="margin-top: 4px;"><tbody></tbody></table>');
+                headerTable.find("tbody").append(url_row);
+                var nodesTable = $('<table class="mdui-table"><tbody></tbody></table>');
+                var nodesDiv = $('<div class="group-' + index + '" style="display:none;"></div>').append(nodesTable);
+                nodeListBody.append($('<div></div>').append(headerTable).append(nodesDiv));
+                currentNodesDiv = nodesDiv;
+                currentNodesTbody = nodesTable.find("tbody");
             }
 
             function make_manual_head(groupIndex) {
                 var manual_head = $("#manual_template").clone();
                 manual_head.attr("id", "real_manual");
                 manual_head.attr("data-group", groupIndex);
-                nodeListBody.append(manual_head);
+                manual_head.find(".group-toggle").addClass("expanded");
                 manual_head.show();
+                var headerTable = $('<table class="mdui-table"><tbody></tbody></table>');
+                headerTable.find("tbody").append(manual_head);
+                var nodesTable = $('<table class="mdui-table"><tbody></tbody></table>');
+                var nodesDiv = $('<div class="group-' + groupIndex + '" style="display:none;"></div>').append(nodesTable);
+                nodeListBody.append($('<div></div>').append(headerTable).append(nodesDiv));
+                currentNodesDiv = nodesDiv;
+                currentNodesTbody = nodesTable.find("tbody");
             }
 
             function make_node_head(groupIndex) {
                 var node_head_row = $("#node_header_template").clone();
                 node_head_row.attr("id", "real_header_" + groupIndex);
-                node_head_row.addClass("group-" + groupIndex);
-                $("#node_list_body").append(node_head_row);
-                node_head_row.hide();
+                currentNodesTbody.append(node_head_row);
             }
 
             function make_node_row(url, node_data, groupIndex, nodeIndex, isFavorite) {
@@ -323,7 +343,6 @@
                 node_row.attr("id", "real_node_" + groupIndex + "_" + nodeIndex);
                 node_row.attr("data-url", url);
                 node_row.attr("data-index", nodeIndex);
-                node_row.addClass("group-" + groupIndex);
                 node_row.find(".node_index").html(nodeIndex + 1);
                 if (isFavorite) {
                     node_row.find(".favorite_node").hide();
@@ -339,9 +358,8 @@
                     node_row.addClass("node_running");
                     node_row.find(".apply_node .mdui-icon").html("vpn_key");
                 }
-                $("#node_list_body").append(node_row);
-                node_row.show();
-                $(".group-" + groupIndex).show();
+                currentNodesTbody.append(node_row);
+                currentNodesDiv.show();
             }
 
             // Render favorites first
