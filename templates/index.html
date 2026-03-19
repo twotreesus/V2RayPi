@@ -48,6 +48,16 @@
         .mdui-text-color-green {
             color: #07c160 !important;
         }
+        .node-type-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            line-height: 1;
+            padding: 1px 4px;
+            border-radius: 3px;
+            border: 1px solid;
+            vertical-align: middle;
+        }
     </style>
 </head>
 
@@ -60,10 +70,11 @@
             <a id="head_title" href="" class="mdui-typo-title"></a>
             <div class="mdui-toolbar-spacer"></div>
             <div id="header_status" style="display: none; align-items: center; font-size: 12px; white-space: nowrap; margin-right: 8px; border-radius: 10px; height: 26px; align-self: center; overflow: hidden;">
-                <div style="display: flex; align-items: center; gap: 6px; padding: 0 10px; height: 100%; background: #4a6572; color: rgba(255,255,255,0.9); min-width: 160px;">
+                <div style="display: flex; align-items: center; gap: 6px; padding: 0 10px; height: 100%; background: #fff; color: rgba(0,0,0,0.75); min-width: 160px;">
                     <span id="hs_dot" style="font-size: 24px; flex-shrink: 0; line-height: 12px; position: relative; top: -1px;">●</span>
                     <span id="hs_mode" style="flex-shrink: 0; font-weight: 600;"></span>
                     <span style="opacity: 0.4; flex-shrink: 0;">|</span>
+                    <span id="hs_protocol" class="node-type-badge" style="flex-shrink: 0; display: none;"></span>
                     <span id="hs_node" style="font-weight: 600;"></span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: center; padding: 0 10px; height: 100%; background: #FF9800; color: #fff; width: 100px; flex-shrink: 0;">
@@ -392,6 +403,12 @@
                 var running = data['running'];
                 $('#hs_dot').css('color', running ? '#07c160' : '#ff8888');
                 $('#hs_mode').text(g_proxy_modes[data['proxy_mode']] || '');
+                var protocol = (data['protocol'] || '').toLowerCase();
+                $('#hs_protocol')
+                    .text(protocol)
+                    .attr('class', 'node-type-badge node-type-' + protocol)
+                    .css({color: '', border: '', backgroundColor: ''})
+                    .toggle(!!protocol);
                 $('#hs_node').text(data['ps'] || '');
                 $('#header_status').css('display', 'flex');
             });
