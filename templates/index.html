@@ -58,6 +58,9 @@
             border: 1px solid;
             vertical-align: middle;
         }
+        .node-type-vmess  { color: #1976d2; border-color: #1976d2; background-color: rgba(25,118,210,0.08); }
+        .node-type-vless  { color: #7b1fa2; border-color: #7b1fa2; background-color: rgba(123,31,162,0.08); }
+        .node-type-anytls { color: #0097a7; border-color: #0097a7; background-color: rgba(0,151,167,0.08); }
     </style>
 </head>
 
@@ -407,7 +410,6 @@
                 $('#hs_protocol')
                     .text(protocol)
                     .attr('class', 'node-type-badge node-type-' + protocol)
-                    .css({color: '', border: '', backgroundColor: ''})
                     .toggle(!!protocol);
                 $('#hs_node').text(data['ps'] || '');
                 $('#header_status').css('display', 'flex');
