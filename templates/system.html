@@ -223,15 +223,19 @@
                     </td>
                 </tr>
                 <tr id="log-content" style="display: none;">
-                    <td>访问日志</td>
-                    <td>
-                        <pre style="max-height: 200px; overflow-x: auto;"><code id="log-access-content" class="language-css"></code></pre>
+                    <td colspan="2" style="padding: 4px 0;">
+                        <div style="margin: 0 8px;">
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.5); background: #1e1e1e; padding: 4px 10px; border-radius: 4px 4px 0 0; margin-bottom: -4px;">访问日志</div>
+                            <pre style="max-height: 200px; overflow-x: auto; background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 0 4px 4px 4px; margin: 0;"><code id="log-access-content"></code></pre>
+                        </div>
                     </td>
                 </tr>
                 <tr id="log-content2" style="display: none;">
-                    <td>错误日志</td>
-                    <td>
-                        <pre style="max-height: 200px; overflow-x: auto;"><code id="log-error-content" class="language-css"></code></pre>
+                    <td colspan="2" style="padding: 4px 0;">
+                        <div style="margin: 0 8px;">
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.5); background: #1e1e1e; padding: 4px 10px; border-radius: 4px 4px 0 0; margin-bottom: -4px;">错误日志</div>
+                            <pre style="max-height: 200px; overflow-x: auto; background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 0 4px 4px 4px; margin: 0;"><code id="log-error-content"></code></pre>
+                        </div>
                     </td>
                 </tr>
                 </tbody>
@@ -464,26 +468,44 @@
         });
     }
 
-    var logInterval = null;
+    var logEventSource = null;
+
+    function scroll_log_to_bottom(el) {
+        var pre = el.closest('pre');
+        pre.scrollTop(pre[0].scrollHeight);
+    }
+
     function toggle_log_display(enabled) {
         if (enabled) {
             $('#log-content, #log-content2').show();
-            logInterval = setInterval(function () {
-                ajax_request({ url: '/get_access_log', dataType: 'text', skipDefaultError: true })
-                    .done(function(data) {
-                        $('#log-access-content').html(data);
-                    });
-                ajax_request({ url: '/get_error_log', dataType: 'text', skipDefaultError: true })
-                    .done(function(data) {
-                        $('#log-error-content').html(data);
-                    });
-            }, 500);
-            add_interval(logInterval);
+            logEventSource = new EventSource('/stream_logs');
+
+            logEventSource.addEventListener('access', function(e) {
+                var msg = JSON.parse(e.data);
+                var el = $('#log-access-content');
+                if (msg.init) {
+                    el.html(msg.text.replace(/\n/g, '<br>'));
+                } else {
+                    el.append(msg.text.replace(/\n/g, '<br>'));
+                }
+                scroll_log_to_bottom(el);
+            });
+
+            logEventSource.addEventListener('xray_error', function(e) {
+                var msg = JSON.parse(e.data);
+                var el = $('#log-error-content');
+                if (msg.init) {
+                    el.html(msg.text.replace(/\n/g, '<br>'));
+                } else {
+                    el.append(msg.text.replace(/\n/g, '<br>'));
+                }
+                scroll_log_to_bottom(el);
+            });
         } else {
             $('#log-content, #log-content2').hide();
-            if (logInterval) {
-                remove_interval(logInterval);
-                logInterval = null;
+            if (logEventSource) {
+                logEventSource.close();
+                logEventSource = null;
             }
         }
     }

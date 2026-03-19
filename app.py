@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-
+import json
 import threading
 import time
 import functools
@@ -9,6 +9,7 @@ from flask import Flask, render_template, jsonify, request, Response, make_respo
 
 from core.core_service import CoreService
 from core.keys import Keyword as K
+from core.v2ray_default_path import V2rayDefaultPath
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(dir_path)
@@ -360,15 +361,66 @@ def make_policy_api():
     policy = CoreService.make_policy(content_list, type, outbound)
     return Response(policy, mimetype='application/json')
 
-@app.route('/get_access_log')
+@app.route('/stream_logs')
 @require_auth
-def get_access_log_api():
-    return CoreService.v2ray.access_log()
+def stream_logs_api():
+    def generate():
+        access_path = V2rayDefaultPath.access_log()
+        error_path = V2rayDefaultPath.error_log()
 
-@app.route('/get_error_log')
-@require_auth
-def get_error_log_api():
-    return CoreService.v2ray.error_log()
+        def tail(path, n=10):
+            try:
+                import subprocess
+                return subprocess.check_output(['tail', '-n', str(n), path]).decode('utf-8', errors='replace')
+            except Exception:
+                return ''
+
+        def file_size(path):
+            try:
+                return os.path.getsize(path)
+            except Exception:
+                return 0
+
+        # Send initial content
+        yield 'event: access\ndata: ' + json.dumps({'init': True, 'text': tail(access_path)}) + '\n\n'
+        yield 'event: xray_error\ndata: ' + json.dumps({'init': True, 'text': tail(error_path)}) + '\n\n'
+
+        access_pos = file_size(access_path)
+        error_pos = file_size(error_path)
+
+        while True:
+            try:
+                time.sleep(0.5)
+
+                size = file_size(access_path)
+                if size < access_pos:
+                    access_pos = size
+                elif size > access_pos:
+                    with open(access_path, 'r', errors='replace') as f:
+                        f.seek(access_pos)
+                        new_text = f.read(size - access_pos)
+                    access_pos = size
+                    if new_text:
+                        yield 'event: access\ndata: ' + json.dumps({'init': False, 'text': new_text}) + '\n\n'
+
+                size = file_size(error_path)
+                if size < error_pos:
+                    error_pos = size
+                elif size > error_pos:
+                    with open(error_path, 'r', errors='replace') as f:
+                        f.seek(error_pos)
+                        new_text = f.read(size - error_pos)
+                    error_pos = size
+                    if new_text:
+                        yield 'event: xray_error\ndata: ' + json.dumps({'init': False, 'text': new_text}) + '\n\n'
+
+                yield ': heartbeat\n\n'
+
+            except GeneratorExit:
+                break
+
+    return Response(generate(), mimetype='text/event-stream',
+                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 @app.route('/update_and_restart_v2raypi')
 @require_auth
