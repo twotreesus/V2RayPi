@@ -37,7 +37,7 @@ class SingboxController:
         if sys.platform == 'darwin':
             result = subprocess.run(
                 ['brew', 'services', 'list'],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
             )
             for line in result.stdout.splitlines():
                 if line.startswith('sing-box') and 'started' in line:
@@ -45,7 +45,7 @@ class SingboxController:
             return False
         result = subprocess.run(
             ['systemctl', 'is-active', 'sing-box'],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
         )
         return result.stdout.strip() == 'active'
 
