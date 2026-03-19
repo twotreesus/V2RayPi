@@ -54,11 +54,17 @@
 <body class="mdui-appbar-with-toolbar mdui-theme-primary-teal mdui-theme-accent-light-blue mdui-loaded mdui-drawer-body-left">
     <!--head bar-->
     <header class="mdui-appbar mdui-appbar-fixed">
-        <div class="mdui-toolbar mdui-color-theme">
+        <div class="mdui-toolbar" style="background-color: #263238; color: #fff; align-items: center;">
             <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white" mdui-drawer="{target: '#main-drawer', swipe: true}"><i class="mdui-icon material-icons">menu</i></span>
             <a href="./" class="mdui-typo-headline mdui-hidden-xs">V2RayPi</a>
             <a id="head_title" href="" class="mdui-typo-title"></a>
             <div class="mdui-toolbar-spacer"></div>
+            <div id="header_status" style="display: none; align-items: center; gap: 6px; font-size: 12px; color: rgba(0,0,0,0.75); white-space: nowrap; overflow: hidden; max-width: 320px; margin-right: 8px; background: #fff; border-radius: 10px; padding: 0 10px; height: 26px; align-self: center;">
+                <span id="hs_dot" style="font-size: 24px; flex-shrink: 0; line-height: 12px; position: relative; top: -1px;">●</span>
+                <span id="hs_mode" style="flex-shrink: 0;"></span>
+                <span style="opacity: 0.4; flex-shrink: 0;">|</span>
+                <span id="hs_node" style="overflow: hidden; text-overflow: ellipsis;"></span>
+            </div>
             <a href="https://github.com/twotreesus/V2RayPi" target="_blank" class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white" mdui-tooltip="{content: 'Github'}">
                 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 36 36" enable-background="new 0 0 36 36" xml:space="preserve" class="mdui-icon" style="width: 24px;height:24px;">
                             <path fill-rule="evenodd" clip-rule="evenodd" fill="#ffffff" d="M18,1.4C9,1.4,1.7,8.7,1.7,17.7c0,7.2,4.7,13.3,11.1,15.5
@@ -356,7 +362,21 @@
         ajax_request({ url: '/api/refresh' })
             .done(function() {
                 $("#status").click();
+                refresh_header_status();
+                setInterval(refresh_header_status, 5000);
             });
     });
+
+    var g_proxy_modes = ['直连', '分流', '全局'];
+    function refresh_header_status() {
+        $.ajax({ url: '/get_status', dataType: 'json' })
+            .done(function(data) {
+                var running = data['running'];
+                $('#hs_dot').css('color', running ? '#07c160' : '#ff8888');
+                $('#hs_mode').text(g_proxy_modes[data['proxy_mode']] || '');
+                $('#hs_node').text(data['ps'] || '');
+                $('#header_status').css('display', 'flex');
+            });
+    }
 </script>
 </html>

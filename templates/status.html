@@ -143,6 +143,9 @@
     //# sourceURL=status.js
     var cpu_bar = null;
     var memory_bar = null;
+    var cpu_history = [];
+    var memory_history = [];
+    var HISTORY_LEN = 30;
 
     $(document).ready(function () {
         $("#proxy_mode").change(function () {
@@ -179,59 +182,81 @@
             $("#host").html(data["add"]);
 
 
+            cpu_history = [];
+            memory_history = [];
+            var cpuLabels = [];
+            var cpuData = [];
+            for (var i = 0; i < HISTORY_LEN; i++) {
+                cpuLabels.push('');
+                cpuData.push(null);
+            }
             cpu_bar = new Chart($("#cpu_usage"), {
-                type: 'bar',
-                data: null,
+                type: 'line',
+                data: {
+                    labels: cpuLabels,
+                    datasets: [{
+                        backgroundColor: 'rgba(255, 99, 132, 0.15)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: true,
+                        tension: 0.4,
+                        data: cpuData
+                    }]
+                },
                 options: {
                     responsive: true,
+                    animation: { duration: 0 },
                     tooltips: {enabled: false},
                     hover: {mode: null},
-                    legend: {
-                        display: false
-                    },
-                    title: {
-                        display: true,
-                        text: 'CPU 占用率 %'
-                    },
+                    legend: {display: false},
+                    title: {display: true, text: 'CPU 占用率'},
                     scales: {
+                        xAxes: [{display: false}],
                         yAxes: [{
                             display: true,
-                            ticks: {
-                                beginAtZero: true,
-                                max: 100
-                            }
+                            ticks: {beginAtZero: true, max: 100}
                         }]
-                    },
+                    }
                 }
             });
-            cpu_bar.inited = false;
 
+            var memLabels = [];
+            var memData = [];
+            for (var j = 0; j < HISTORY_LEN; j++) {
+                memLabels.push('');
+                memData.push(null);
+            }
             memory_bar = new Chart($("#memory_usage"), {
-                type: 'bar',
-                data: null,
+                type: 'line',
+                data: {
+                    labels: memLabels,
+                    datasets: [{
+                        backgroundColor: 'rgba(153, 102, 255, 0.15)',
+                        borderColor: 'rgb(153, 102, 255)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: true,
+                        tension: 0.4,
+                        data: memData
+                    }]
+                },
                 options: {
                     responsive: true,
+                    animation: { duration: 0 },
                     tooltips: {enabled: false},
                     hover: {mode: null},
-                    legend: {
-                        display: false
-                    },
-                    title: {
-                        display: true,
-                        text: '内存 占用率 %'
-                    },
+                    legend: {display: false},
+                    title: {display: true, text: '内存占用率'},
                     scales: {
+                        xAxes: [{display: false}],
                         yAxes: [{
                             display: true,
-                            ticks: {
-                                beginAtZero: true,
-                                max: 100
-                            }
+                            ticks: {beginAtZero: true, max: 100}
                         }]
-                    },
+                    }
                 }
             });
-            memory_bar.inited = false;
         });
 
         add_interval(setInterval(update_performance, 1000));
@@ -240,42 +265,24 @@
     function update_performance() {
         ajax_request({ url: "/get_performance" }).then(function (data) {
             cpu_status = data["cpu"];
-            if (!cpu_bar.inited) {
-                cpu_bar.data = {
-                    labels: Object.keys(cpu_status),
-                    datasets: [{
-                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                        borderColor: 'rgb(255, 99, 132)',
-                        borderWidth: 1,
-                        data: []
-                    }]
-                };
-                cpu_bar.inited = true;
-            }
-
-            cpu_bar.data.datasets[0].data = [];
-            Object.keys(cpu_status).forEach(function (k) {
-                cpu_bar.data.datasets[0].data.push(cpu_status[k]);
-            })
-
+            var values = Object.keys(cpu_status).map(function(k) { return cpu_status[k]; });
+            var avg = values.reduce(function(a, b) { return a + b; }, 0) / (values.length || 1);
+            cpu_history.push(avg);
+            if (cpu_history.length > HISTORY_LEN) cpu_history.shift();
+            var cpuPadded = [];
+            for (var i = 0; i < HISTORY_LEN - cpu_history.length; i++) cpuPadded.push(null);
+            cpu_bar.data.datasets[0].data = cpuPadded.concat(cpu_history);
+            cpu_bar.options.title.text = 'CPU 占用率  ' + avg.toFixed(1) + '%';
             cpu_bar.update();
 
             memory_status = data["memory"];
-            if (!memory_bar.inited) {
-                memory_bar.data = {
-                    labels: [""],
-                    datasets: [{
-                        backgroundColor: 'rgba(153, 102, 255, 0.5)',
-                        borderColor: 'rgb(153, 102, 255)',
-                        borderWidth: 1,
-                        data: [0]
-                    }]
-                };
-                memory_bar.inited = true;
-            }
-
-            memory_bar.data.labels[0] = "total: " + memory_status["total"] + " MB used: " + memory_status["used"] + " MB";
-            memory_bar.data.datasets[0].data[0] = memory_status["percent"];
+            memory_history.push(memory_status["percent"]);
+            if (memory_history.length > HISTORY_LEN) memory_history.shift();
+            var memPadded = [];
+            for (var j = 0; j < HISTORY_LEN - memory_history.length; j++) memPadded.push(null);
+            memory_bar.data.datasets[0].data = memPadded.concat(memory_history);
+            memory_bar.data.datasets[0].label = "total: " + memory_status["total"] + " MB  used: " + memory_status["used"] + " MB";
+            memory_bar.options.title.text = '内存占用率  ' + memory_status["percent"].toFixed(1) + '%  (' + memory_status["used"] + ' / ' + memory_status["total"] + ' MB)';
             memory_bar.update();
         });
     }
