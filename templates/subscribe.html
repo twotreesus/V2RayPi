@@ -373,6 +373,12 @@
                     var nodeUrl = runningRow.data("url");
                     if (nodeUrl === 'manual') {
                         $("#real_manual .subscribe-index").addClass("running");
+                        var ps = runningRow.find(".node_name").data("ps");
+                        if (ps) {
+                            $("#node_list_body tr").filter(function() {
+                                return $(this).data("url") !== 'manual' && $(this).find(".node_name").data("ps") === ps;
+                            }).addClass("node_running").find(".apply_node .mdui-icon").html("vpn_key");
+                        }
                     } else {
                         $("#node_list_body tr").filter(function() {
                             return $(this).data("url") === nodeUrl;
@@ -399,6 +405,12 @@
 
                 if (url === "manual") {
                     $("#real_manual .subscribe-index").addClass("running");
+                    var ps = current_node.find(".node_name").data("ps");
+                    if (ps) {
+                        $("#node_list_body tr").filter(function() {
+                            return $(this).data("url") !== 'manual' && $(this).find(".node_name").data("ps") === ps;
+                        }).addClass("node_running").find(".apply_node .mdui-icon").html("vpn_key");
+                    }
                 } else {
                     $("#node_list_body tr").filter(function() {
                         return $(this).data("url") === url;
