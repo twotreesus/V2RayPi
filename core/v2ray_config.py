@@ -1,4 +1,5 @@
 # encoding: utf-8
+from __future__ import annotations
 from enum import Enum
 import typing
 import socket
