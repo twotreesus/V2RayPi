@@ -21,6 +21,7 @@ class Keyword:
     vmess_scheme = 'vmess://'
     vless_scheme = 'vless://'
     anytls_scheme = 'anytls://'
+    ss_scheme = 'ss://'
     node_index = 'node_index'
     groups = 'groups'
     dns = 'dns'

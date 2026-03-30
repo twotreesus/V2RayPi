@@ -42,6 +42,8 @@ class Node(BaseDataItem):
             return self._anytls_link()
         if self.protocol == 'vless':
             return self._vless_link()
+        if self.protocol == 'ss':
+            return self._ss_link()
         data = self.dump()
         content = json.dumps(data)
         content = base64.b64encode(content.encode('utf8')).decode('utf8')
@@ -159,3 +161,45 @@ class Node(BaseDataItem):
             'fp': first('fp') or 'chrome',
         }
         return data
+
+    def _ss_link(self):
+        from urllib.parse import quote
+        method = self.scy or 'aes-256-gcm'
+        password = self.password or ''
+        netloc = '{}:{}@{}:{}'.format(method, password, self.add, self.port)
+        frag = quote(self.ps or '', safe='')
+        return '{}://{}#{}'.format(K.ss_scheme.rstrip('://'), netloc, frag)
+
+    @classmethod
+    def ss_uri_to_data(cls, url: str):
+        """Parse ss:// URI into a dict suitable for Node().load_data(). Returns None if invalid."""
+        if not url or not url.strip().startswith(K.ss_scheme):
+            return None
+        url = url.strip()
+        parsed = urlparse(url)
+        netloc = parsed.netloc
+        if '@' not in netloc:
+            return None
+        method_password, hostport = netloc.rsplit('@', 1)
+        if ':' in method_password:
+            method, password = method_password.split(':', 1)
+        else:
+            method = method_password
+            password = ''
+        if ':' in hostport:
+            host, port_str = hostport.rsplit(':', 1)
+            try:
+                port = int(port_str)
+            except ValueError:
+                return None
+        else:
+            host = hostport
+            port = 443
+        return {
+            'protocol': 'ss',
+            'scy': method,
+            'password': password,
+            'add': host,
+            'port': port,
+            'ps': unquote(parsed.fragment) if parsed.fragment else '{}:{}'.format(host, port),
+        }

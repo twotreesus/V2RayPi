@@ -41,6 +41,9 @@ class NodeManager(BaseDataItem):
         if line.startswith(K.vless_scheme):
             data = Node.vless_uri_to_data(line)
             return Node().load_data(data) if data else None
+        if line.startswith(K.ss_scheme):
+            data = Node.ss_uri_to_data(line)
+            return Node().load_data(data) if data else None
         if line.startswith(K.vmess_scheme):
             try:
                 data = json.loads(base64.b64decode(line[len(K.vmess_scheme):]).decode('utf8'))
@@ -93,6 +96,11 @@ class NodeManager(BaseDataItem):
                 node.tls = None
             node.sni = proxy.get('servername', '') or node.add
             node.host = node.sni
+
+        elif ptype == 'ss':
+            node.protocol = 'ss'
+            node.password = proxy.get('password', '')
+            node.scy = proxy.get('cipher', 'aes-256-gcm')
 
         else:
             return None

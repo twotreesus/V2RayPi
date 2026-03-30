@@ -85,6 +85,7 @@ class ProtocolType(Enum):
     vmess = 'vmess'
     vless = 'vless'
     dns = 'dns'
+    shadowsocks = 'shadowsocks'
 
 class NetworkType(Enum):
     tcp = 'tcp'
@@ -194,6 +195,22 @@ class ProtocolVLess:
 
         def add_server(self, server: Server):
             self.vnext.append(server)
+
+class ProtocolShadowsocks:
+    type = ProtocolType.shadowsocks.value
+    class Settings:
+        class Server:
+            def __init__(self):
+                self.address = ''
+                self.port = 0
+                self.method = ''
+                self.password = ''
+                self.email = ''
+                self.ivCheck = False
+        def __init__(self):
+            self.servers: List[ProtocolShadowsocks.Settings.Server] = []
+        def add_server(self, server: ProtocolShadowsocks.Settings.Server):
+            self.servers.append(server)
 
 class ProtocolDNS:
     type = ProtocolType.dns.value
@@ -551,6 +568,8 @@ class V2RayConfig(DontPickleNone):
     def _make_outbound_proxy(cls, node: Node, enable_mux: bool) -> Outbound:
         if node.protocol == 'vless':
             return cls._make_outbound_proxy_vless(node, enable_mux)
+        if node.protocol == 'ss':
+            return cls._make_outbound_proxy_ss(node)
         if node.protocol == 'anytls':
             from .singbox_controller import SINGBOX_SOCKS_PORT
             return cls._make_outbound_proxy_socks(SINGBOX_SOCKS_PORT)
@@ -668,6 +687,26 @@ class V2RayConfig(DontPickleNone):
         proxy.mux = Outbound.Mux()
         proxy.mux.enabled = enable_mux
         proxy.mux.concurrency = -1
+
+        return proxy
+
+    @classmethod
+    def _make_outbound_proxy_ss(cls, node: Node) -> Outbound:
+        proxy = Outbound()
+        proxy.tag = Tags.proxy.value
+        proxy.protocol = ProtocolShadowsocks.type
+
+        server = ProtocolShadowsocks.Settings.Server()
+        server.address = node.add
+        server.port = int(node.port)
+        server.method = node.scy or 'aes-256-gcm'
+        server.password = node.password or ''
+
+        settings = ProtocolShadowsocks.Settings()
+        settings.add_server(server)
+        proxy.settings = settings
+        proxy.streamSettings = None
+        proxy.mux = None
 
         return proxy
 
