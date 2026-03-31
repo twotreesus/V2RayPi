@@ -26,14 +26,19 @@ def require_auth(f):
         # Skip auth for page routes
         if request.path.endswith('.html') or request.path == '/':
             return f(*args, **kwargs)
-            
-        # Check session in cookie
+
+        # Check session in cookie or Authorization header
         session = request.cookies.get(K.session)
+        if not session:
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                session = auth_header[7:]
         if not session or not CoreService.verify_session(session):
             return jsonify({K.result: K.session_error, 'message': 'Session invalid or expired'})
-            
+
         return f(*args, **kwargs)
     return decorated
+
 
 @app.route('/')
 @app.route('/index.html')
@@ -467,6 +472,35 @@ def shutdown_host_api():
         return jsonify({K.result: K.ok})
     except Exception:
         return jsonify({K.result: K.failed})
+
+@app.route('/export_config')
+def export_config_api():
+    session = request.cookies.get(K.session)
+    if not session or not CoreService.verify_session(session):
+        return jsonify({K.result: K.session_error, 'message': 'Session invalid or expired'})
+    data = CoreService.export_config()
+    from datetime import datetime
+    filename = 'v2raypi-config-{}.zip'.format(datetime.now().strftime('%Y%m%d%H%M%S'))
+    response = make_response(data)
+    response.headers['Content-Type'] = 'application/zip'
+    response.headers['Content-Disposition'] = 'attachment; filename={}'.format(filename)
+    return response
+
+@app.route('/import_config', methods=['POST'])
+@require_auth
+def import_config_api():
+    if 'file' not in request.files:
+        return jsonify({K.result: K.failed, 'message': 'No file provided'})
+    f = request.files['file']
+    if not f.filename.endswith('.zip'):
+        return jsonify({K.result: K.failed, 'message': 'File must be a .zip'})
+    try:
+        data = f.read()
+        if CoreService.import_config(data):
+            return jsonify({K.result: K.ok})
+        return jsonify({K.result: K.failed, 'message': 'Invalid backup file'})
+    except Exception:
+        return jsonify({K.result: K.failed, 'message': 'Import failed'})
 
 # Session check and refresh API
 @app.route('/api/refresh')

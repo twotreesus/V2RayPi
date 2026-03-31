@@ -566,3 +566,35 @@ class CoreService:
 
         detect.last_switch_time = '{0} ---- {1}'.format(datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), best_node.node_ps)
         cls.user_config.save()
+
+    @classmethod
+    def export_config(cls) -> str:
+        import zipfile, io
+        buf = io.BytesIO()
+        config_dir = 'config'
+        with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for root, _, files in os.walk(config_dir):
+                for fname in files:
+                    fpath = os.path.join(root, fname)
+                    zf.write(fpath, fpath)
+        buf.seek(0)
+        return buf.read()
+
+    @classmethod
+    def import_config(cls, zip_data: bytes) -> bool:
+        import zipfile, io, tempfile, shutil
+        try:
+            tmpdir = tempfile.mkdtemp(prefix='v2raypi_backup_')
+            buf = io.BytesIO(zip_data)
+            with zipfile.ZipFile(buf, 'r') as zf:
+                zf.extractall(tmpdir)
+            for root, _, files in os.walk(tmpdir):
+                for fname in files:
+                    src = os.path.join(root, fname)
+                    dst = os.path.join('config', fname)
+                    shutil.move(src, dst)
+            shutil.rmtree(tmpdir)
+            cls.load()
+            return True
+        except Exception:
+            return False
