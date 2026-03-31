@@ -38,38 +38,45 @@ class SingboxController:
         return output.strip() != ''
 
     def version(self) -> str:
-        try:
-            ver = subprocess.check_output(
-                "sing-box version 2>/dev/null | head -n 1 | awk '{print $NF}'",
-                shell=True
-            ).decode('utf-8').strip()
-            return ver if ver.startswith('v') else 'v' + ver
-        except Exception:
-            return ''
+        ver = subprocess.check_output(
+            "echo `sing-box version 2>/dev/null | head -n 1` | awk '{print $3}'",
+            shell=True
+        ).decode('utf-8').strip()
+        return ver if ver.startswith('v') else 'v' + ver
 
     def check_new_version(self) -> str:
         r = requests.get('https://api.github.com/repos/SagerNet/sing-box/releases/latest')
-        return r.json().get('tag_name', '')
+        return r.json()['tag_name']
 
     def update(self) -> bool:
         was_running = self.running()
-        result = subprocess.run(
-            'curl -fsSL https://sing-box.app/install.sh | sh',
-            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        if result.returncode != 0:
-            return False
-        if was_running:
-            self._service('restart')
-        return True
+        if sys.platform == 'darwin':
+            result = subprocess.run(
+                'brew upgrade sing-box',
+                shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                env=os.environ.copy()
+            )
+        else:
+            result = subprocess.run(
+                'curl -fsSL https://sing-box.app/install.sh | sh',
+                shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                env=os.environ.copy()
+            )
+        output = result.stdout.decode('utf-8')
+        if output.find('Setting up sing-box') != -1 or output.find('/Cellar/sing-box/') != -1:
+            if was_running:
+                self._service('restart')
+            return True
+        return False
 
     def _service(self, action: str) -> bool:
         if sys.platform == 'darwin':
-            cmd = ['brew', 'services', action, 'sing-box']
+            cmd = 'brew services {} sing-box'.format(action)
         else:
-            cmd = ['systemctl', action, 'sing-box']
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return result.returncode == 0
+            cmd = 'systemctl {} sing-box'.format(action)
+        result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = result.stdout.decode('utf-8')
+        return output.find('Failed') == -1
 
     def _gen_config(self, node) -> dict:
         anytls_outbound = {
