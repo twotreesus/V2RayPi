@@ -12228,7 +12228,7 @@ body.mdui-loaded .mdui-drawer {
   color: #fff;
   font-size: 14px;
   line-height: 20px;
-  background-color: #323232;
+  background-color: #1976D2;
   will-change: transform;
 }
 @media (min-width: 600px) {
