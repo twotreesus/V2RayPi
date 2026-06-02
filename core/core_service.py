@@ -313,7 +313,11 @@ class CoreService:
         if not cls.user_config.node.add:
             return True
 
-        result = cls.v2ray.apply_node(cls.user_config, cls.node_manager.all_nodes())
+        result = cls.v2ray.apply_node(
+            cls.user_config,
+            cls.node_manager.all_nodes(),
+            cls.node_manager.subscribe_hosts(),
+        )
         if restart_auto_detect:
             cls.restart_auto_detect()
         return result

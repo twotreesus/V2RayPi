@@ -2,7 +2,7 @@
 from __future__ import annotations
 from enum import Enum
 import typing
-import socket
+import ipaddress
 import sys
 from typing import List
 from typing import Dict
@@ -373,19 +373,20 @@ class V2RayConfig(DontPickleNone):
         self.outbounds.append(outbound)
 
     @classmethod
-    def gen_config(cls, user_config:V2RayUserConfig, all_nodes: List[Node]) -> str:
+    def gen_config(cls, user_config:V2RayUserConfig, all_nodes: List[Node], subscribe_hosts: List[str] = None) -> str:
         config = V2RayConfig()
 
-        # prepare all nodes addr
+        # prepare node and subscribe addrs
         all_node_domains = set()
         all_node_ips = set()
-        for node in all_nodes:
-            node:Node
+        addrs = [node.add for node in all_nodes if node.add]
+        addrs.extend(subscribe_hosts or [])
+        for addr in addrs:
             try:
-                socket.inet_aton(node.add)
-                all_node_ips.add(node.add)
-            except socket.error:
-                all_node_domains.add(node.add)
+                ipaddress.ip_address(addr)
+                all_node_ips.add(addr)
+            except ValueError:
+                all_node_domains.add(addr)
 
         # log
         config.log.loglevel = Log.Level[user_config.advance_config.log.level].name
@@ -459,12 +460,12 @@ class V2RayConfig(DontPickleNone):
                 adblock = cls._make_adblock_rule()
                 config.routing.rules.append(adblock)
 
-            # all node domains direct rule
+            # all node and subscribe domains direct rule
             if len(all_node_domains):
                 all_node_domain_rule = cls._make_user_domain_rule(list(all_node_domains), V2RayUserConfig.AdvanceConfig.Policy.Outbound.direct)
                 config.routing.rules.append(all_node_domain_rule)
 
-            # all node ips direct rule
+            # all node and subscribe ips direct rule
             if len(all_node_ips):
                 all_node_ip_rule = cls._make_user_ip_rule(list(all_node_ips), V2RayUserConfig.AdvanceConfig.Policy.Outbound.direct)
                 config.routing.rules.append(all_node_ip_rule)

@@ -14,6 +14,7 @@ import json
 import requests
 import base64
 import yaml
+from urllib.parse import urlparse
 from tcp_latency import measure_latency
 from concurrent import futures
 from .keys import Keyword as K
@@ -214,6 +215,14 @@ class NodeManager(BaseDataItem):
             nodes.extend(group.nodes)
         nodes.extend(self.manual_nodes)
         return nodes
+
+    def subscribe_hosts(self) -> list:
+        hosts = []
+        for url in self.subscribes.keys():
+            host = urlparse(url).hostname
+            if host:
+                hosts.append(host)
+        return hosts
 
     def refresh_update_time(self):
         self.last_subscribe = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')

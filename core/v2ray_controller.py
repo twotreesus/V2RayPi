@@ -88,13 +88,13 @@ class V2rayController:
     def update_singbox(self) -> bool:
         return self._singbox.update()
 
-    def apply_node(self, user_config:V2RayUserConfig, all_nodes: List[Node]) -> bool:
+    def apply_node(self, user_config:V2RayUserConfig, all_nodes: List[Node], subscribe_hosts: List[str] = None) -> bool:
         node = user_config.node
         if node.protocol == 'anytls':
             self._singbox.apply_node(node)
         else:
             self._singbox.stop()
-        config = V2RayConfig.gen_config(user_config, all_nodes)
+        config = V2RayConfig.gen_config(user_config, all_nodes, subscribe_hosts)
         return self.apply_config(config)
 
     def apply_config(self, config: str) -> bool:
