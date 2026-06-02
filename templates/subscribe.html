@@ -195,6 +195,11 @@
         border-color: #0097a7;
         background-color: rgba(0, 151, 167, 0.08);
     }
+    .node-type-hy2 {
+        color: #2e7d32;
+        border-color: #2e7d32;
+        background-color: rgba(46, 125, 50, 0.08);
+    }
     .node-type-ss {
         color: #e91e63;
         border-color: #e91e63;
@@ -339,6 +344,14 @@
                 currentNodesTbody.append(node_head_row);
             }
 
+            function protocol_badge(protocol) {
+                protocol = (protocol || "vmess").toLowerCase();
+                if (protocol === "hysteria2") {
+                    return { label: "hy2", className: "hy2" };
+                }
+                return { label: protocol, className: protocol };
+            }
+
             function make_node_row(url, node_data, groupIndex, nodeIndex, isFavorite) {
                 var node_row = $("#node_template").clone();
                 node_row.attr("id", "real_node_" + groupIndex + "_" + nodeIndex);
@@ -351,8 +364,8 @@
                     node_row.find(".favorite_node .mdui-icon").html("star");
                     node_row.find(".favorite_node .mdui-chip-icon").removeClass("mdui-color-grey-400").addClass("mdui-color-yellow-700");
                 }
-                var protocol = (node_data["protocol"] || "vmess").toLowerCase();
-                var typeBadge = '<span class="node-type-badge node-type-' + protocol + '">' + protocol + '</span>';
+                var badge = protocol_badge(node_data["protocol"]);
+                var typeBadge = '<span class="node-type-badge node-type-' + badge.className + '">' + badge.label + '</span>';
                 node_row.find(".node_name").attr("data-ps", node_data["ps"]).html(typeBadge + ' <span class="node-name-text">' + node_data["ps"] + '</span>');
                 node_row.find(".node_addr").html(node_data["add"]);
                 if (node_data["ps"] === node_running) {
@@ -539,7 +552,7 @@
     }
 
     function add_manual_node() {
-        mdui.prompt("请输入节点链接：<br><small style='color:#888'>支持 vmess://, vless://, ss://, anytls://</small>", function (url) {
+        mdui.prompt("请输入节点链接：<br><small style='color:#888'>支持 vmess://, vless://, ss://, anytls://, hysteria2://, hy2://</small>", function (url) {
             if (!url.length) {
                 return;
             }

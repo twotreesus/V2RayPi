@@ -29,6 +29,11 @@
         border-color: #0097a7;
         background-color: rgba(0, 151, 167, 0.08);
     }
+    .node-type-hy2 {
+        color: #2e7d32;
+        border-color: #2e7d32;
+        background-color: rgba(46, 125, 50, 0.08);
+    }
     .node-type-ss {
         color: #e91e63;
         border-color: #e91e63;
@@ -166,6 +171,14 @@
         return Math.round(kb * 1024) + ' B/s';
     }
 
+    function protocol_badge(protocol) {
+        protocol = (protocol || "vmess").toLowerCase();
+        if (protocol === "hysteria2") {
+            return { label: "hy2", className: "hy2" };
+        }
+        return { label: protocol, className: protocol };
+    }
+
     $(document).ready(function () {
         $("#proxy_mode").change(function () {
             $("#switch_mode").show();
@@ -195,8 +208,8 @@
             $("#proxy_mode").prop("selectedIndex", mode);
             $("#v2ray_current_ver").html(data["version"]);
             $("#v2ray_new_ver").html(window.g_new_version);
-            var protocol = (data["protocol"] || "vmess").toLowerCase();
-            var typeBadge = '<span class="node-type-badge node-type-' + protocol + '">' + protocol + '</span>';
+            var badge = protocol_badge(data["protocol"]);
+            var typeBadge = '<span class="node-type-badge node-type-' + badge.className + '">' + badge.label + '</span>';
             $("#remark").html(typeBadge + ' <span class="node-name">' + data["ps"] + '</span>');
             $("#host").html(data["add"]);
 

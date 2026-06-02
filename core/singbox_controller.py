@@ -79,7 +79,25 @@ class SingboxController:
         return output.find('Failed') == -1
 
     def _gen_config(self, node) -> dict:
-        anytls_outbound = {
+        if node.protocol == 'hysteria2':
+            outbound = self._gen_hysteria2_outbound(node)
+        else:
+            outbound = self._gen_anytls_outbound(node)
+
+        return {
+            'inbounds': [
+                {
+                    'type': 'socks',
+                    'tag': 'socks-in',
+                    'listen': '127.0.0.1',
+                    'listen_port': SINGBOX_SOCKS_PORT,
+                }
+            ],
+            'outbounds': [outbound],
+        }
+
+    def _gen_anytls_outbound(self, node) -> dict:
+        outbound = {
             'type': 'anytls',
             'tag': 'proxy',
             'server': node.add,
@@ -92,16 +110,53 @@ class SingboxController:
             },
         }
         if sys.platform != 'darwin':
-            anytls_outbound['routing_mark'] = 255
+            outbound['routing_mark'] = 255
 
-        return {
-            'inbounds': [
-                {
-                    'type': 'socks',
-                    'tag': 'socks-in',
-                    'listen': '127.0.0.1',
-                    'listen_port': SINGBOX_SOCKS_PORT,
-                }
-            ],
-            'outbounds': [anytls_outbound],
+        return outbound
+
+    def _gen_hysteria2_outbound(self, node) -> dict:
+        outbound = {
+            'type': 'hysteria2',
+            'tag': 'proxy',
+            'server': node.add,
+            'server_port': int(node.port or 443),
+            'password': node.password or '',
+            'tls': {
+                'enabled': True,
+                'server_name': node.sni or node.add,
+                'insecure': getattr(node, 'skip_cert_verify', False),
+            },
         }
+
+        if getattr(node, 'alpn', None):
+            outbound['tls']['alpn'] = node.alpn if isinstance(node.alpn, list) else [node.alpn]
+        if getattr(node, 'obfs', None):
+            outbound['obfs'] = {
+                'type': node.obfs,
+                'password': getattr(node, 'obfs_password', None) or '',
+            }
+        up_mbps = self._mbps_value(getattr(node, 'up', None))
+        if up_mbps:
+            outbound['up_mbps'] = up_mbps
+        down_mbps = self._mbps_value(getattr(node, 'down', None))
+        if down_mbps:
+            outbound['down_mbps'] = down_mbps
+        if getattr(node, 'ports', None):
+            outbound['server_ports'] = node.ports
+        if getattr(node, 'hop_interval', None):
+            outbound['hop_interval'] = node.hop_interval
+        if sys.platform != 'darwin':
+            outbound['routing_mark'] = 255
+
+        return outbound
+
+    def _mbps_value(self, value):
+        if value is None or value == '':
+            return None
+        if isinstance(value, int):
+            return value
+        text = str(value).strip().split()[0]
+        try:
+            return int(float(text))
+        except ValueError:
+            return None

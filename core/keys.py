@@ -21,6 +21,8 @@ class Keyword:
     vmess_scheme = 'vmess://'
     vless_scheme = 'vless://'
     anytls_scheme = 'anytls://'
+    hysteria2_scheme = 'hysteria2://'
+    hy2_scheme = 'hy2://'
     ss_scheme = 'ss://'
     node_index = 'node_index'
     groups = 'groups'

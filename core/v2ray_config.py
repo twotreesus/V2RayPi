@@ -572,7 +572,7 @@ class V2RayConfig(DontPickleNone):
             return cls._make_outbound_proxy_vless(node, enable_mux)
         if node.protocol == 'ss':
             return cls._make_outbound_proxy_ss(node)
-        if node.protocol == 'anytls':
+        if node.protocol in ('anytls', 'hysteria2'):
             from .singbox_controller import SINGBOX_SOCKS_PORT
             return cls._make_outbound_proxy_socks(SINGBOX_SOCKS_PORT)
         return cls._make_outbound_proxy_vmess(node, enable_mux)

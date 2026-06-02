@@ -90,7 +90,7 @@ class V2rayController:
 
     def apply_node(self, user_config:V2RayUserConfig, all_nodes: List[Node], subscribe_hosts: List[str] = None) -> bool:
         node = user_config.node
-        if node.protocol == 'anytls':
+        if node.protocol in ('anytls', 'hysteria2'):
             self._singbox.apply_node(node)
         else:
             self._singbox.stop()

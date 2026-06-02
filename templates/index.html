@@ -61,6 +61,7 @@
         .node-type-vmess  { color: #1976d2; border-color: #1976d2; background-color: rgba(25,118,210,0.08); }
         .node-type-vless  { color: #7b1fa2; border-color: #7b1fa2; background-color: rgba(123,31,162,0.08); }
         .node-type-anytls { color: #0097a7; border-color: #0097a7; background-color: rgba(0,151,167,0.08); }
+        .node-type-hy2    { color: #2e7d32; border-color: #2e7d32; background-color: rgba(46,125,50,0.08); }
         .node-type-ss     { color: #e91e63; border-color: #e91e63; background-color: rgba(233,30,99,0.08); }
     </style>
 </head>
@@ -399,6 +400,14 @@
         return Math.round(kb * 1024) + ' B/s';
     }
 
+    function hs_protocol_badge(protocol) {
+        protocol = (protocol || '').toLowerCase();
+        if (protocol === 'hysteria2') {
+            return { label: 'hy2', className: 'hy2' };
+        }
+        return { label: protocol, className: protocol };
+    }
+
     var g_hs_up_samples = [];
     var g_hs_down_samples = [];
 
@@ -408,11 +417,11 @@
                 var running = data['running'];
                 $('#hs_dot').css('color', running ? '#07c160' : '#ff8888');
                 $('#hs_mode').text(g_proxy_modes[data['proxy_mode']] || '');
-                var protocol = (data['protocol'] || '').toLowerCase();
+                var protocol = hs_protocol_badge(data['protocol']);
                 $('#hs_protocol')
-                    .text(protocol)
-                    .attr('class', 'node-type-badge node-type-' + protocol)
-                    .toggle(!!protocol);
+                    .text(protocol.label)
+                    .attr('class', 'node-type-badge node-type-' + protocol.className)
+                    .toggle(!!protocol.label);
                 $('#hs_node').text(data['ps'] || '');
                 $('#header_status').css('display', 'flex');
             });

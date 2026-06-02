@@ -39,6 +39,9 @@ class NodeManager(BaseDataItem):
         if line.startswith(K.anytls_scheme):
             data = Node.anytls_uri_to_data(line)
             return Node().load_data(data) if data else None
+        if line.startswith(K.hysteria2_scheme) or line.startswith(K.hy2_scheme):
+            data = Node.hysteria2_uri_to_data(line)
+            return Node().load_data(data) if data else None
         if line.startswith(K.vless_scheme):
             data = Node.vless_uri_to_data(line)
             return Node().load_data(data) if data else None
@@ -66,6 +69,20 @@ class NodeManager(BaseDataItem):
             node.password = proxy.get('password', '')
             node.sni = proxy.get('sni', '') or node.add
             node.skip_cert_verify = proxy.get('skip-cert-verify', False)
+
+        elif ptype in ('hysteria2', 'hy2'):
+            node.protocol = 'hysteria2'
+            node.password = proxy.get('password', '') or proxy.get('auth', '')
+            node.sni = proxy.get('sni', '') or node.add
+            node.skip_cert_verify = proxy.get('skip-cert-verify', False)
+            node.alpn = proxy.get('alpn', None)
+            node.obfs = proxy.get('obfs', None)
+            node.obfs_password = proxy.get('obfs-password', None)
+            node.up = proxy.get('up', None)
+            node.down = proxy.get('down', None)
+            node.ports = proxy.get('ports', None)
+            node.hop_interval = proxy.get('hop-interval', None)
+            node.udp = proxy.get('udp', True)
 
         elif ptype == 'vmess':
             node.protocol = 'vmess'
