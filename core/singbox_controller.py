@@ -142,7 +142,7 @@ class SingboxController:
         if down_mbps:
             outbound['down_mbps'] = down_mbps
         if getattr(node, 'ports', None):
-            outbound['server_ports'] = node.ports
+            outbound['server_ports'] = self._server_ports_value(node.ports)
         if getattr(node, 'hop_interval', None):
             outbound['hop_interval'] = node.hop_interval
         if sys.platform != 'darwin':
@@ -160,3 +160,17 @@ class SingboxController:
             return int(float(text))
         except ValueError:
             return None
+
+    def _server_ports_value(self, value):
+        ports = value if isinstance(value, list) else str(value).split(',')
+        result = []
+        for port in ports:
+            text = str(port).strip()
+            if not text:
+                continue
+            if '-' in text and ':' not in text:
+                text = text.replace('-', ':', 1)
+            elif text.isdigit():
+                text = '{}:{}'.format(text, text)
+            result.append(text)
+        return result
