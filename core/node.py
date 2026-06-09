@@ -121,7 +121,7 @@ class Node(BaseDataItem):
         if self.down:
             q.append(('down', self.down))
         if self.ports:
-            q.append(('ports', self.ports))
+            q.append(('mport', self.ports))
         if self.hop_interval:
             q.append(('hop-interval', self.hop_interval))
         frag = quote(self.ps or '', safe='')
@@ -157,7 +157,7 @@ class Node(BaseDataItem):
             'alpn': alpn,
             'up': first('up'),
             'down': first('down'),
-            'ports': first('ports'),
+            'ports': first('mport') or first('ports'),
             'hop_interval': first('hop-interval') or first('hop_interval'),
             'ps': unquote(parsed.fragment) if parsed.fragment else '{}:{}'.format(parsed.hostname, parsed.port or 443),
         }
