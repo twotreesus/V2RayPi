@@ -175,8 +175,14 @@ class Node(BaseDataItem):
             q.append(('fp', self.fp))
         if self.sni:
             q.append(('sni', self.sni))
+        if self.host:
+            q.append(('host', self.host))
+        if self.path:
+            q.append(('path', self.path))
         if self.sid:
             q.append(('sid', self.sid))
+        if self.skip_cert_verify:
+            q.append(('insecure', '1'))
         q.append(('headerType', getattr(self, 'headerType', None) or 'none'))
         q.append(('type', self.net or 'tcp'))
         if self.flow:
@@ -210,6 +216,7 @@ class Node(BaseDataItem):
             return query.get(k, [default])[0] if query.get(k) else default
         tls = first('security')
         sni = first('sni') or (host if tls else None)
+        ws_host = first('host') or sni or host
         data = {
             'protocol': 'vless',
             'id': uuid,
@@ -220,12 +227,13 @@ class Node(BaseDataItem):
             'type': first('headerType') or 'none',
             'tls': tls,
             'sni': sni,
-            'host': sni or host,
+            'host': ws_host,
             'path': first('path') or '',
             'flow': first('flow'),
             'pbk': first('pbk'),
             'sid': first('sid'),
             'fp': first('fp') or 'chrome',
+            'skip_cert_verify': first('insecure') in ('1', 'true', 'True') or first('allowInsecure') == '1',
         }
         return data
 

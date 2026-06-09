@@ -102,9 +102,9 @@ class NodeManager(BaseDataItem):
             node.id = proxy.get('uuid', '')
             node.net = proxy.get('network', 'tcp')
             node.type = 'none'
-            node.path = ''
             node.flow = proxy.get('flow', None)
             node.fp = proxy.get('client-fingerprint', 'chrome')
+            node.skip_cert_verify = proxy.get('skip-cert-verify', False)
             reality_opts = proxy.get('reality-opts', {})
             node.pbk = reality_opts.get('public-key', '')
             node.sid = reality_opts.get('short-id', '')
@@ -113,7 +113,10 @@ class NodeManager(BaseDataItem):
             else:
                 node.tls = None
             node.sni = proxy.get('servername', '') or node.add
-            node.host = node.sni
+            ws_opts = proxy.get('ws-opts', {})
+            headers = ws_opts.get('headers') or {}
+            node.path = ws_opts.get('path', '')
+            node.host = headers.get('Host') or headers.get('host') or node.sni
 
         elif ptype == 'ss':
             node.protocol = 'ss'

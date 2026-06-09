@@ -269,6 +269,7 @@ class StreamSettings(DontPickleNone):
             self.serverName:str = ''
             self.allowInsecure:bool = False
             self.alpn = None
+            self.fingerprint: typing.Optional[str] = None
     class SockOpt(DontPickleNone):
         class TProxy(Enum):
             redirect = 'redirect'
@@ -617,6 +618,8 @@ class V2RayConfig(DontPickleNone):
             if node.alpn:
                 tls.alpn = [node.alpn]
             tls.serverName = node.sni or node.host or node.add
+            tls.allowInsecure = getattr(node, 'skip_cert_verify', False)
+            tls.fingerprint = getattr(node, 'fp', None) or 'chrome'
             stream_settings.tlsSettings = tls
         else:
             stream_settings.security = StreamSettings.Security.none.value
