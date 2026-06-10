@@ -48,6 +48,9 @@
                                         <button class="copy_url mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" mdui-tooltip="{'content': '复制订阅地址'}">复制</button>
                                     </div>
                                     <div>
+                                        <button class="show_subscribe_qr mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" mdui-tooltip="{'content': '显示订阅地址二维码'}">二维码</button>
+                                    </div>
+                                    <div>
                                         <button class="update_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple">更新</button>
                                     </div>
                                     <div>
@@ -243,6 +246,11 @@
             if (copy_to_clipboard(url)) {
                 message("订阅地址已复制");
             }
+        });
+
+        $("#node_list_body").on("click", ".show_subscribe_qr", function() {
+            var url = $(this).closest("tr").data("url");
+            show_qr_code(url);
         });
 
         $("#node_list_body").on("click", ".apply_node", function() {
@@ -470,13 +478,16 @@
         ajax_request({ url: "/get_node_link", data: {subscribe:url, node_index:index} }).then(function (data) {
             if (check_result(data)) {
                 link = data["node_link"];
-
-                $("#qr_code").empty().qrcode(link);
-                toast = new mdui.Dialog("#qr_toast", { destroyOnClosed:true });
-                toast.open();
-                mdui.mutation();
+                show_qr_code(link);
             }
         })
+    }
+
+    function show_qr_code(text) {
+        $("#qr_code").empty().qrcode(text);
+        toast = new mdui.Dialog("#qr_toast", { destroyOnClosed:true });
+        toast.open();
+        mdui.mutation();
     }
 
     function favorite_node(url, index, $btn) {
