@@ -434,6 +434,11 @@
         ajax_request({ url: "/apply_node", data: {subscribe: url, node_index: index} }).then(function(data) {
             if (check_result(data)) {
                 update_toast("应用成功");
+                if (typeof update_header_status === "function") {
+                    update_header_status(data);
+                } else if (typeof refresh_header_status === "function") {
+                    refresh_header_status();
+                }
                 $(".node_running").removeClass("node_running").find(".apply_node .mdui-icon").html("check");
                 $(".subscribe-index").removeClass("running");
 

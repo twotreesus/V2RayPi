@@ -408,24 +408,28 @@
         return { label: protocol, className: protocol };
     }
 
+    function update_header_status(data) {
+        var running = data['running'];
+        $('#hs_dot').css('color', running ? '#07c160' : '#ff8888');
+        $('#hs_mode').text(g_proxy_modes[data['proxy_mode']] || '');
+        var protocol = hs_protocol_badge(data['protocol']);
+        $('#hs_protocol')
+            .text(protocol.label)
+            .attr('class', 'node-type-badge node-type-' + protocol.className)
+            .toggle(!!protocol.label);
+        $('#hs_node').text(data['ps'] || '');
+        $('#header_status').css('display', 'flex');
+    }
+
     var g_hs_up_samples = [];
     var g_hs_down_samples = [];
 
     function refresh_header_status() {
-        $.ajax({ url: '/get_status', dataType: 'json' })
+        $.ajax({ url: '/get_status', dataType: 'json', cache: false })
             .done(function(data) {
-                var running = data['running'];
-                $('#hs_dot').css('color', running ? '#07c160' : '#ff8888');
-                $('#hs_mode').text(g_proxy_modes[data['proxy_mode']] || '');
-                var protocol = hs_protocol_badge(data['protocol']);
-                $('#hs_protocol')
-                    .text(protocol.label)
-                    .attr('class', 'node-type-badge node-type-' + protocol.className)
-                    .toggle(!!protocol.label);
-                $('#hs_node').text(data['ps'] || '');
-                $('#header_status').css('display', 'flex');
+                update_header_status(data);
             });
-        $.ajax({ url: '/get_performance', dataType: 'json' })
+        $.ajax({ url: '/get_performance', dataType: 'json', cache: false })
             .done(function(data) {
                 var net = data['network'];
                 if (!net) return;

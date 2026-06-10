@@ -277,10 +277,8 @@ def apply_node_api():
 
     # Get current running node info
     status = CoreService.status()
-    return jsonify({
-        K.result: result,
-        K.ps: status.get(K.ps, None)
-    })
+    status.update({K.result: result})
+    return jsonify(status)
 
 @app.route('/get_node_link')
 @require_auth
