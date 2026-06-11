@@ -9,8 +9,8 @@ iptables -t mangle -A V2RAY -d 224.0.0.0/4 -j RETURN
 iptables -t mangle -A V2RAY -d 255.255.255.255/32 -j RETURN 
 iptables -t mangle -A V2RAY -d 192.168.0.0/16 -p tcp -j RETURN # 直连局域网，避免 V2Ray 无法启动时无法连网关的 SSH，如果你配置的是其他网段（如 10.x.x.x 等），则修改成自己的
 iptables -t mangle -A V2RAY -d 192.168.0.0/16 -p udp ! --dport 53 -j RETURN # 直连局域网，53 端口除外（因为要使用 V2Ray 的 DNS)
-iptables -t mangle -A V2RAY -p udp --dport 443 -j DROP # 丢弃 QUIC 协议 udp 包，规避已知的很多兼容性问题，比如 V2Ray 对于预设的域名路由规则在 QUIC 协议下不生效等问题
-iptables -t mangle -A V2RAY -p udp --dport 80 -j DROP # 丢弃 QUIC 协议 udp 包
+# iptables -t mangle -A V2RAY -p udp --dport 443 -j DROP # 丢弃 QUIC 协议 udp 包，规避已知的很多兼容性问题，比如 V2Ray 对于预设的域名路由规则在 QUIC 协议下不生效等问题
+# iptables -t mangle -A V2RAY -p udp --dport 80 -j DROP # 丢弃 QUIC 协议 udp 包
 iptables -t mangle -A V2RAY -j RETURN -m mark --mark 0xff # 直连 SO_MARK 为 0xff 的流量(0xff 是 16 进制数，数值上等同与上面V2Ray 配置的 255)，此规则目的是解决v2ray占用大量CPU（https://github.com/v2ray/v2ray-core/issues/2621）
 iptables -t mangle -A V2RAY -p udp -j TPROXY --on-ip 127.0.0.1 --on-port 12345 --tproxy-mark 1 # 给 UDP 打标记 1，转发至 12345 端口
 iptables -t mangle -A V2RAY -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port 12345 --tproxy-mark 1 # 给 TCP 打标记 1，转发至 12345 端口
