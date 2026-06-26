@@ -69,7 +69,7 @@ sequenceDiagram
 ### 主要特性
 - **透明代理**：终端设备无需任何设置，只需连接到主路由即可
 - **多种代理模式**：支持直连、智能分流、全局代理
-- **多协议支持**：支持 VMess、VLESS（含 Reality）、AnyTLS、Shadowsocks
+- **多协议支持**：支持 VMess、VLESS（含 Reality）、AnyTLS、Hysteria2、Shadowsocks
 - **双订阅格式**：兼容 v2rayN base64 订阅和 Clash YAML 订阅
 - **节点收藏**：支持收藏常用节点，快速切换
 - **实时监控**：实时显示网络速度和系统性能图表
@@ -226,12 +226,13 @@ sudo systemctl restart v2raypi
 | VMess | xray-core | V2Ray 原生协议 |
 | VLESS | xray-core | 轻量级协议，支持 Reality 加密 |
 | AnyTLS | sing-box | TLS 伪装协议 |
+| Hysteria2 | sing-box | 基于 QUIC 的代理协议，支持端口跳跃和混淆 |
 | Shadowsocks | xray-core | 经典代理协议 |
 
 ### 节点管理
 
 - **订阅管理**：支持 v2rayN base64 和 Clash YAML 两种订阅格式
-- **手动添加**：支持 vmess://、vless://、anytls://、ss:// 链接导入
+- **手动添加**：支持 vmess://、vless://、anytls://、hysteria2://、hy2://、ss:// 链接导入
 - **节点收藏**：收藏常用节点，在收藏列表中快速切换
 - **速度测试**：支持 TCP 延迟测试，评估节点质量
 
@@ -292,7 +293,7 @@ sudo systemctl status sing-box
 3. 节点更新失败
    - 检查订阅地址是否可访问
    - 检查订阅格式是否正确（支持 v2rayN base64 格式和 Clash YAML 格式）
-   - 尝试手动添加节点（支持 vmess:// / vless:// / anytls://）
+   - 尝试手动添加节点（支持 vmess:// / vless:// / anytls:// / hysteria2:// / hy2:// / ss://）
 
 4. 系统更新失败
    - 检查网络连接
