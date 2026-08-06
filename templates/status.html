@@ -39,6 +39,11 @@
         border-color: #e91e63;
         background-color: rgba(233, 30, 99, 0.08);
     }
+    .node-type-mieru {
+        color: #ef6c00;
+        border-color: #ef6c00;
+        background-color: rgba(239, 108, 0, 0.08);
+    }
 </style>
 <div id="status_page" class="mdui-container">
     <p></p>
@@ -175,6 +180,9 @@
         protocol = (protocol || "vmess").toLowerCase();
         if (protocol === "hysteria2") {
             return { label: "hy2", className: "hy2" };
+        }
+        if (protocol === "mieru") {
+            return { label: "mieru", className: "mieru" };
         }
         return { label: protocol, className: protocol };
     }

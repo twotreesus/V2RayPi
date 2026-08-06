@@ -211,6 +211,8 @@ class CoreService:
             K.running: running,
             K.version: version,
             'singbox_version': cls.v2ray.singbox_version(),
+            'mieru_version': cls.v2ray.mieru_version(),
+            'mieru_running': cls.v2ray.mieru_running(),
             K.proxy_mode: cls.user_config.proxy_mode,
         }
 
@@ -373,6 +375,10 @@ class CoreService:
     @classmethod
     def update_singbox(cls) -> bool:
         return cls.v2ray.update_singbox()
+
+    @classmethod
+    def update_mieru(cls) -> bool:
+        return cls.v2ray.update_mieru()
 
     @classmethod
     def check_new_geo_data(cls) -> str:

@@ -24,6 +24,8 @@ class Keyword:
     hysteria2_scheme = 'hysteria2://'
     hy2_scheme = 'hy2://'
     ss_scheme = 'ss://'
+    mieru_scheme = 'mieru://'
+    mierus_scheme = 'mierus://'
     node_index = 'node_index'
     groups = 'groups'
     dns = 'dns'

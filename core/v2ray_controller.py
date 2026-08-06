@@ -18,17 +18,18 @@ from .v2ray_config import V2RayConfig
 from .v2ray_default_path import V2rayDefaultPath
 from .node import Node
 from .singbox_controller import SingboxController
+from .mieru_controller import MieruController
 
 class V2rayController:
     def __init__(self):
         self._singbox = SingboxController()
+        self._mieru = MieruController()
     def start(self) -> bool:
         cmd = "systemctl start xray.service"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return self.running()
 
     def stop(self) -> bool:
-        self._singbox.stop()
         cmd = "systemctl stop xray.service"
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return not self.running()
@@ -82,19 +83,37 @@ class V2rayController:
     def singbox_version(self) -> str:
         return self._singbox.version()
 
+    def mieru_version(self) -> str:
+        return self._mieru.version()
+
+    def mieru_running(self) -> bool:
+        return self._mieru.running()
+
     def singbox_check_new_version(self) -> str:
         return self._singbox.check_new_version()
 
     def update_singbox(self) -> bool:
         return self._singbox.update()
 
+    def mieru_check_new_version(self) -> str:
+        return self._mieru.check_new_version()
+
+    def update_mieru(self) -> bool:
+        return self._mieru.update()
+
     def apply_node(self, user_config:V2RayUserConfig, all_nodes: List[Node], subscribe_hosts: List[str] = None) -> bool:
         node = user_config.node
+        sidecar_port = None
         if node.protocol in ('anytls', 'hysteria2'):
             self._singbox.apply_node(node)
-        else:
-            self._singbox.stop()
-        config = V2RayConfig.gen_config(user_config, all_nodes, subscribe_hosts)
+            from .singbox_controller import SINGBOX_SOCKS_PORT
+            sidecar_port = SINGBOX_SOCKS_PORT
+        elif node.protocol == 'mieru':
+            if not self._mieru.apply_node(node):
+                return False
+            from .mieru_controller import MIERU_SOCKS_PORT
+            sidecar_port = MIERU_SOCKS_PORT
+        config = V2RayConfig.gen_config(user_config, all_nodes, subscribe_hosts, sidecar_port)
         return self.apply_config(config)
 
     def apply_config(self, config: str) -> bool:

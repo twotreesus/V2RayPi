@@ -44,6 +44,9 @@ EOF
 # install sing-box
 curl -fsSL https://sing-box.app/install.sh | sh
 
+# install Mieru (portable official release for the current CPU architecture)
+bash "$SCRIPT_DIR/update_mieru.sh" install
+
 # install xray
 mkdir -p /usr/local/etc/xray/
 touch /usr/local/etc/xray/config.json

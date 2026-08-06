@@ -34,6 +34,17 @@ class Node(BaseDataItem):
         self.sid = None
         self.fp = None
         self.password = None
+        # Mieru uses a username/password pair.  Keep these as flat fields so
+        # loading and persistence remain compatible with the existing Node
+        # model used by the other protocols.
+        self.username = None
+        self.port_bindings = None
+        self.domain_name = None
+        self.profile_name = None
+        self.mtu = None
+        self.multiplexing = None
+        self.handshake_mode = None
+        self.traffic_pattern = None
         self.skip_cert_verify = False
         self.obfs = None
         self.obfs_password = None
@@ -45,6 +56,8 @@ class Node(BaseDataItem):
 
     @property
     def link(self):
+        if self.protocol == 'mieru':
+            return self._mieru_link()
         if self.protocol == 'anytls':
             return self._anytls_link()
         if self.protocol == 'hysteria2':
@@ -57,6 +70,122 @@ class Node(BaseDataItem):
         content = json.dumps(data)
         content = base64.b64encode(content.encode('utf8')).decode('utf8')
         return K.vmess_scheme + content
+
+    def _mieru_link(self):
+        """Serialize the simple Mieru sharing URI.
+
+        The original Mieru standard sharing URI is not reconstructed here;
+        preserving the simple URI gives manual nodes a safe round trip while
+        the native client remains responsible for applying its JSON config.
+        """
+        username = quote(self.username or '', safe='')
+        password = quote(self.password or '', safe='')
+        netloc = '{}:{}@{}:{}'.format(username, password, self.add, self.port or 443)
+        query = []
+        bindings = self.port_bindings or []
+        for binding in bindings:
+            if not isinstance(binding, dict):
+                continue
+            if binding.get('portRange') is not None:
+                query.append(('port', binding.get('portRange')))
+            elif binding.get('port') is not None:
+                query.append(('port', binding.get('port')))
+            if binding.get('protocol'):
+                query.append(('protocol', binding.get('protocol')))
+        if self.mtu is not None:
+            query.append(('mtu', self.mtu))
+        if self.multiplexing:
+            query.append(('multiplexing', self.multiplexing))
+        if self.handshake_mode:
+            query.append(('handshake-mode', self.handshake_mode))
+        if self.traffic_pattern:
+            query.append(('traffic-pattern', self.traffic_pattern))
+        if self.profile_name:
+            query.append(('profile', self.profile_name))
+        fragment = quote(self.ps or '', safe='')
+        suffix = '?' + urlencode(query) if query else ''
+        return '{}{}{}#{}'.format(K.mierus_scheme, netloc, suffix, fragment)
+
+    @classmethod
+    def mieru_uri_to_data(cls, url: str):
+        """Parse Mieru simple sharing links (mierus:// and compatible mieru://).
+
+        The native ``mieru://`` standard sharing link is intentionally left
+        for the Mieru CLI/importer because it is an encoded native config,
+        whereas ``mierus://`` is the human-readable form used by subscriptions.
+        """
+        if not url:
+            return None
+        url = url.strip()
+        # ``mieru://`` is the native encoded sharing link.  It is not the
+        # human-readable form parsed below; do not silently interpret its
+        # payload as a hostname.
+        if not url.startswith(K.mierus_scheme):
+            return None
+
+        parsed = urlparse(url)
+        if not parsed.hostname:
+            return None
+        query = parse_qs(parsed.query, keep_blank_values=True)
+
+        def values(*keys):
+            result = []
+            for key in keys:
+                result.extend(query.get(key, []))
+            return result
+
+        def first(*keys):
+            items = values(*keys)
+            return unquote(items[0]) if items else None
+
+        bindings = []
+        ports = values('port', 'ports')
+        port_ranges = values('portRange', 'port-range', 'port_range')
+        protocols = values('protocol', 'protocols', 'transport')
+        for index, port in enumerate(ports):
+            port = unquote(port)
+            binding = {
+                'protocol': unquote(protocols[index]) if index < len(protocols) else 'TCP',
+            }
+            if '-' in port:
+                binding['portRange'] = port
+            else:
+                binding['port'] = port
+            bindings.append({
+                **binding,
+            })
+        for index, port_range in enumerate(port_ranges):
+            bindings.append({
+                'portRange': unquote(port_range),
+                'protocol': unquote(protocols[index]) if index < len(protocols) else 'TCP',
+            })
+
+        # For the common one-port form, retain the existing flat port field.
+        port = parsed.port
+        if port is None and ports:
+            try:
+                port = int(ports[0])
+            except (TypeError, ValueError):
+                port = 443
+        port = port or 443
+        username = unquote(parsed.username or '') or first('username', 'user')
+        password = unquote(parsed.password or '') or first('password', 'pass')
+        return {
+            'protocol': 'mieru',
+            'username': username or '',
+            'password': password or '',
+            'add': parsed.hostname,
+            'port': port,
+            'port_bindings': bindings or [{'port': str(port), 'protocol': first('protocol', 'transport') or 'TCP'}],
+            'domain_name': first('domainName', 'domain-name'),
+            'profile_name': first('profile'),
+            'mtu': first('mtu'),
+            'multiplexing': first('multiplexing', 'multiplex'),
+            'handshake_mode': first('handshake-mode', 'handshakeMode'),
+            'traffic_pattern': first('traffic-pattern', 'trafficPattern'),
+            'udp': first('udp') not in ('0', 'false', 'False'),
+            'ps': unquote(parsed.fragment) if parsed.fragment else '{}:{}'.format(parsed.hostname, port),
+        }
 
     def _anytls_link(self):
         netloc = '{}@{}:{}'.format(self.password or '', self.add, self.port)

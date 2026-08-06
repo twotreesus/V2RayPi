@@ -36,6 +36,9 @@ class NodeManager(BaseDataItem):
         return 'config/nodes.json'
 
     def _parse_node_uri(self, line: str) -> Optional[Node]:
+        if line.startswith(K.mieru_scheme) or line.startswith(K.mierus_scheme):
+            data = Node.mieru_uri_to_data(line)
+            return Node().load_data(data) if data else None
         if line.startswith(K.anytls_scheme):
             data = Node.anytls_uri_to_data(line)
             return Node().load_data(data) if data else None
@@ -122,6 +125,25 @@ class NodeManager(BaseDataItem):
             node.protocol = 'ss'
             node.password = proxy.get('password', '')
             node.scy = proxy.get('cipher', 'aes-256-gcm')
+
+        elif ptype == 'mieru':
+            node.protocol = 'mieru'
+            node.username = proxy.get('username', '')
+            node.password = proxy.get('password', '')
+            node.domain_name = proxy.get('domain-name', proxy.get('domainName'))
+            node.profile_name = proxy.get('profile')
+            node.udp = proxy.get('udp', True)
+            node.mtu = proxy.get('mtu')
+            node.multiplexing = proxy.get('multiplexing')
+            node.handshake_mode = proxy.get('handshake-mode', proxy.get('handshakeMode'))
+            node.traffic_pattern = proxy.get('traffic-pattern', proxy.get('trafficPattern'))
+            port_range = proxy.get('port-range', proxy.get('port_range'))
+            binding = {'protocol': proxy.get('transport', proxy.get('protocol', 'TCP'))}
+            if port_range:
+                binding['portRange'] = port_range
+            else:
+                binding['port'] = node.port
+            node.port_bindings = [binding]
 
         else:
             return None

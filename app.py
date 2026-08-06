@@ -164,6 +164,18 @@ def update_singbox_api():
     success = CoreService.update_singbox()
     return jsonify({K.result: K.ok if success else K.failed})
 
+@app.route('/check_mieru_new_ver')
+@require_auth
+def check_mieru_new_ver_api():
+    version = CoreService.v2ray.mieru_check_new_version()
+    return jsonify({K.result: K.ok, K.version: version})
+
+@app.route('/update_mieru')
+@require_auth
+def update_mieru_api():
+    success = CoreService.update_mieru()
+    return jsonify({K.result: K.ok if success else K.failed})
+
 @app.route('/switch_proxy_mode')
 @require_auth
 def switch_proxy_mode_api():

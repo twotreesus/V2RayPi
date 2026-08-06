@@ -374,7 +374,7 @@ class V2RayConfig(DontPickleNone):
         self.outbounds.append(outbound)
 
     @classmethod
-    def gen_config(cls, user_config:V2RayUserConfig, all_nodes: List[Node], subscribe_hosts: List[str] = None) -> str:
+    def gen_config(cls, user_config:V2RayUserConfig, all_nodes: List[Node], subscribe_hosts: List[str] = None, sidecar_port: int = None) -> str:
         config = V2RayConfig()
 
         # prepare node and subscribe addrs
@@ -406,7 +406,7 @@ class V2RayConfig(DontPickleNone):
             dnsout = cls._make_outbound_dnsout()
             config.outbounds.extend((direct, dnsout))
         else:
-            proxy = cls._make_outbound_proxy(user_config.node, user_config.advance_config.enable_mux)
+            proxy = cls._make_outbound_proxy(user_config.node, user_config.advance_config.enable_mux, sidecar_port)
             block = cls._make_outbound_block()
             dnsout = cls._make_outbound_dnsout()
             if user_config.advance_config.proxy_preferred:
@@ -568,14 +568,17 @@ class V2RayConfig(DontPickleNone):
         return proxy
 
     @classmethod
-    def _make_outbound_proxy(cls, node: Node, enable_mux: bool) -> Outbound:
+    def _make_outbound_proxy(cls, node: Node, enable_mux: bool, sidecar_port: int = None) -> Outbound:
         if node.protocol == 'vless':
             return cls._make_outbound_proxy_vless(node, enable_mux)
         if node.protocol == 'ss':
             return cls._make_outbound_proxy_ss(node)
         if node.protocol in ('anytls', 'hysteria2'):
             from .singbox_controller import SINGBOX_SOCKS_PORT
-            return cls._make_outbound_proxy_socks(SINGBOX_SOCKS_PORT)
+            return cls._make_outbound_proxy_socks(sidecar_port or SINGBOX_SOCKS_PORT)
+        if node.protocol == 'mieru':
+            from .mieru_controller import MIERU_SOCKS_PORT
+            return cls._make_outbound_proxy_socks(sidecar_port or MIERU_SOCKS_PORT)
         return cls._make_outbound_proxy_vmess(node, enable_mux)
 
     @classmethod

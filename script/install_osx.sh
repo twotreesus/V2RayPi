@@ -7,6 +7,9 @@ brew install wget curl python3 xray sing-box
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
+# install Mieru from its official portable release archive
+bash "$SCRIPT_DIR/update_mieru.sh" install
+
 # setup venv and install pip packages
 VENV_DIR="$PROJECT_DIR/venv"
 python3 -m venv "$VENV_DIR"
