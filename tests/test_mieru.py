@@ -198,6 +198,25 @@ class MieruProcessTest(unittest.TestCase):
         run.assert_not_called()
         self.assertEqual(signal_pids.call_args_list, [call([1234], signal.SIGKILL)])
 
+    def test_linux_root_launches_mieru_as_dedicated_user(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+
+        user = SimpleNamespace(pw_name='mieru', pw_uid=991, pw_gid=991)
+        controller = MieruController(binary='/usr/local/bin/mieru')
+        with patch('core.mieru_controller.sys.platform', 'linux'), \
+             patch('core.mieru_controller.os.geteuid', return_value=0), \
+             patch('core.mieru_controller.pwd.getpwnam', return_value=user), \
+             patch('core.mieru_controller.shutil.which', return_value='/usr/sbin/runuser'):
+            self.assertEqual(
+                controller._command(['/usr/local/bin/mieru', 'start']),
+                [
+                    '/usr/sbin/runuser', '-u', 'mieru', '--', 'env',
+                    'HOME=/var/lib/mieru', 'USER=mieru', 'LOGNAME=mieru',
+                    '/usr/local/bin/mieru', 'start',
+                ],
+            )
+
     def test_start_does_not_wait_for_daemon_stdio_pipe(self):
         from unittest.mock import Mock, patch
 

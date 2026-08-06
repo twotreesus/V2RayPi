@@ -47,6 +47,21 @@ curl -fsSL https://sing-box.app/install.sh | sh
 # install Mieru (portable official release for the current CPU architecture)
 bash "$SCRIPT_DIR/update_mieru.sh" install
 
+# Run the native Mieru sidecar under a dedicated unprivileged account.  The
+# iptables owner rule installed below uses this account to bypass TPROXY and
+# prevents Mieru's own upstream connection from looping back into Xray.
+MIERU_USER="${MIERU_USER:-mieru}"
+MIERU_HOME="${MIERU_HOME:-/var/lib/$MIERU_USER}"
+if ! id -u "$MIERU_USER" >/dev/null 2>&1; then
+    useradd --system --user-group --home-dir "$MIERU_HOME" \
+        --create-home --shell /usr/sbin/nologin "$MIERU_USER"
+fi
+MIERU_GROUP="$(id -gn "$MIERU_USER")"
+install -d -o "$MIERU_USER" -g "$MIERU_GROUP" -m 750 "$MIERU_HOME"
+# Stop a legacy root-owned Mieru process before the first dedicated-user start.
+# Otherwise its listeners can keep the new sidecar from binding its ports.
+pkill -KILL -x mieru >/dev/null 2>&1 || true
+
 # install xray
 mkdir -p /usr/local/etc/xray/
 touch /usr/local/etc/xray/config.json

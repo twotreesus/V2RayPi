@@ -22,6 +22,17 @@ iptables -t mangle -A V2RAY_MASK -d 224.0.0.0/4 -j RETURN
 iptables -t mangle -A V2RAY_MASK -d 255.255.255.255/32 -j RETURN 
 iptables -t mangle -A V2RAY_MASK -d 192.168.0.0/16 -p tcp -j RETURN # 直连局域网
 iptables -t mangle -A V2RAY_MASK -d 192.168.0.0/16 -p udp ! --dport 53 -j RETURN # 直连局域网，53 端口除外（因为要使用 V2Ray 的 DNS）
+# Mieru is a native sidecar and cannot set SO_MARK itself.  Match its
+# dedicated Linux user before the generic OUTPUT mark so its upstream sockets
+# always bypass TPROXY and cannot loop back through the Mieru SOCKS inbound.
+MIERU_USER="${MIERU_USER:-mieru}"
+if id -u "$MIERU_USER" >/dev/null 2>&1; then
+    # Insert at the head so this remains effective when the script is applied
+    # on an existing chain whose generic MARK rules are already present.
+    if ! iptables -t mangle -C V2RAY_MASK -m owner --uid-owner "$MIERU_USER" -j RETURN >/dev/null 2>&1; then
+        iptables -t mangle -I V2RAY_MASK 1 -m owner --uid-owner "$MIERU_USER" -j RETURN
+    fi
+fi
 iptables -t mangle -A V2RAY_MASK -j RETURN -m mark --mark 0xff    # 直连 SO_MARK 为 0xff 的流量(0xff 是 16 进制数，数值上等同与上面V2Ray 配置的 255)，此规则目的是避免代理本机(网关)流量出现回环问题
 iptables -t mangle -A V2RAY_MASK -p udp -j MARK --set-mark 1   # 给 UDP 打标记,重路由
 iptables -t mangle -A V2RAY_MASK -p tcp -j MARK --set-mark 1   # 给 TCP 打标记，重路由

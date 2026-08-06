@@ -325,8 +325,11 @@ pgrep -x mieru
 
 6. Mieru 节点无法连接或切换后未生效
    - 在「系统维护」中确认已安装 Mieru，并检查当前版本。
-   - 使用 `pgrep -x mieru` 确认 sidecar 是否已启动；切换 Mieru 节点会自动重新应用配置并重启 Mieru。
+   - Linux 安装会创建 `mieru` 专用系统用户；使用 `pgrep -u mieru -x mieru` 确认 sidecar 是否已启动。
+   - 检查 owner bypass 是否存在：`sudo iptables -t mangle -L V2RAY_MASK -n -v`，应看到 `owner UID match mieru` 规则。
+   - 切换 Mieru 节点会自动重新应用配置并重启 Mieru；切换时使用 kill，不依赖可能超时的 Mieru RPC stop。
    - 检查节点的服务器地址、端口、用户名、密码及传输协议是否正确。
+   - 如果是旧版本升级，先执行 `sudo pkill -KILL -x mieru`，再重启 `v2raypi`，避免旧的 root-owned 进程占用端口。
    - 使用 `sudo ./script/update_mieru.sh update` 更新客户端后再次切换节点。
 
 7. TProxy 下 DNS 异常（Linux）

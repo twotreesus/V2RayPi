@@ -31,13 +31,19 @@ if command -v supervisorctl >/dev/null 2>&1; then
     ignore_failure supervisorctl stop v2raypi
 fi
 
-# Mieru is a native sidecar and has no systemd service in this project.  Try
-# both supported default binary locations before deleting the executable.
-for mieru_bin in /usr/local/bin/mieru /opt/homebrew/bin/mieru; do
-    if [[ -x "$mieru_bin" ]]; then
-        ignore_failure "$mieru_bin" stop
-    fi
-done
+# Mieru is a native sidecar and has no systemd service in this project.  Kill
+# the dedicated-user processes directly; the native RPC stop command can time
+# out while leaving the daemon alive.
+MIERU_USER="${MIERU_USER:-mieru}"
+if [[ "$OS" == "Linux" ]] && id -u "$MIERU_USER" >/dev/null 2>&1; then
+    ignore_failure pkill -KILL -u "$MIERU_USER" -x mieru
+else
+    for mieru_bin in /usr/local/bin/mieru /opt/homebrew/bin/mieru; do
+        if [[ -x "$mieru_bin" ]]; then
+            ignore_failure pkill -KILL -x mieru
+        fi
+    done
+fi
 
 if [[ "$OS" == "Linux" ]] && command -v systemctl >/dev/null 2>&1; then
     ignore_failure systemctl stop xray_iptable.service
@@ -83,6 +89,14 @@ remove_path /usr/local/bin/mieru
 remove_path /opt/homebrew/bin/mieru
 if [[ -n "${MIERU_BIN:-}" && "$MIERU_BIN" == */* ]]; then
     remove_path "$MIERU_BIN"
+fi
+
+if [[ "$OS" == "Linux" ]] && id -u "$MIERU_USER" >/dev/null 2>&1; then
+    MIERU_HOME="${MIERU_HOME:-/var/lib/$MIERU_USER}"
+    ignore_failure userdel -r "$MIERU_USER"
+    # userdel normally removes the home directory.  Remove the configured
+    # default explicitly for systems where the account had a custom home.
+    remove_path "$MIERU_HOME"
 fi
 
 if [[ "$OS" == "Linux" ]] && command -v systemctl >/dev/null 2>&1; then

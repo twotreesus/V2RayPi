@@ -8,8 +8,10 @@ existing sing-box sidecar path.
 import ipaddress
 import json
 import os
+import pwd
 import signal
 import shutil
+import sys
 import subprocess
 import time
 from typing import Optional
@@ -19,6 +21,8 @@ import requests
 MIERU_SOCKS_PORT = int(os.environ.get('MIERU_SOCKS_PORT', '2335'))
 MIERU_RPC_PORT = int(os.environ.get('MIERU_RPC_PORT', '2336'))
 MIERU_KILL_WAIT_TIMEOUT = float(os.environ.get('MIERU_KILL_WAIT_TIMEOUT', '3'))
+MIERU_USER = os.environ.get('MIERU_USER', 'mieru')
+MIERU_HOME = os.environ.get('MIERU_HOME', os.path.join('/var/lib', MIERU_USER))
 
 _PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MIERU_CONFIG_PATH = os.environ.get(
@@ -35,14 +39,15 @@ class MieruController:
         self.config_path = config_path or MIERU_CONFIG_PATH
 
     def apply_node(self, node) -> bool:
-        config = self._gen_config(node)
-        config_dir = os.path.dirname(self.config_path)
-        if config_dir:
-            os.makedirs(config_dir, exist_ok=True)
-        with open(self.config_path, 'w') as f:
-            json.dump(config, f, indent=2)
-            f.write('\n')
         try:
+            config = self._gen_config(node)
+            config_dir = os.path.dirname(self.config_path)
+            if config_dir:
+                os.makedirs(config_dir, exist_ok=True)
+            with open(self.config_path, 'w') as f:
+                json.dump(config, f, indent=2)
+                f.write('\n')
+            self._prepare_config_file()
             # `mieru apply config` only updates the on-disk configuration. It
             # does not reload the already-running client's mux, so an active
             # daemon must be restarted for a node switch to take effect. This
@@ -90,8 +95,13 @@ class MieruController:
     def _pids(self):
         try:
             process_name = os.path.basename(self.binary)
+            command = ['pgrep']
+            user = self._dedicated_user()
+            if user:
+                command.extend(['-u', user.pw_name])
+            command.extend(['-x', process_name])
             result = subprocess.run(
-                ['pgrep', '-x', process_name],
+                command,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 text=True,
@@ -107,6 +117,44 @@ class MieruController:
             except (TypeError, ValueError):
                 continue
         return pids
+
+    def _dedicated_user(self):
+        """Return the configured Linux sidecar account when it is available.
+
+        The macOS client continues to run as the invoking user.  On Linux the
+        installer creates this account; the graceful fallback keeps older
+        installations usable until the account is provisioned.
+        """
+        if not sys.platform.startswith('linux') or os.geteuid() != 0:
+            return None
+        try:
+            return pwd.getpwnam(MIERU_USER)
+        except KeyError:
+            return None
+
+    def _command(self, command):
+        user = self._dedicated_user()
+        if not user:
+            return command
+        runuser = os.environ.get('MIERU_RUNUSER_BIN') or shutil.which('runuser')
+        if not runuser:
+            raise OSError('runuser is required to launch Mieru as the dedicated user')
+        return [
+            runuser, '-u', user.pw_name, '--', 'env',
+            f'HOME={MIERU_HOME}',
+            f'USER={user.pw_name}',
+            f'LOGNAME={user.pw_name}',
+            *command,
+        ]
+
+    def _prepare_config_file(self):
+        user = self._dedicated_user()
+        if not user:
+            return
+        # The application writes the profile as root, while the Mieru process
+        # must be able to read it after privilege dropping.
+        os.chown(self.config_path, user.pw_uid, user.pw_gid)
+        os.chmod(self.config_path, 0o600)
 
     def running(self) -> bool:
         return bool(self._pids())
@@ -154,7 +202,7 @@ class MieruController:
         return result.returncode == 0
 
     def _run(self, *args, check=False):
-        command = [self.binary, *args]
+        command = self._command([self.binary, *args])
         kwargs = {
             'stdout': subprocess.PIPE,
             'stderr': subprocess.STDOUT,
