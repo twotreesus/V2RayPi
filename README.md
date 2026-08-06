@@ -13,6 +13,8 @@
 - [功能说明](#功能说明)
   - [协议支持](#协议支持)
   - [节点管理](#节点管理)
+  - [Mieru 节点与 Sidecar](#mieru-节点与-sidecar)
+  - [TProxy DNS 与 Mieru](#tproxy-dns-与-mieru)
   - [实时监控](#实时监控)
   - [配置管理](#配置管理)
 - [系统维护](#系统维护)
@@ -69,13 +71,13 @@ sequenceDiagram
 ### 主要特性
 - **透明代理**：终端设备无需任何设置，只需连接到主路由即可
 - **多种代理模式**：支持直连、智能分流、全局代理
-- **多协议支持**：支持 VMess、VLESS（含 Reality）、AnyTLS、Hysteria2、Shadowsocks
+- **多协议支持**：支持 VMess、VLESS（含 Reality）、AnyTLS、Hysteria2、Mieru、Shadowsocks
 - **双订阅格式**：兼容 v2rayN base64 订阅和 Clash YAML 订阅
 - **节点收藏**：支持收藏常用节点，快速切换
 - **实时监控**：实时显示网络速度和系统性能图表
 - **配置管理**：支持配置备份和恢复，便于迁移和灾难恢复
 - **自动化管理**：自动处理订阅更新和策略配置
-- **一键更新**：内置 xray-core / sing-box 及系统更新功能
+- **一键更新**：内置 xray-core / sing-box / Mieru 及系统更新功能
 - **跨平台支持**：支持多种硬件平台和操作系统
 - **简单易用**：图形化管理界面，操作直观
 
@@ -201,9 +203,21 @@ sudo supervisorctl restart v2raypi
 1. 在系统页面查看最近更新记录，点击「检查更新」
 2. 有新版本时点击「更新并重启」；更新过程中代理服务不中断
 
-**更新 xray-core / sing-box**
-1. 在系统页面对应区块点击「查询」获取最新版本
-2. 版本不一致时点击「升级」即可；升级后服务自动重启
+**更新 xray-core / sing-box / Mieru**
+1. 在系统页面对应区块点击「查询」获取最新版本。
+2. 版本不一致时点击「升级」即可。
+3. Mieru 升级只替换客户端二进制文件；若 sidecar 正在运行，新版本会在下一次 Mieru 启动或切换 Mieru 节点时生效。
+
+也可以在命令行安装或更新 Mieru：
+```bash
+# Linux 通常需要 sudo；macOS 如 /usr/local/bin 无写入权限也需要 sudo
+sudo ./script/update_mieru.sh update
+
+# 查看已安装版本
+./script/update_mieru.sh version
+```
+
+安装脚本会下载并校验官方发布包，支持 macOS（x86_64、Apple Silicon）以及 Linux 的 x86_64、arm64、armv7 和 riscv64。
 
 手动更新方式（可选）：
 ```bash
@@ -227,12 +241,13 @@ sudo systemctl restart v2raypi
 | VLESS | xray-core | 轻量级协议，支持 Reality 加密 |
 | AnyTLS | sing-box | TLS 伪装协议 |
 | Hysteria2 | sing-box | 基于 QUIC 的代理协议，支持端口跳跃和混淆 |
+| Mieru | mieru sidecar + xray-core | Mieru 提供本地 SOCKS5，Xray 负责透明代理和分流 |
 | Shadowsocks | xray-core | 经典代理协议 |
 
 ### 节点管理
 
 - **订阅管理**：支持 v2rayN base64 和 Clash YAML 两种订阅格式
-- **手动添加**：支持 vmess://、vless://、anytls://、hysteria2://、hy2://、ss:// 链接导入
+- **手动添加**：支持 vmess://、vless://、anytls://、hysteria2://、hy2://、mierus://、ss:// 链接导入
 - **节点收藏**：收藏常用节点，在收藏列表中快速切换
 - **速度测试**：支持 TCP 延迟测试，评估节点质量
 
@@ -273,8 +288,12 @@ sudo git reset --hard && sudo git pull && sudo supervisorctl restart v2raypi
 # 查看 xray-core 日志
 tail -f /var/log/xray/error.log
 
-# 查看 sing-box 服务状态（AnyTLS 节点时运行）
+# 查看 sing-box 服务状态（AnyTLS/Hysteria2 节点使用）
 sudo systemctl status sing-box
+
+# 查看 Mieru 版本和运行状态（Mieru 节点使用）
+mieru version
+pgrep -x mieru
 ```
 
 ### 常见问题
@@ -293,7 +312,7 @@ sudo systemctl status sing-box
 3. 节点更新失败
    - 检查订阅地址是否可访问
    - 检查订阅格式是否正确（支持 v2rayN base64 格式和 Clash YAML 格式）
-   - 尝试手动添加节点（支持 vmess:// / vless:// / anytls:// / hysteria2:// / hy2:// / ss://）
+   - 尝试手动添加节点（支持 vmess:// / vless:// / anytls:// / hysteria2:// / hy2:// / mierus:// / ss://）
 
 4. 系统更新失败
    - 检查网络连接
@@ -303,6 +322,17 @@ sudo systemctl status sing-box
    - 确认系统是否支持 TPROXY（MacOS 不支持）
    - 检查 iptables 规则：`sudo iptables -t mangle -L`
    - 重启服务并检查日志
+
+6. Mieru 节点无法连接或切换后未生效
+   - 在「系统维护」中确认已安装 Mieru，并检查当前版本。
+   - 使用 `pgrep -x mieru` 确认 sidecar 是否已启动；切换 Mieru 节点会自动重新应用配置并重启 Mieru。
+   - 检查节点的服务器地址、端口、用户名、密码及传输协议是否正确。
+   - 使用 `sudo ./script/update_mieru.sh update` 更新客户端后再次切换节点。
+
+7. TProxy 下 DNS 异常（Linux）
+   - 确认高级设置中的远程 DNS 使用 IP 地址；默认远程 DNS 为 `8.8.8.8`。
+   - 使用 `sudo tcpdump -ni any 'udp port 53'` 观察 DNS 请求是否进入网关。
+   - 使用 `mieru get metrics` 查看 Mieru 的 UDP 转发指标；如命令无法连接，请先确认 Mieru sidecar 正在运行。
 
 ### 其他问题
 如果遇到其他问题，可以：
