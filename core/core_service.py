@@ -10,6 +10,7 @@ import time
 import os
 import os.path
 import platform
+import re
 import subprocess
 from .package import jsonpickle
 from typing import List, Dict, Any, Optional
@@ -221,10 +222,15 @@ class CoreService:
         return result
 
     @classmethod
-    def update_and_restart_v2raypi(cls):
+    def update_and_restart_v2raypi(cls, branch: str = None):
         script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'script', 'update_and_restart.sh')
+        if branch and not cls.is_valid_branch_name(branch):
+            print(f'Refused to update, invalid branch name: {branch}')
+            return
+        target = f' {branch}' if branch else ''
+        print(f'Updating V2RayPi, target branch: {branch or "current"}')
         # Run script in a new session to ensure it survives service stop
-        os.system(f'setsid {script_path} > /dev/null 2>&1 < /dev/null &')
+        os.system(f'setsid {script_path}{target} > /dev/null 2>&1 < /dev/null &')
 
     @classmethod
     def reboot_host(cls) -> bool:
@@ -451,10 +457,53 @@ class CoreService:
             return ""
 
     @classmethod
-    def check_v2raypi_updates(cls) -> List[str]:
+    def is_valid_branch_name(cls, branch: str) -> bool:
+        return bool(re.fullmatch(r'[A-Za-z0-9._/-]+', branch or ''))
+
+    @classmethod
+    def get_v2raypi_branches(cls) -> Dict[str, Any]:
         try:
             cwd = os.path.dirname(os.path.dirname(__file__))
-            
+
+            fetch_cmd = ["git", "fetch", "--prune"]
+            fetch_result = subprocess.run(fetch_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            if fetch_result.returncode != 0:
+                print(f'Failed to fetch branches, git fetch returned {fetch_result.returncode}')
+                print(f'Error output: {fetch_result.stderr}')
+
+            list_cmd = ["git", "branch", "-r", "--format=%(refname:short)"]
+            list_result = subprocess.run(list_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            if list_result.returncode != 0:
+                print(f'Failed to list branches, git branch returned {list_result.returncode}')
+                print(f'Error output: {list_result.stderr}')
+                return {'branches': [], 'current': ''}
+
+            branches = []
+            for ref in list_result.stdout.strip().split('\n'):
+                ref = ref.strip()
+                if not ref.startswith('origin/') or '->' in ref:
+                    continue
+                name = ref[len('origin/'):]
+                if name != 'HEAD' and name not in branches:
+                    branches.append(name)
+
+            branch_cmd = ["git", "rev-parse", "--abbrev-ref", "HEAD"]
+            branch_result = subprocess.run(branch_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            current = branch_result.stdout.strip() if branch_result.returncode == 0 else ''
+
+            if current and current not in branches:
+                branches.append(current)
+
+            return {'branches': branches, 'current': current}
+        except Exception as e:
+            print(f'Exception in get_v2raypi_branches: {str(e)}')
+            return {'branches': [], 'current': ''}
+
+    @classmethod
+    def check_v2raypi_updates(cls, branch: str = None) -> List[str]:
+        try:
+            cwd = os.path.dirname(os.path.dirname(__file__))
+
             # First fetch from remote
             fetch_cmd = ["git", "fetch"]
             fetch_result = subprocess.run(fetch_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
@@ -468,6 +517,11 @@ class CoreService:
                 return []
             current_branch = branch_result.stdout.strip()
 
+            if branch and not cls.is_valid_branch_name(branch):
+                print(f'Refused to check updates, invalid branch name: {branch}')
+                return []
+            target_branch = branch or current_branch
+
             # Get latest local commit date
             local_cmd = ["git", "--no-pager", "log", "-1", "--pretty=format:%at"]
             local_result = subprocess.run(local_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
@@ -475,18 +529,24 @@ class CoreService:
                 return []
             local_timestamp = int(local_result.stdout.strip())
 
-            # Get commits that are in origin/<current_branch> but not in current branch
-            cmd = ["git", "--no-pager", "log", f"HEAD..origin/{current_branch}", "--pretty=format:%at|%ad|%s", "--date=format:%Y-%m-%d"]
+            # Get commits that are in origin/<target_branch> but not in current branch
+            cmd = ["git", "--no-pager", "log", f"HEAD..origin/{target_branch}", "--pretty=format:%at|%ad|%s", "--date=format:%Y-%m-%d"]
             result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-            
+
             if result.returncode != 0:
+                print(f'Failed to check updates for {target_branch}, git log returned {result.returncode}')
+                print(f'Error output: {result.stderr}')
                 return []
+
+            # Commits older than local HEAD are only noise when tracking the same
+            # branch; across branches they are genuinely missing locally.
+            same_branch = target_branch == current_branch
 
             commits = []
             if result.stdout.strip():
                 for commit in result.stdout.strip().split('\n'):
                     timestamp, date, message = commit.split('|')
-                    if int(timestamp) > local_timestamp:
+                    if not same_branch or int(timestamp) > local_timestamp:
                         commits.append(f"{date}|{message}")
             return commits
         except Exception:

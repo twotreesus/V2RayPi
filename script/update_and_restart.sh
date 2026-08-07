@@ -7,8 +7,17 @@ PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 # Change to project directory
 cd "$PROJECT_DIR"
 
-# Pull latest code
-git pull
+# Pull latest code, switching branch first when one is requested
+TARGET_BRANCH="$1"
+if [ -n "$TARGET_BRANCH" ]; then
+    echo "Switching to branch $TARGET_BRANCH, local changes will be discarded"
+    git fetch --prune
+    git reset --hard
+    git checkout -f "$TARGET_BRANCH"
+    git reset --hard "origin/$TARGET_BRANCH"
+else
+    git pull
+fi
 
 # Update venv dependencies
 VENV_DIR="$PROJECT_DIR/venv"

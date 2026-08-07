@@ -152,6 +152,10 @@
                             <div class="mdui-col-xs-10" style="display: flex; align-items: center; gap: 64px;">
                                 <span id="lastUpdateTime" style="white-space: nowrap; font-size: 14px; color: rgba(0, 0, 0, 0.54);"></span>
                                 <div style="display: flex; gap: 8px; align-items: center;">
+                                    <div style="min-width: 120px;">
+                                        <label for="v2raypi_branch"></label>
+                                        <select id="v2raypi_branch" class="mdui-select" mdui-select="{position: 'bottom'}"></select>
+                                    </div>
                                     <div>
                                         <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2raypi_updates()">检查更新</button>
                                     </div>
@@ -333,6 +337,26 @@
                 }
             });
         get_v2raypi_recent_commits();
+        get_v2raypi_branches();
+    }
+
+    function get_v2raypi_branches() {
+        ajax_request({ url: '/get_v2raypi_branches' })
+            .done(function(response) {
+            if (check_result(response)) {
+                window.g_v2raypi_current_branch = response.current;
+                var select = $('#v2raypi_branch');
+                select.empty();
+                response.branches.forEach(function(branch) {
+                    var label = branch === response.current ? branch + ' (当前)' : branch;
+                    select.append($('<option></option>').attr('value', branch).text(label));
+                });
+                if (response.current) {
+                    select.val(response.current);
+                }
+                mdui.updateSelects();
+            }
+        });
     }
 
 
@@ -437,11 +461,13 @@
     }
 
     function check_v2raypi_updates() {
+        var branch = $('#v2raypi_branch').val();
         var toast = pop_toast("正在检查更新...");
-        ajax_request({ url: "/check_v2raypi_updates" })
+        ajax_request({ url: "/check_v2raypi_updates", data: { branch: branch } })
             .done(function(response) {
             if (check_result(response)) {
                 var container = $('#recent_commits');
+                container.empty();
                 response.commits.slice().reverse().forEach(function(commit) {
                     var parts = commit.split('|');
                     var date = parts[0];
@@ -457,6 +483,7 @@
                     message("发现新的更新");
                 } else {
                     $('#update_btn_v2raypi').hide();
+                    get_v2raypi_recent_commits();
                     message("已是最新版本");
                 }
             } else {
@@ -507,10 +534,18 @@
     }
 
     function update_and_restart_v2raypi() {
-        mdui.confirm('确定要更新并重启服务吗？', '更新确认', function(){
-            mdui.confirm('警告：更新过程中服务将会重启，确定继续吗？', '再次确认', function() {
+        var branch = $('#v2raypi_branch').val();
+        var switching = branch && branch !== window.g_v2raypi_current_branch;
+        var first_message = switching
+            ? '确定要切换到分支 ' + branch + ' 并更新重启服务吗？'
+            : '确定要更新并重启服务吗？';
+        var second_message = switching
+            ? '警告：将切换到分支 ' + branch + '，本地未提交的改动会被丢弃，且服务将会重启，确定继续吗？'
+            : '警告：更新过程中服务将会重启，确定继续吗？';
+        mdui.confirm(first_message, '更新确认', function(){
+            mdui.confirm(second_message, '再次确认', function() {
                 pop_toast("正在更新系统...");
-                ajax_request({ url: "/update_and_restart_v2raypi" })
+                ajax_request({ url: "/update_and_restart_v2raypi", data: { branch: branch } })
                     .done(function (data) {
                     if (check_result(data)) {
                         var countdown = 10;
@@ -749,6 +784,12 @@ $(document).ready(function() {
         // Log switch handler
         $('#log-switch').change(function() {
             toggle_log_display($(this).is(':checked'));
+        });
+
+        // Selecting another branch invalidates the last check result
+        $('#v2raypi_branch').change(function() {
+            $('#update_btn_v2raypi').toggle($(this).val() !== window.g_v2raypi_current_branch);
+            get_v2raypi_recent_commits();
         });
 
         mdui.mutation();

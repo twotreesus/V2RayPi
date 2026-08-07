@@ -441,9 +441,19 @@ def stream_logs_api():
 @require_auth
 def update_and_restart_v2raypi_api():
     try:
-        CoreService.update_and_restart_v2raypi()
+        branch = request.args.get('branch')
+        CoreService.update_and_restart_v2raypi(branch)
         return jsonify({K.result: K.ok})
     except:
+        return jsonify({K.result: K.failed})
+
+@app.route('/get_v2raypi_branches')
+@require_auth
+def get_v2raypi_branches_api():
+    try:
+        info = CoreService.get_v2raypi_branches()
+        return jsonify({K.result: K.ok, 'branches': info['branches'], 'current': info['current']})
+    except Exception:
         return jsonify({K.result: K.failed})
 
 @app.route('/get_v2raypi_recent_commits')
@@ -460,7 +470,7 @@ def get_v2raypi_recent_commits_api():
 @require_auth
 def check_v2raypi_updates_api():
     try:
-        commits = CoreService.check_v2raypi_updates()
+        commits = CoreService.check_v2raypi_updates(request.args.get('branch'))
         return jsonify({K.result: K.ok, 'commits': commits})
     except Exception:
         return jsonify({K.result: K.failed})
