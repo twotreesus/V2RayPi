@@ -15,12 +15,7 @@ class AppConfig(BaseDataItem):
 
     def load(self):
         obj = super().load()
-        # ``inited`` was used to gate the first TPROXY enable.  Service state
-        # is now the source of truth, so remove the legacy field on load.
-        if hasattr(obj, 'inited'):
-            delattr(obj, 'inited')
-            obj.save()
-        elif obj == self:
+        if obj == self:
             self.save()
         return obj
 
