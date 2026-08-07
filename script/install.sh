@@ -10,6 +10,13 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 VENV_DIR="$PROJECT_DIR/venv"
 
+# Preserve the TPROXY service state across reinstalls. A fresh installation
+# remains disabled until the first node is successfully applied.
+IPTABLES_WAS_ENABLED=0
+if command -v systemctl >/dev/null 2>&1 && systemctl is-enabled --quiet xray_iptable.service 2>/dev/null; then
+    IPTABLES_WAS_ENABLED=1
+fi
+
 #install Needed Packages
 apt-get update -y
 apt-get install wget curl socat git iptables python3 python3-venv python3-dev openssl libssl-dev ca-certificates supervisor -y
@@ -99,11 +106,12 @@ cat>/etc/systemd/system/xray_iptable.service<<-EOF
 [Unit]
 Description=Tproxy rule
 After=network-online.target
+Before=xray.service
 Wants=network-online.target
 
 [Service]
-
 Type=oneshot
+RemainAfterExit=yes
 ExecStart=/bin/bash /usr/local/V2RayPi/script/config_iptable.sh
 
 [Install]
@@ -112,7 +120,16 @@ EOF
 
 systemctl daemon-reload
 systemctl enable xray.service
-systemctl disable xray_iptable.service
+
+# Keep a fresh installation safe, while preserving an already-enabled
+# service when the installer is run again.
+if [[ "$IPTABLES_WAS_ENABLED" -eq 1 ]]; then
+    systemctl enable xray_iptable.service
+    systemctl restart xray_iptable.service
+else
+    systemctl disable xray_iptable.service >/dev/null 2>&1 || true
+    systemctl stop xray_iptable.service >/dev/null 2>&1 || true
+fi
 
 # 
 chmod +x /etc/rc.local

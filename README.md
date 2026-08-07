@@ -155,6 +155,8 @@ sudo reboot
 
 完成配置后，浏览器输入 V2RayPi 的地址（如 `192.168.66.200:1086`）即可访问管理面板
 
+> 安装脚本首次安装时**不会**启用 TPROXY iptables 规则，以避免尚未配置可用节点时旁路由断网。首次成功应用节点后，V2RayPi 会自动配置规则并启用 `xray_iptable.service`；之后每次应用节点都会检查该服务，重复安装也会保留已启用状态。
+
 ### MacOS 安装
 > 注意：MacOS 版本不支持透明代理功能
 
@@ -294,6 +296,10 @@ sudo systemctl status sing-box
 # 查看 Mieru 版本和运行状态（Mieru 节点使用）
 mieru version
 pgrep -x mieru
+
+# 查看 TPROXY 规则服务是否会在重启后自动恢复
+sudo systemctl is-enabled xray_iptable.service
+sudo systemctl status xray_iptable.service --no-pager
 ```
 
 ### 常见问题

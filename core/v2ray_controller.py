@@ -123,9 +123,27 @@ class V2rayController:
         result = self.restart()
         return  result
 
+    @staticmethod
+    def _iptables_service_state(action):
+        result = subprocess.run(
+            ["systemctl", action, "--quiet", "xray_iptable.service"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return result.returncode == 0
+
     def enable_iptables(self):
+        # The service is intentionally disabled on a fresh installation.  Once
+        # a node has been applied successfully, enable it and make sure the
+        # current boot has the rules as well.  This method is idempotent and is
+        # called for every successful node application.
+        if self._iptables_service_state("is-enabled"):
+            if not self._iptables_service_state("is-active"):
+                subprocess.check_output("systemctl start xray_iptable.service", shell=True)
+            return True
         subprocess.check_output("bash ./script/config_iptable.sh", shell=True)
         subprocess.check_output("systemctl enable xray_iptable.service", shell=True)
+        return True
 
     def check_new_geo_data(self, url) -> str:
         headers = requests.head(url + '/latest').headers

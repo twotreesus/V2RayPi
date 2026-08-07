@@ -320,6 +320,11 @@ class CoreService:
             cls.node_manager.all_nodes(),
             cls.node_manager.subscribe_hosts(),
         )
+        if result:
+            # The first successful node application enables TPROXY.  The
+            # controller checks the systemd service state, so this is safe to
+            # call on every subsequent node application and after reinstall.
+            cls.v2ray.enable_iptables()
         if restart_auto_detect:
             cls.restart_auto_detect()
         return result
@@ -344,11 +349,6 @@ class CoreService:
         cls.user_config.node = node
         if cls.re_apply_node(restart_auto_detect):
             cls.user_config.save()
-
-            if not cls.app_config.inited:
-                cls.v2ray.enable_iptables()
-                cls.app_config.inited = True
-                cls.app_config.save()
             result = True
         return result
 

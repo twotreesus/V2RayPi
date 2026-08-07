@@ -11,12 +11,16 @@ from .base_data_item import BaseDataItem
 class AppConfig(BaseDataItem):
     def __init__(self):
         self.port = 1086
-        self.inited = False
         self.password_hash = hashlib.sha256('admin'.encode()).hexdigest()
 
     def load(self):
         obj = super().load()
-        if obj == self:
+        # ``inited`` was used to gate the first TPROXY enable.  Service state
+        # is now the source of truth, so remove the legacy field on load.
+        if hasattr(obj, 'inited'):
+            delattr(obj, 'inited')
+            obj.save()
+        elif obj == self:
             self.save()
         return obj
 
