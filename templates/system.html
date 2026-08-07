@@ -152,9 +152,8 @@
                             <div class="mdui-col-xs-10" style="display: flex; align-items: center; gap: 64px;">
                                 <span id="lastUpdateTime" style="white-space: nowrap; font-size: 14px; color: rgba(0, 0, 0, 0.54);"></span>
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <div style="min-width: 120px;">
-                                        <label for="v2raypi_branch"></label>
-                                        <select id="v2raypi_branch" class="mdui-select" mdui-select="{position: 'bottom'}"></select>
+                                    <div id="v2raypi_branch_wrapper" style="min-width: 140px; display: none;">
+                                        <select id="v2raypi_branch"></select>
                                     </div>
                                     <div>
                                         <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2raypi_updates()">检查更新</button>
@@ -354,14 +353,22 @@
                 if (response.current) {
                     select.val(response.current);
                 }
-                mdui.updateSelects();
+                $('#v2raypi_branch_wrapper').show();
+                // The select is populated asynchronously, so mdui cannot auto-init
+                // it. Keep the instance to refresh the widget after option changes.
+                if (window.g_v2raypi_branch_select) {
+                    window.g_v2raypi_branch_select.handleUpdate();
+                } else {
+                    window.g_v2raypi_branch_select = new mdui.Select(select[0], { position: 'bottom' });
+                }
             }
         });
     }
 
 
     function get_v2raypi_recent_commits() {
-        ajax_request({ url: '/get_v2raypi_recent_commits' })
+        var branch = $('#v2raypi_branch').val();
+        ajax_request({ url: '/get_v2raypi_recent_commits', data: { branch: branch } })
             .done(function(response) {
             if (check_result(response)) {
                 if (response.last_update) {

@@ -460,8 +460,9 @@ def get_v2raypi_branches_api():
 @require_auth
 def get_v2raypi_recent_commits_api():
     try:
-        commits = CoreService.get_v2raypi_recent_commits()
-        last_update = CoreService.get_v2raypi_last_update_time()
+        branch = request.args.get('branch')
+        commits = CoreService.get_v2raypi_recent_commits(branch)
+        last_update = CoreService.get_v2raypi_last_update_time(branch)
         return jsonify({K.result: K.ok, 'commits': commits, 'last_update': last_update})
     except Exception:
         return jsonify({K.result: K.failed})

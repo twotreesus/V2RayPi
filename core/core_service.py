@@ -420,9 +420,31 @@ class CoreService:
         return jsonpickle.encode(policy, indent=4)
 
     @classmethod
-    def get_v2raypi_recent_commits(cls) -> List[str]:
+    def get_current_branch(cls) -> str:
         try:
-            cmd = ["git", "--no-pager", "log", "-n", "5", "--pretty=format:%ad|%s", "--date=format:%Y-%m-%d"]
+            cmd = ["git", "rev-parse", "--abbrev-ref", "HEAD"]
+            cwd = os.path.dirname(os.path.dirname(__file__))
+            result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            return result.stdout.strip() if result.returncode == 0 else ''
+        except Exception as e:
+            print(f'Exception in get_current_branch: {str(e)}')
+            return ''
+
+    @classmethod
+    def resolve_local_rev(cls, branch: str = None) -> str:
+        # Read history without touching the network: HEAD for the checked-out
+        # branch, otherwise the local remote-tracking ref for the target branch.
+        if not branch or not cls.is_valid_branch_name(branch):
+            return "HEAD"
+        if branch == cls.get_current_branch():
+            return "HEAD"
+        return f"origin/{branch}"
+
+    @classmethod
+    def get_v2raypi_recent_commits(cls, branch: str = None) -> List[str]:
+        try:
+            rev = cls.resolve_local_rev(branch)
+            cmd = ["git", "--no-pager", "log", "-n", "5", "--pretty=format:%ad|%s", "--date=format:%Y-%m-%d", rev, "--"]
             cwd = os.path.dirname(os.path.dirname(__file__))
             result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
             
@@ -435,9 +457,10 @@ class CoreService:
             return []
 
     @classmethod
-    def get_v2raypi_last_update_time(cls) -> str:
+    def get_v2raypi_last_update_time(cls, branch: str = None) -> str:
         try:
-            cmd = ["git", "--no-pager", "log", "-1", "--pretty=format:%ad", "--date=format:%Y-%m-%d %H:%M:%S"]
+            rev = cls.resolve_local_rev(branch)
+            cmd = ["git", "--no-pager", "log", "-1", "--pretty=format:%ad", "--date=format:%Y-%m-%d %H:%M:%S", rev, "--"]
             cwd = os.path.dirname(os.path.dirname(__file__))
             result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
             
