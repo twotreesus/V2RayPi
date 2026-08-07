@@ -45,7 +45,9 @@ class CoreService:
         {
             'apscheduler.executors.default': {
                 'class': 'apscheduler.executors.pool:ThreadPoolExecutor',
-                'max_workers': '1'
+                # Traffic sampling must keep its 1s cadence even while
+                # auto-detect is blocked on network probes.
+                'max_workers': '2'
             }
         })
 
@@ -271,7 +273,9 @@ class CoreService:
         # On a transparent side-router, system-wide counters mix the LAN
         # client side with the proxy's upstream side.  TrafficMonitor reads
         # counters installed at the client-facing iptables boundaries instead.
-        result['network'] = cls.traffic_monitor.sample()
+        # Read the scheduled job's latest rate so that every poller, whatever
+        # its cadence, sees the same number over the same interval.
+        result['network'] = cls.traffic_monitor.latest()
 
         return result
 
@@ -574,6 +578,28 @@ class CoreService:
             return commits
         except Exception:
             return []
+
+    TRAFFIC_SAMPLE_SPAN = 1
+
+    @classmethod
+    def traffic_sample_start(cls):
+        cls.scheduler.add_job(
+            CoreService.traffic_sample_job,
+            trigger='interval',
+            seconds=cls.TRAFFIC_SAMPLE_SPAN,
+            id=K.traffic_sample,
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True)
+        if cls.scheduler.state is not STATE_RUNNING :
+            cls.scheduler.start()
+
+    @classmethod
+    def traffic_sample_job(cls):
+        try:
+            cls.traffic_monitor.poll()
+        except Exception as e:
+            print(f'Traffic sampling failed: {e}')
 
     @classmethod
     def auto_detect_start(cls):

@@ -352,8 +352,7 @@
             if (success) {
                 close_login_dialog();
                 $("#status").click();
-                refresh_header_status();
-                add_interval(setInterval(refresh_header_status, 1000));
+                start_header_status_polling();
             }
         });
     }
@@ -388,8 +387,7 @@
         ajax_request({ url: '/api/refresh' })
             .done(function() {
                 $("#status").click();
-                refresh_header_status();
-                setInterval(refresh_header_status, 1000);
+                start_header_status_polling();
             });
     });
 
@@ -425,8 +423,20 @@
         $('#header_status').css('display', 'flex');
     }
 
+    // Must match SMOOTH_LEN in status.html so both views average the same
+    // number of samples and show the same speed.
+    var HS_SMOOTH_LEN = 5;
     var g_hs_up_samples = [];
     var g_hs_down_samples = [];
+    var g_hs_interval = null;
+
+    // The header is always visible, so its poller is not registered with
+    // add_interval: it must survive the clear_intervals() on page switches.
+    function start_header_status_polling() {
+        refresh_header_status();
+        if (g_hs_interval) return;
+        g_hs_interval = setInterval(refresh_header_status, 1000);
+    }
 
     function refresh_header_status() {
         $.ajax({ url: '/get_status', dataType: 'json', cache: false })
@@ -439,8 +449,8 @@
                 if (!net) return;
                 g_hs_up_samples.push(net['upload']);
                 g_hs_down_samples.push(net['download']);
-                if (g_hs_up_samples.length > 3) g_hs_up_samples.shift();
-                if (g_hs_down_samples.length > 3) g_hs_down_samples.shift();
+                if (g_hs_up_samples.length > HS_SMOOTH_LEN) g_hs_up_samples.shift();
+                if (g_hs_down_samples.length > HS_SMOOTH_LEN) g_hs_down_samples.shift();
                 var up = g_hs_up_samples.reduce(function(a, b) { return a + b; }, 0) / g_hs_up_samples.length;
                 var down = g_hs_down_samples.reduce(function(a, b) { return a + b; }, 0) / g_hs_down_samples.length;
                 $('#hs_upload').text(hs_format_speed(up));

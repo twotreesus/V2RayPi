@@ -26,7 +26,7 @@ class TrafficMonitorTest(unittest.TestCase):
         ):
             self.assertIsNone(TrafficMonitor._read_iptables_counter(DOWNLOAD_CHAIN))
 
-    def test_sample_uses_client_facing_counters_and_handles_reset(self):
+    def test_poll_uses_client_facing_counters_and_handles_reset(self):
         values = {
             UPLOAD_CHAIN: [1024, 3072, 100],
             DOWNLOAD_CHAIN: [2048, 6144, 200],
@@ -39,17 +39,16 @@ class TrafficMonitorTest(unittest.TestCase):
         monitor = TrafficMonitor(
             counter_reader=read_counter,
             system_reader=lambda: (999999, 999999),
-            cache_seconds=0,
         )
         with patch("core.traffic_monitor.time.monotonic", side_effect=clock):
-            self.assertEqual(monitor.sample(), {
+            self.assertEqual(monitor.poll(), {
                 "upload": 0.0, "download": 0.0, "source": "iptables",
             })
-            self.assertEqual(monitor.sample(), {
+            self.assertEqual(monitor.poll(), {
                 "upload": 1.0, "download": 2.0, "source": "iptables",
             })
             # The counters were reset when the firewall rules were reapplied.
-            self.assertEqual(monitor.sample(), {
+            self.assertEqual(monitor.poll(), {
                 "upload": 0.0, "download": 0.0, "source": "iptables",
             })
 
@@ -59,15 +58,32 @@ class TrafficMonitorTest(unittest.TestCase):
         monitor = TrafficMonitor(
             counter_reader=lambda chain: None,
             system_reader=lambda: next(system_values),
-            cache_seconds=0,
         )
         with patch("core.traffic_monitor.time.monotonic", side_effect=[10.0, 11.0]):
-            self.assertEqual(monitor.sample()["source"], "system")
-            self.assertEqual(monitor.sample(), {
+            self.assertEqual(monitor.poll()["source"], "system")
+            self.assertEqual(monitor.poll(), {
                 "upload": round(1024 / 1024, 2),
                 "download": round(2048 / 1024, 2),
                 "source": "system",
             })
+
+    def test_latest_is_idle_until_the_first_poll_and_then_repeatable(self):
+        monitor = TrafficMonitor(
+            counter_reader=lambda chain: None,
+            system_reader=lambda: (100, 200),
+        )
+        self.assertEqual(monitor.latest(), {
+            "upload": 0.0, "download": 0.0, "source": None,
+        })
+
+        with patch("core.traffic_monitor.time.monotonic", side_effect=[10.0, 11.0]):
+            monitor.poll()
+            monitor.poll()
+
+        # Reading twice must not advance the baseline: both callers see the
+        # same rate over the same interval.
+        self.assertEqual(monitor.latest(), monitor.latest())
+        self.assertEqual(monitor.latest()["source"], "system")
 
 
 if __name__ == "__main__":

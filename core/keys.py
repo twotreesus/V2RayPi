@@ -39,6 +39,7 @@ class Keyword:
     type = 'type'
     outbound = 'outbound'
     auto_detect = 'auto_detect'
+    traffic_sample = 'traffic_sample'
     ps = 'ps'
     
     # Auth related keywords

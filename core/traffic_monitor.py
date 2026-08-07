@@ -12,6 +12,13 @@ client-facing boundaries instead:
 This module only samples those counters.  It deliberately keeps a system
 counter fallback for macOS/development environments where the Linux rules do
 not exist.
+
+A rate is a delta over an interval, so whoever advances the baseline defines
+the interval.  Sampling is therefore driven by a single scheduled job rather
+than by incoming HTTP requests: several pages poll ``/get_performance``
+independently, and letting each request advance the baseline would slice one
+second into unrelated fragments and hand every caller a different rate.
+Requests only read the most recent rate via :meth:`TrafficMonitor.latest`.
 """
 
 from __future__ import annotations
@@ -31,19 +38,18 @@ DOWNLOAD_CHAIN = "V2RAYPI_TRAFFIC_DOWN"
 class TrafficMonitor:
     """Convert monotonically increasing byte counters into KB/s rates."""
 
+    IDLE_RATES = {"upload": 0.0, "download": 0.0, "source": None}
+
     def __init__(
         self,
         counter_reader: Optional[Callable[[str], Optional[int]]] = None,
         system_reader: Optional[Callable[[], Tuple[int, int]]] = None,
-        cache_seconds: float = 0.1,
     ):
         self._counter_reader = counter_reader or self._read_iptables_counter
         self._system_reader = system_reader or self._read_system_counters
-        self._cache_seconds = cache_seconds
         self._last_counters: Optional[Tuple[str, int, int]] = None
         self._last_time: Optional[float] = None
-        self._cached_at: Optional[float] = None
-        self._cached_result = None
+        self._latest_rates: Optional[dict] = None
         self._lock = threading.Lock()
 
     @staticmethod
@@ -88,19 +94,20 @@ class TrafficMonitor:
         upload, download = self._system_reader()
         return "system", upload, download
 
-    def sample(self) -> dict:
+    def latest(self) -> dict:
+        """Return the most recently measured rates without resampling."""
+        with self._lock:
+            if self._latest_rates is None:
+                return dict(self.IDLE_RATES)
+            return dict(self._latest_rates)
+
+    def poll(self) -> dict:
+        """Advance the baseline and measure the rate since the previous poll.
+
+        Only the sampling job should call this; see the module docstring.
+        """
         now = time.monotonic()
         with self._lock:
-            # The status page and the header can poll at nearly the same time.
-            # Avoid turning the second request into an artificial near-zero
-            # sample while still keeping the UI responsive.
-            if (
-                self._cached_result is not None
-                and self._cached_at is not None
-                and now - self._cached_at < self._cache_seconds
-            ):
-                return dict(self._cached_result)
-
             source, upload, download = self._sample_counters()
             current = (source, upload, download)
             elapsed = now - self._last_time if self._last_time is not None else 0.0
@@ -121,10 +128,9 @@ class TrafficMonitor:
 
             self._last_counters = current
             self._last_time = now
-            self._cached_at = now
-            self._cached_result = {
+            self._latest_rates = {
                 "upload": round(max(0.0, upload_rate), 2),
                 "download": round(max(0.0, download_rate), 2),
                 "source": source,
             }
-            return dict(self._cached_result)
+            return dict(self._latest_rates)
