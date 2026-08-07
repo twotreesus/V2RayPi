@@ -74,7 +74,7 @@ sequenceDiagram
 - **多协议支持**：支持 VMess、VLESS（含 Reality）、AnyTLS、Hysteria2、Mieru、Shadowsocks
 - **双订阅格式**：兼容 v2rayN base64 订阅和 Clash YAML 订阅
 - **节点收藏**：支持收藏常用节点，快速切换
-- **实时监控**：实时显示网络速度和系统性能图表
+- **实时监控**：实时显示网络速度和系统性能图表；Linux 旁路由优先使用客户端侧 iptables 计数，避免将代理上游流量与客户端上下行混合
 - **配置管理**：支持配置备份和恢复，便于迁移和灾难恢复
 - **自动化管理**：自动处理订阅更新和策略配置
 - **一键更新**：内置 xray-core / sing-box / Mieru 及系统更新功能
@@ -329,7 +329,13 @@ sudo systemctl status xray_iptable.service --no-pager
    - 检查 iptables 规则：`sudo iptables -t mangle -L`
    - 重启服务并检查日志
 
-6. Mieru 节点无法连接或切换后未生效
+6. 上传/下载速度显示异常
+   - Linux 旁路由的监控使用 `V2RAYPI_TRAFFIC_UP` 和 `V2RAYPI_TRAFFIC_DOWN` 两个 mangle 计数链：上传统计客户端进入旁路由的流量，下载统计转发或代理输出到客户端的流量，不再直接使用主机所有网卡的合计值。
+   - 检查计数器是否存在：`sudo iptables -t mangle -L V2RAYPI_TRAFFIC_UP -v -x -n` 和 `sudo iptables -t mangle -L V2RAYPI_TRAFFIC_DOWN -v -x -n`。
+   - 脚本会按默认路由接口自动识别 LAN 网段；多网卡或特殊拓扑可在执行规则脚本前设置 `V2RAYPI_LAN_CIDR`，例如 `V2RAYPI_LAN_CIDR=10.0.0.0/24 sudo -E ./script/config_iptable.sh`。
+   - 如果规则链不存在，页面会暂时显示系统网卡计数器作为兼容回退，并在接口返回的 `network.source` 中标记为 `system`。
+
+7. Mieru 节点无法连接或切换后未生效
    - 在「系统维护」中确认已安装 Mieru，并检查当前版本。
    - Linux 安装会创建 `mieru` 专用系统用户；使用 `pgrep -u mieru -x mieru` 确认 sidecar 是否已启动。
    - 检查 owner bypass 是否存在：`sudo iptables -t mangle -L V2RAY_MASK -n -v`，应看到 `owner UID match mieru` 规则。

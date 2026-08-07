@@ -32,14 +32,14 @@ from .v2ray_controller import V2rayController, make_controller
 from .node_manager import NodeManager
 from .keys import Keyword as K
 from .v2ray_user_config import V2RayUserConfig
+from .traffic_monitor import TrafficMonitor
 
 class CoreService:
     app_config : AppConfig = None
     user_config: V2RayUserConfig = V2RayUserConfig()
     v2ray:V2rayController = make_controller()
     node_manager:NodeManager = NodeManager()
-    _last_net_io = None
-    _last_net_time = None
+    traffic_monitor = TrafficMonitor()
     scheduler:BackgroundScheduler = BackgroundScheduler(
         {
             'apscheduler.executors.default': {
@@ -262,21 +262,10 @@ class CoreService:
             "used" : int((memory_usage.total - memory_usage.available) / (1024 * 1024))
         }
 
-        now = time.time()
-        net_io = psutil.net_io_counters()
-        if cls._last_net_io is not None and cls._last_net_time is not None:
-            elapsed = now - cls._last_net_time
-            upload = (net_io.bytes_sent - cls._last_net_io.bytes_sent) / elapsed
-            download = (net_io.bytes_recv - cls._last_net_io.bytes_recv) / elapsed
-        else:
-            upload = 0.0
-            download = 0.0
-        cls._last_net_io = net_io
-        cls._last_net_time = now
-        result['network'] = {
-            "upload": round(upload / 1024, 2),
-            "download": round(download / 1024, 2)
-        }
+        # On a transparent side-router, system-wide counters mix the LAN
+        # client side with the proxy's upstream side.  TrafficMonitor reads
+        # counters installed at the client-facing iptables boundaries instead.
+        result['network'] = cls.traffic_monitor.sample()
 
         return result
 
