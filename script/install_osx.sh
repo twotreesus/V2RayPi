@@ -1,14 +1,11 @@
 #!/bin/bash
 
 brew update
-brew install wget curl python3 xray sing-box
+brew install wget curl python3 mihomo
 
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
-
-# install Mieru from its official portable release archive
-bash "$SCRIPT_DIR/update_mieru.sh" install
 
 # setup venv and install pip packages
 VENV_DIR="$PROJECT_DIR/venv"
@@ -18,5 +15,5 @@ pip install --upgrade pip setuptools wheel
 pip install -r $SCRIPT_DIR/requirements.txt
 deactivate
 
-mkdir -p ~/Library/Logs/xray/
-brew services start xray
+mkdir -p ~/Library/Logs/mihomo/
+brew services start mihomo

@@ -69,9 +69,6 @@
                                 <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">收藏</strong>
                             </div>
                             <div style="flex: 1;"></div>
-                            <div style="flex-shrink: 0; padding-right: 8px;">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_manual_node()">添加</button>
-                            </div>
                         </div>
                     </td>
                 </tr>
@@ -108,11 +105,8 @@
                 <div class="mdui-chip favorite_node" title="添加到收藏">
                     <span class="mdui-chip-icon mdui-color-grey-400"><i class="mdui-icon material-icons">star_border</i></span>
                 </div>
-                <div class="mdui-chip get_node_link" title="拷贝链接">
+                <div class="mdui-chip get_node_link" title="拷贝节点配置">
                     <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">links</i></span>
-                </div>
-                <div class="mdui-chip get_node_qr" title="获取二维码">
-                    <span class="mdui-chip-icon mdui-color-grey-500"><i class="mdui-icon material-icons">crop_free</i></span>
                 </div>
                 <div class="mdui-chip delete_node" title="删除节点">
                     <span class="mdui-chip-icon mdui-color-red-500"><i class="mdui-icon material-icons">delete</i></span>
@@ -213,6 +207,21 @@
         border-color: #ef6c00;
         background-color: rgba(239, 108, 0, 0.08);
     }
+    .node-type-trojan {
+        color: #c62828;
+        border-color: #c62828;
+        background-color: rgba(198, 40, 40, 0.08);
+    }
+    .node-type-tuic {
+        color: #00695c;
+        border-color: #00695c;
+        background-color: rgba(0, 105, 92, 0.08);
+    }
+    .node-type-other {
+        color: #546e7a;
+        border-color: #546e7a;
+        background-color: rgba(84, 110, 122, 0.08);
+    }
 </style>
 
 <script src="/static/js/qrcode.js"></script>
@@ -279,11 +288,6 @@
         $("#node_list_body").on("click", ".get_node_link", function() {
             var row = $(this).closest("tr");
             get_node_link(row.data("url"), row.data("index"));
-        });
-
-        $("#node_list_body").on("click", ".get_node_qr", function() {
-            var row = $(this).closest("tr");
-            get_node_qr(row.data("url"), row.data("index"));
         });
 
         $("#node_list_body").on("click", ".delete_node", function() {
@@ -358,14 +362,15 @@
             }
 
             function protocol_badge(protocol) {
-                protocol = (protocol || "vmess").toLowerCase();
-                if (protocol === "hysteria2") {
-                    return { label: "hy2", className: "hy2" };
-                }
-                if (protocol === "mieru") {
-                    return { label: "mieru", className: "mieru" };
-                }
-                return { label: protocol, className: protocol };
+                // The protocol comes straight from the Clash `type` field, so any type
+                // mihomo supports can show up here.  Only a few get their own colour;
+                // the rest share a neutral badge instead of an undefined class.
+                protocol = (protocol || "").toLowerCase();
+                var labels = { hysteria2: "hy2", hysteria: "hy1", socks5: "socks", wireguard: "wg" };
+                var styled = ["vmess", "vless", "ss", "anytls", "mieru", "trojan", "tuic", "hy2"];
+                var label = labels[protocol] || protocol || "unknown";
+                var className = styled.indexOf(label) !== -1 ? label : "other";
+                return { label: label, className: className };
             }
 
             function make_node_row(url, node_data, groupIndex, nodeIndex, isFavorite) {
@@ -482,16 +487,7 @@
             if (check_result(data)) {
                 link = data["node_link"];
                 copy_to_clipboard(link);
-                message("链接已复制到剪贴板");
-            }
-        })
-    }
-
-    function get_node_qr(url, index) {
-        ajax_request({ url: "/get_node_link", data: {subscribe:url, node_index:index} }).then(function (data) {
-            if (check_result(data)) {
-                link = data["node_link"];
-                show_qr_code(link);
+                message("节点配置已复制到剪贴板");
             }
         })
     }
@@ -556,7 +552,7 @@
     }
 
     function add_subscribe() {
-        mdui.prompt("请输入订阅地址：<br><small style='color:#888'>支持 V2rayN base64 格式和 Clash YAML 格式</small>", function (url) {
+        mdui.prompt("请输入订阅地址：<br><small style='color:#888'>仅支持 Clash YAML 格式订阅</small>", function (url) {
             if (!url.length) {
                 return;
             }
@@ -570,25 +566,6 @@
                 }
             }).always(function () {
                 close_toast();
-                refresh();
-            });
-        });
-    }
-
-    function add_manual_node() {
-        mdui.prompt("请输入节点链接：<br><small style='color:#888'>支持 vmess://, vless://, ss://, anytls://, hysteria2://, hy2://, mierus://</small>", function (url) {
-            if (!url.length) {
-                return;
-            }
-            message("正在添加新的节点列表...");
-            ajax_request({ url: "/add_manual_node", data: {url:url} }).then(function (data) {
-                if (check_result(data)) {
-                    message("添加成功");
-                }
-                else {
-                    message("添加失败");
-                }
-            }).always(function () {
                 refresh();
             });
         });

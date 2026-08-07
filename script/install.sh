@@ -13,7 +13,7 @@ VENV_DIR="$PROJECT_DIR/venv"
 # Preserve the TPROXY service state across reinstalls. A fresh installation
 # remains disabled until the first node is successfully applied.
 IPTABLES_WAS_ENABLED=0
-if command -v systemctl >/dev/null 2>&1 && systemctl is-enabled --quiet xray_iptable.service 2>/dev/null; then
+if command -v systemctl >/dev/null 2>&1 && systemctl is-enabled --quiet mihomo_iptable.service 2>/dev/null; then
     IPTABLES_WAS_ENABLED=1
 fi
 
@@ -42,39 +42,29 @@ cat>/etc/rc.local<<-EOF
 # bits.
 #
 # By default this script does nothing.
-if [ ! -d "/var/log/xray" ]; then
-    mkdir /var/log/xray
+if [ ! -d "/var/log/mihomo" ]; then
+    mkdir /var/log/mihomo
 fi
 exit 0
 EOF
 
-# install sing-box
-curl -fsSL https://sing-box.app/install.sh | sh
+# install mihomo (portable official release for the current CPU architecture)
+mkdir -p /etc/mihomo/
+mkdir -p /var/log/mihomo/
+bash "$SCRIPT_DIR/update_mihomo.sh" install
 
-# install Mieru (portable official release for the current CPU architecture)
-bash "$SCRIPT_DIR/update_mieru.sh" install
-
-# Run the native Mieru sidecar under a dedicated unprivileged account.  The
-# iptables owner rule installed below uses this account to bypass TPROXY and
-# prevents Mieru's own upstream connection from looping back into Xray.
-MIERU_USER="${MIERU_USER:-mieru}"
-MIERU_HOME="${MIERU_HOME:-/var/lib/$MIERU_USER}"
-if ! id -u "$MIERU_USER" >/dev/null 2>&1; then
-    useradd --system --user-group --home-dir "$MIERU_HOME" \
-        --create-home --shell /usr/sbin/nologin "$MIERU_USER"
+# mihomo refuses to start without a config file.  Seed a direct-mode
+# placeholder so the service is startable before the first node is applied;
+# V2RayPi overwrites it on every node application.
+if [ ! -f /etc/mihomo/config.yaml ]; then
+    cat>/etc/mihomo/config.yaml<<-EOF
+mode: direct
+log-level: warning
+rules:
+  - MATCH,DIRECT
+EOF
 fi
-MIERU_GROUP="$(id -gn "$MIERU_USER")"
-install -d -o "$MIERU_USER" -g "$MIERU_GROUP" -m 750 "$MIERU_HOME"
-# Stop a legacy root-owned Mieru process before the first dedicated-user start.
-# Otherwise its listeners can keep the new sidecar from binding its ports.
-pkill -KILL -x mieru >/dev/null 2>&1 || true
-
-# install xray
-mkdir -p /usr/local/etc/xray/
-touch /usr/local/etc/xray/config.json
-chmod 644 /usr/local/etc/xray/config.json
-mkdir -p /var/log/xray/
-bash $SCRIPT_DIR/update_xray.sh install -u root
+chmod 644 /etc/mihomo/config.yaml
 
 #configure Supervisor
 mkdir /etc/supervisor
@@ -100,13 +90,36 @@ EOF
 systemctl restart supervisor
 supervisorctl -c /etc/supervisor/supervisord.conf restart v2raypi
 
+# mihomo service.  Logs are appended to a file rather than left in the journal
+# so that the management UI can tail them the same way it always has.
+cat>/etc/systemd/system/mihomo.service<<-EOF
+[Unit]
+Description=mihomo Daemon
+After=network.target nss-lookup.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/sleep 1s
+ExecStart=/usr/local/bin/mihomo -d /etc/mihomo
+ExecReload=/bin/kill -HUP \$MAINPID
+Restart=always
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
+StandardOutput=append:/var/log/mihomo/mihomo.log
+StandardError=append:/var/log/mihomo/mihomo.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 # ip table
 echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf && sysctl -p
-cat>/etc/systemd/system/xray_iptable.service<<-EOF
+cat>/etc/systemd/system/mihomo_iptable.service<<-EOF
 [Unit]
 Description=Tproxy rule
 After=network-online.target
-Before=xray.service
+Before=mihomo.service
 Wants=network-online.target
 
 [Service]
@@ -119,19 +132,19 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable xray.service
+systemctl enable mihomo.service
 
 # Keep a fresh installation safe, while preserving an already-enabled
 # service when the installer is run again.
 if [[ "$IPTABLES_WAS_ENABLED" -eq 1 ]]; then
-    systemctl enable xray_iptable.service
-    systemctl restart xray_iptable.service
+    systemctl enable mihomo_iptable.service
+    systemctl restart mihomo_iptable.service
 else
-    systemctl disable xray_iptable.service >/dev/null 2>&1 || true
-    systemctl stop xray_iptable.service >/dev/null 2>&1 || true
+    systemctl disable mihomo_iptable.service >/dev/null 2>&1 || true
+    systemctl stop mihomo_iptable.service >/dev/null 2>&1 || true
 fi
 
-# 
+#
 chmod +x /etc/rc.local
 systemctl start rc-local
 systemctl status rc-local --no-pager

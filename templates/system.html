@@ -4,12 +4,12 @@
         <div class="mdui-table-fluid">
             <table class="mdui-table">
                 <tbody>
-                <!-- Xray Core Update -->
+                <!-- mihomo Core Update -->
                 <tr>
                     <td colspan="2" class="mdui-typo">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">xray-core</h5>
+                                <h5 style="margin: 0; white-space: nowrap;">mihomo</h5>
                             </div>
                         </div>
                     </td>
@@ -21,7 +21,7 @@
                                 <span style="white-space: nowrap;">当前版本</span>
                             </div>
                             <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <span id="v2ray_current_ver"></span>
+                                <span id="mihomo_current_ver"></span>
                             </div>
                         </div>
                     </td>
@@ -34,98 +34,12 @@
                             </div>
                             <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <span id="v2ray_new_ver" class="mdui-text-color-blue" style="display: inline-block; min-width: 100px;"></span>
+                                    <span id="mihomo_new_ver" class="mdui-text-color-blue" style="display: inline-block; min-width: 100px;"></span>
                                     <div id="check_update">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2ray_new_ver()">查询</button>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_mihomo_new_ver()">查询</button>
                                     </div>
                                     <div id="update" style="display: none">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_v2ray()">升级</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
-                <!-- sing-box Update -->
-                <tr>
-                    <td colspan="2" class="mdui-typo">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">sing-box</h5>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">当前版本</span>
-                            </div>
-                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <span id="singbox_current_ver"></span>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">最新版本</span>
-                            </div>
-                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <span id="singbox_new_ver" class="mdui-text-color-blue" style="display: inline-block; min-width: 100px;"></span>
-                                    <div id="singbox_check_update">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_singbox_new_ver()">查询</button>
-                                    </div>
-                                    <div id="singbox_update" style="display: none">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_singbox()">升级</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
-                <!-- Mieru Update -->
-                <tr>
-                    <td colspan="2" class="mdui-typo">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">Mieru</h5>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">当前版本</span>
-                            </div>
-                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <span id="mieru_current_ver"></span>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">最新版本</span>
-                            </div>
-                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <span id="mieru_new_ver" class="mdui-text-color-blue" style="display: inline-block; min-width: 100px;"></span>
-                                    <div id="mieru_check_update">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_mieru_new_ver()">查询</button>
-                                    </div>
-                                    <div id="mieru_update" style="display: none">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_mieru()">升级</button>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_mihomo()">升级</button>
                                     </div>
                                 </div>
                             </div>
@@ -301,16 +215,8 @@
                 <tr id="log-content" style="display: none;">
                     <td colspan="2" style="padding: 4px 0;">
                         <div style="margin: 0 8px;">
-                            <div style="font-size: 12px; color: rgba(255,255,255,0.5); background: #1e1e1e; padding: 4px 10px; border-radius: 4px 4px 0 0; margin-bottom: -4px;">访问日志</div>
-                            <pre style="max-height: 200px; overflow-x: auto; background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 0 4px 4px 4px; margin: 0;"><code id="log-access-content"></code></pre>
-                        </div>
-                    </td>
-                </tr>
-                <tr id="log-content2" style="display: none;">
-                    <td colspan="2" style="padding: 4px 0;">
-                        <div style="margin: 0 8px;">
-                            <div style="font-size: 12px; color: rgba(255,255,255,0.5); background: #1e1e1e; padding: 4px 10px; border-radius: 4px 4px 0 0; margin-bottom: -4px;">错误日志</div>
-                            <pre style="max-height: 200px; overflow-x: auto; background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 0 4px 4px 4px; margin: 0;"><code id="log-error-content"></code></pre>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.5); background: #1e1e1e; padding: 4px 10px; border-radius: 4px 4px 0 0; margin-bottom: -4px;">运行日志</div>
+                            <pre style="max-height: 200px; overflow-x: auto; background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 0 4px 4px 4px; margin: 0;"><code id="log-mihomo-content"></code></pre>
                         </div>
                     </td>
                 </tr>
@@ -330,9 +236,7 @@
         ajax_request({ url: "/get_system_status" })
             .done(function (data) {
                 if (check_result(data)) {
-                    $("#v2ray_current_ver").html(data["version"]);
-                    $("#singbox_current_ver").html(data["singbox_version"]);
-                    $("#mieru_current_ver").html(data["mieru_version"]);
+                    $("#mihomo_current_ver").html(data["version"]);
                 }
             });
         get_v2raypi_recent_commits();
@@ -391,82 +295,6 @@
         });
     }
 
-    function check_singbox_new_ver() {
-        message("正在查询...");
-        ajax_request({ url: "/check_singbox_new_ver" })
-            .done(function (data) {
-            window.g_singbox_new_version = data["version"];
-            $("#singbox_new_ver").html(window.g_singbox_new_version);
-            var current = $("#singbox_current_ver").html();
-            if (window.g_singbox_new_version === current) {
-                message("当前已是最新版本无需更新");
-                $("#singbox_check_update").show();
-                $("#singbox_update").hide();
-            } else {
-                message("已发布新版本，点击升级按钮更新");
-                $("#singbox_check_update").hide();
-                $("#singbox_update").show();
-            }
-        }).fail(function () {
-            message("检查失败");
-        });
-    }
-
-    function update_singbox() {
-        pop_toast("正在升级...");
-        ajax_request({ url: "/update_singbox" })
-            .done(function (data) {
-                if (check_result(data)) {
-                    update_toast("升级成功");
-                } else {
-                    update_toast("升级失败");
-                }
-            })
-            .always(function () {
-                close_toast();
-                refresh();
-                check_singbox_new_ver();
-            });
-    }
-
-    function check_mieru_new_ver() {
-        message("正在查询...");
-        ajax_request({ url: "/check_mieru_new_ver" })
-            .done(function (data) {
-            window.g_mieru_new_version = data["version"];
-            $("#mieru_new_ver").html(window.g_mieru_new_version);
-            var current = $("#mieru_current_ver").html();
-            if (window.g_mieru_new_version === current) {
-                message("当前已是最新版本无需更新");
-                $("#mieru_check_update").show();
-                $("#mieru_update").hide();
-            } else {
-                message("已发布新版本，点击升级按钮更新");
-                $("#mieru_check_update").hide();
-                $("#mieru_update").show();
-            }
-        }).fail(function () {
-            message("检查失败");
-        });
-    }
-
-    function update_mieru() {
-        pop_toast("正在升级...");
-        ajax_request({ url: "/update_mieru" })
-            .done(function (data) {
-                if (check_result(data)) {
-                    update_toast("升级成功（运行中的 Mieru 将在下次启动时使用新版本）");
-                } else {
-                    update_toast("升级失败");
-                }
-            })
-            .always(function () {
-                close_toast();
-                refresh();
-                check_mieru_new_ver();
-            });
-    }
-
     function check_v2raypi_updates() {
         var branch = $('#v2raypi_branch').val();
         var toast = pop_toast("正在检查更新...");
@@ -500,13 +328,13 @@
         });
     }
 
-    function check_v2ray_new_ver() {
+    function check_mihomo_new_ver() {
         message("正在查询...");
-        ajax_request({ url: "/check_v2ray_new_ver" })
+        ajax_request({ url: "/check_mihomo_new_ver" })
             .done(function (data) {
             window.g_new_version = data["version"];
-            $("#v2ray_new_ver").html(window.g_new_version)
-            var current_version = $("#v2ray_current_ver").html();
+            $("#mihomo_new_ver").html(window.g_new_version)
+            var current_version = $("#mihomo_current_ver").html();
             if (window.g_new_version === current_version) {
                 message("当前已是最新版本无需更新");
                 $("#check_update").show();
@@ -522,9 +350,9 @@
         });
     }
 
-    function update_v2ray() {
+    function update_mihomo() {
         pop_toast("正在升级...");
-        ajax_request({ url: "/update_v2ray" })
+        ajax_request({ url: "/update_mihomo" })
             .done(function (data) {
                 if (check_result(data)) {
                     update_toast("升级成功")
@@ -536,7 +364,7 @@
             .always(function () {
                 close_toast();
                 refresh();
-                check_v2ray_new_ver();
+                check_mihomo_new_ver();
             });
     }
 
@@ -631,23 +459,12 @@
 
     function toggle_log_display(enabled) {
         if (enabled) {
-            $('#log-content, #log-content2').show();
+            $('#log-content').show();
             logEventSource = new EventSource('/stream_logs');
 
-            logEventSource.addEventListener('access', function(e) {
+            logEventSource.addEventListener('mihomo', function(e) {
                 var msg = JSON.parse(e.data);
-                var el = $('#log-access-content');
-                if (msg.init) {
-                    el.html(msg.text.replace(/\n/g, '<br>'));
-                } else {
-                    el.append(msg.text.replace(/\n/g, '<br>'));
-                }
-                scroll_log_to_bottom(el);
-            });
-
-            logEventSource.addEventListener('xray_error', function(e) {
-                var msg = JSON.parse(e.data);
-                var el = $('#log-error-content');
+                var el = $('#log-mihomo-content');
                 if (msg.init) {
                     el.html(msg.text.replace(/\n/g, '<br>'));
                 } else {
@@ -656,7 +473,7 @@
                 scroll_log_to_bottom(el);
             });
         } else {
-            $('#log-content, #log-content2').hide();
+            $('#log-content').hide();
             if (logEventSource) {
                 logEventSource.close();
                 logEventSource = null;

@@ -29,16 +29,17 @@ from datetime import datetime, timedelta
 import secrets
 
 from .app_config import AppConfig
-from .v2ray_controller import V2rayController, make_controller
+from .mihomo_controller import MihomoController, make_controller
 from .node_manager import NodeManager
 from .keys import Keyword as K
-from .v2ray_user_config import V2RayUserConfig
+from .mihomo_user_config import MihomoUserConfig
+from .node import Node
 from .traffic_monitor import TrafficMonitor
 
 class CoreService:
     app_config : AppConfig = None
-    user_config: V2RayUserConfig = V2RayUserConfig()
-    v2ray:V2rayController = make_controller()
+    user_config: MihomoUserConfig = MihomoUserConfig()
+    mihomo:MihomoController = make_controller()
     node_manager:NodeManager = NodeManager()
     traffic_monitor = TrafficMonitor()
     scheduler:BackgroundScheduler = BackgroundScheduler(
@@ -59,7 +60,13 @@ class CoreService:
 
         cls.app_config = AppConfig().load()
         cls.node_manager = NodeManager().load()
-        cls.user_config = V2RayUserConfig().load()
+        cls.user_config = MihomoUserConfig().load()
+
+        # A node selected before the move to mihomo has no Clash payload to hand
+        # to the core, so treat it as no selection rather than repeatedly failing
+        # to apply it.
+        if not getattr(cls.user_config.node, 'clash', None):
+            cls.user_config.node = Node()
 
         cls.restart_auto_detect()
 
@@ -207,15 +214,12 @@ class CoreService:
             
     @classmethod
     def status(cls) -> dict:
-        running = cls.v2ray.running()
-        version = cls.v2ray.version()
+        running = cls.mihomo.running()
+        version = cls.mihomo.version()
 
         result = {
             K.running: running,
             K.version: version,
-            'singbox_version': cls.v2ray.singbox_version(),
-            'mieru_version': cls.v2ray.mieru_version(),
-            'mieru_running': cls.v2ray.mieru_running(),
             K.proxy_mode: cls.user_config.proxy_mode,
         }
 
@@ -300,11 +304,6 @@ class CoreService:
         cls.re_apply_node()
 
     @classmethod
-    def add_manual_node(cls, url):
-        cls.node_manager.add_manual_node(url)
-        cls.re_apply_node()
-
-    @classmethod
     def delete_node(cls, url, index):
         cls.node_manager.delete_node(url, index)
         cls.re_apply_node()
@@ -314,7 +313,7 @@ class CoreService:
         if not cls.user_config.node.add:
             return True
 
-        result = cls.v2ray.apply_node(
+        result = cls.mihomo.apply_node(
             cls.user_config,
             cls.node_manager.all_nodes(),
             cls.node_manager.subscribe_hosts(),
@@ -323,7 +322,7 @@ class CoreService:
             # The first successful node application enables TPROXY.  The
             # controller checks the systemd service state, so this is safe to
             # call on every subsequent node application and after reinstall.
-            cls.v2ray.enable_iptables()
+            cls.mihomo.enable_iptables()
         if restart_auto_detect:
             cls.restart_auto_detect()
         return result
@@ -335,8 +334,8 @@ class CoreService:
             cls.auto_detect_start()
 
     @classmethod
-    def stop_v2ray(cls) -> bool:
-        result = cls.v2ray.stop()
+    def stop_mihomo(cls) -> bool:
+        result = cls.mihomo.stop()
         cls.auto_detect_cancel()
 
         return result
@@ -362,9 +361,9 @@ class CoreService:
         return result
 
     @classmethod
-    def update_v2ray(cls) -> bool:
+    def update_mihomo(cls) -> bool:
         result = True
-        result = cls.v2ray.update()
+        result = cls.mihomo.update()
         if result:
             if cls.user_config.advance_config.geo_data.enabled():
                 cls.update_geo_data()
@@ -372,25 +371,17 @@ class CoreService:
         return result
 
     @classmethod
-    def update_singbox(cls) -> bool:
-        return cls.v2ray.update_singbox()
-
-    @classmethod
-    def update_mieru(cls) -> bool:
-        return cls.v2ray.update_mieru()
-
-    @classmethod
     def check_new_geo_data(cls) -> str:
         check_url = cls.user_config.advance_config.geo_data.check_url
-        new_version = cls.v2ray.check_new_geo_data(check_url)
+        new_version = cls.mihomo.check_new_geo_data(check_url)
         return new_version
 
     @classmethod
     def update_geo_data(cls):
         check_url = cls.user_config.advance_config.geo_data.check_url
-        new_version = cls.v2ray.check_new_geo_data(check_url)
+        new_version = cls.mihomo.check_new_geo_data(check_url)
 
-        cls.v2ray.update_geo_data(check_url)
+        cls.mihomo.update_geo_data(check_url)
         cls.user_config.advance_config.geo_data.current_version = new_version
         cls.user_config.save()
 
@@ -407,7 +398,7 @@ class CoreService:
     @classmethod
     def reset_advance_config(cls):
         result = True
-        cls.user_config.advance_config = V2RayUserConfig.AdvanceConfig()
+        cls.user_config.advance_config = MihomoUserConfig.AdvanceConfig()
         result = cls.re_apply_node()
         if result:
             cls.user_config.save()
@@ -415,9 +406,9 @@ class CoreService:
 
     @classmethod
     def make_policy(cls, contents:List[str], type:str, outbound:str) -> dict:
-        type = V2RayUserConfig.AdvanceConfig.Policy.Type[type]
-        outbound = V2RayUserConfig.AdvanceConfig.Policy.Outbound[outbound]
-        policy = V2RayUserConfig.AdvanceConfig.Policy()
+        type = MihomoUserConfig.AdvanceConfig.Policy.Type[type]
+        outbound = MihomoUserConfig.AdvanceConfig.Policy.Outbound[outbound]
+        policy = MihomoUserConfig.AdvanceConfig.Policy()
         policy.contents = contents
         policy.type = type.name
         policy.outbound = outbound.name
@@ -615,7 +606,7 @@ class CoreService:
 
     @classmethod
     def auto_detect_job(cls):
-        detect:V2RayUserConfig.AdvanceConfig.AutoDetectAndSwitch = cls.user_config.advance_config.auto_detect
+        detect:MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch = cls.user_config.advance_config.auto_detect
 
         DEFAULT_TIMEOUT = 5 # seconds
         class TimeoutHTTPAdapter(HTTPAdapter):

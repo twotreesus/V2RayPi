@@ -9,7 +9,7 @@ from flask import Flask, render_template, jsonify, request, Response, make_respo
 
 from core.core_service import CoreService
 from core.keys import Keyword as K
-from core.v2ray_default_path import V2rayDefaultPath
+from core.mihomo_default_path import MihomoDefaultPath
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(dir_path)
@@ -57,10 +57,6 @@ def subscribe_page():
 def advance_page():
     return render_template("advance.html")
 
-@app.route('/log.html')
-def log_page():
-    return render_template("log.html")
-
 @app.route('/system.html')
 def system_page():
     return render_template("system.html")
@@ -102,7 +98,7 @@ def start_service_api():
 @require_auth
 def stop_service_api():
     result = K.failed
-    if CoreService.stop_v2ray():
+    if CoreService.stop_mihomo():
         result = K.ok
     return jsonify({K.result: result})
 
@@ -135,46 +131,22 @@ def get_performance_api():
     performance.update({K.result: K.ok})
     return jsonify(performance)
 
-@app.route('/check_v2ray_new_ver')
+@app.route('/check_mihomo_new_ver')
 @require_auth
-def check_v2ray_new_ver_api():
-    version = CoreService.v2ray.check_new_version()
+def check_mihomo_new_ver_api():
+    version = CoreService.mihomo.check_new_version()
     return jsonify({
         K.result : K.ok,
         K.version : version})
 
-@app.route('/update_v2ray')
+@app.route('/update_mihomo')
 @require_auth
-def update_v2ray_api():
-    success = CoreService.update_v2ray()
+def update_mihomo_api():
+    success = CoreService.update_mihomo()
     result = K.failed
     if success:
         result = K.ok
     return jsonify({K.result:result})
-
-@app.route('/check_singbox_new_ver')
-@require_auth
-def check_singbox_new_ver_api():
-    version = CoreService.v2ray.singbox_check_new_version()
-    return jsonify({K.result: K.ok, K.version: version})
-
-@app.route('/update_singbox')
-@require_auth
-def update_singbox_api():
-    success = CoreService.update_singbox()
-    return jsonify({K.result: K.ok if success else K.failed})
-
-@app.route('/check_mieru_new_ver')
-@require_auth
-def check_mieru_new_ver_api():
-    version = CoreService.v2ray.mieru_check_new_version()
-    return jsonify({K.result: K.ok, K.version: version})
-
-@app.route('/update_mieru')
-@require_auth
-def update_mieru_api():
-    success = CoreService.update_mieru()
-    return jsonify({K.result: K.ok if success else K.failed})
 
 @app.route('/switch_proxy_mode')
 @require_auth
@@ -212,19 +184,6 @@ def favorite_node_api():
     except:
         pass
     return jsonify({K.result: result})
-
-@app.route('/add_manual_node')
-@require_auth
-def add_manual_node_api():
-    result = K.failed
-    try:
-        url = request.args.get(K.url)
-        CoreService.add_manual_node(url)
-        result = K.ok
-    except:
-        pass
-
-    return jsonify({K.result : result})
 
 @app.route('/remove_subscribe')
 @require_auth
@@ -380,8 +339,7 @@ def make_policy_api():
 @require_auth
 def stream_logs_api():
     def generate():
-        access_path = V2rayDefaultPath.access_log()
-        error_path = V2rayDefaultPath.error_log()
+        log_path = MihomoDefaultPath.log_file()
 
         def tail(path, n=10):
             try:
@@ -397,37 +355,24 @@ def stream_logs_api():
                 return 0
 
         # Send initial content
-        yield 'event: access\ndata: ' + json.dumps({'init': True, 'text': tail(access_path)}) + '\n\n'
-        yield 'event: xray_error\ndata: ' + json.dumps({'init': True, 'text': tail(error_path)}) + '\n\n'
+        yield 'event: mihomo\ndata: ' + json.dumps({'init': True, 'text': tail(log_path)}) + '\n\n'
 
-        access_pos = file_size(access_path)
-        error_pos = file_size(error_path)
+        log_pos = file_size(log_path)
 
         while True:
             try:
                 time.sleep(0.5)
 
-                size = file_size(access_path)
-                if size < access_pos:
-                    access_pos = size
-                elif size > access_pos:
-                    with open(access_path, 'r', errors='replace') as f:
-                        f.seek(access_pos)
-                        new_text = f.read(size - access_pos)
-                    access_pos = size
+                size = file_size(log_path)
+                if size < log_pos:
+                    log_pos = size
+                elif size > log_pos:
+                    with open(log_path, 'r', errors='replace') as f:
+                        f.seek(log_pos)
+                        new_text = f.read(size - log_pos)
+                    log_pos = size
                     if new_text:
-                        yield 'event: access\ndata: ' + json.dumps({'init': False, 'text': new_text}) + '\n\n'
-
-                size = file_size(error_path)
-                if size < error_pos:
-                    error_pos = size
-                elif size > error_pos:
-                    with open(error_path, 'r', errors='replace') as f:
-                        f.seek(error_pos)
-                        new_text = f.read(size - error_pos)
-                    error_pos = size
-                    if new_text:
-                        yield 'event: xray_error\ndata: ' + json.dumps({'init': False, 'text': new_text}) + '\n\n'
+                        yield 'event: mihomo\ndata: ' + json.dumps({'init': False, 'text': new_text}) + '\n\n'
 
                 yield ': heartbeat\n\n'
 

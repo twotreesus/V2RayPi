@@ -24,39 +24,23 @@ remove_path() {
     fi
 }
 
-# Stop the application first.  This is intentionally separate from protocol
-# switching: uninstalling should not leave a sidecar or supervisor process
-# holding files and ports after the project has been removed.
+# Stop the application first, so supervisor does not restart it while the rest
+# of the uninstall runs.
 if command -v supervisorctl >/dev/null 2>&1; then
     ignore_failure supervisorctl stop v2raypi
 fi
 
-# Mieru is a native sidecar and has no systemd service in this project.  Kill
-# the dedicated-user processes directly; the native RPC stop command can time
-# out while leaving the daemon alive.
-MIERU_USER="${MIERU_USER:-mieru}"
-if [[ "$OS" == "Linux" ]] && id -u "$MIERU_USER" >/dev/null 2>&1; then
-    ignore_failure pkill -KILL -u "$MIERU_USER" -x mieru
-else
-    for mieru_bin in /usr/local/bin/mieru /opt/homebrew/bin/mieru; do
-        if [[ -x "$mieru_bin" ]]; then
-            ignore_failure pkill -KILL -x mieru
-        fi
-    done
-fi
-
 if [[ "$OS" == "Linux" ]] && command -v systemctl >/dev/null 2>&1; then
-    ignore_failure systemctl stop xray_iptable.service
-    ignore_failure systemctl disable xray_iptable.service
-    ignore_failure systemctl stop xray.service
-    ignore_failure systemctl disable xray.service
+    ignore_failure systemctl stop mihomo_iptable.service
+    ignore_failure systemctl disable mihomo_iptable.service
+    ignore_failure systemctl stop mihomo.service
+    ignore_failure systemctl disable mihomo.service
 fi
 
 # Homebrew services are used by the macOS installer.  Ignore missing services
 # and Homebrew errors so removal is also safe on Linux.
 if [[ "$OS" == "Darwin" ]] && command -v brew >/dev/null 2>&1; then
-    ignore_failure brew services stop xray
-    ignore_failure brew services stop sing-box
+    ignore_failure brew services stop mihomo
 fi
 
 # Supervisor configuration and logs.
@@ -66,37 +50,52 @@ if command -v supervisorctl >/dev/null 2>&1; then
 fi
 remove_path /var/log/v2raypi
 
-# Xray and sidecar service files.
-remove_path /etc/systemd/system/xray_iptable.service
-remove_path /etc/systemd/system/xray.service
-remove_path /etc/systemd/system/xray@.service
-remove_path /etc/systemd/system/xray.service.d
-remove_path /etc/systemd/system/xray@.service.d
-remove_path /usr/local/bin/xray
-remove_path /usr/local/bin/sing-box
-remove_path /opt/homebrew/bin/xray
-remove_path /opt/homebrew/bin/sing-box
-remove_path /usr/local/etc/xray
-remove_path /etc/sing-box
-remove_path /opt/homebrew/etc/sing-box
-remove_path /var/log/xray
-remove_path /usr/local/share/xray
-
-# Mieru is installed from the portable release script.  Remove both default
-# locations used on Linux and macOS.  A custom MIERU_BIN installation is left
-# untouched unless the caller explicitly exports that path for this script.
-remove_path /usr/local/bin/mieru
-remove_path /opt/homebrew/bin/mieru
-if [[ -n "${MIERU_BIN:-}" && "$MIERU_BIN" == */* ]]; then
-    remove_path "$MIERU_BIN"
+# mihomo service files, binary, config and logs.
+remove_path /etc/systemd/system/mihomo_iptable.service
+remove_path /etc/systemd/system/mihomo.service
+remove_path /usr/local/bin/mihomo
+remove_path /opt/homebrew/bin/mihomo
+remove_path /etc/mihomo
+remove_path /opt/homebrew/etc/mihomo
+remove_path /usr/local/etc/mihomo
+remove_path /var/log/mihomo
+if [[ -n "${MIHOMO_BIN:-}" && "$MIHOMO_BIN" == */* ]]; then
+    remove_path "$MIHOMO_BIN"
 fi
 
-if [[ "$OS" == "Linux" ]] && id -u "$MIERU_USER" >/dev/null 2>&1; then
-    MIERU_HOME="${MIERU_HOME:-/var/lib/$MIERU_USER}"
-    ignore_failure userdel -r "$MIERU_USER"
-    # userdel normally removes the home directory.  Remove the configured
-    # default explicitly for systems where the account had a custom home.
-    remove_path "$MIERU_HOME"
+# Leftovers from installations that predate the move to mihomo.  Uninstalling
+# has to leave nothing behind on those devices either, so these are cleaned up
+# unconditionally rather than detected.
+if [[ "$OS" == "Linux" ]] && command -v systemctl >/dev/null 2>&1; then
+    ignore_failure systemctl stop xray_iptable.service
+    ignore_failure systemctl disable xray_iptable.service
+    ignore_failure systemctl stop xray.service
+    ignore_failure systemctl disable xray.service
+    ignore_failure systemctl stop sing-box.service
+    ignore_failure systemctl disable sing-box.service
+fi
+if [[ "$OS" == "Darwin" ]] && command -v brew >/dev/null 2>&1; then
+    ignore_failure brew services stop xray
+    ignore_failure brew services stop sing-box
+fi
+ignore_failure pkill -KILL -x mieru
+for legacy in \
+    /etc/systemd/system/xray_iptable.service \
+    /etc/systemd/system/xray.service \
+    /etc/systemd/system/xray@.service \
+    /etc/systemd/system/xray.service.d \
+    /etc/systemd/system/xray@.service.d \
+    /usr/local/bin/xray /opt/homebrew/bin/xray \
+    /usr/local/bin/sing-box /opt/homebrew/bin/sing-box \
+    /usr/local/bin/mieru /opt/homebrew/bin/mieru \
+    /usr/local/etc/xray /var/log/xray /usr/local/share/xray \
+    /etc/sing-box /opt/homebrew/etc/sing-box; do
+    remove_path "$legacy"
+done
+LEGACY_MIERU_USER="${MIERU_USER:-mieru}"
+if [[ "$OS" == "Linux" ]] && id -u "$LEGACY_MIERU_USER" >/dev/null 2>&1; then
+    ignore_failure userdel -r "$LEGACY_MIERU_USER"
+    remove_path "${MIERU_HOME:-/var/lib/$LEGACY_MIERU_USER}"
 fi
 
 if [[ "$OS" == "Linux" ]] && command -v systemctl >/dev/null 2>&1; then
@@ -104,7 +103,7 @@ if [[ "$OS" == "Linux" ]] && command -v systemctl >/dev/null 2>&1; then
     ignore_failure systemctl reset-failed
 fi
 
-# Remove the V2RayPi checkout, virtualenv and generated Mieru config.
+# Remove the V2RayPi checkout and virtualenv.
 remove_path "$PROJECT_DIR"
 
 echo "remove success, please reboot device!"

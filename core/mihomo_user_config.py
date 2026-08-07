@@ -4,7 +4,7 @@ from typing import List
 from .base_data_item import BaseDataItem
 from .node import Node
 
-class V2RayUserConfig(BaseDataItem):
+class MihomoUserConfig(BaseDataItem):
     class ProxyMode(Enum):
         Direct = 0
         ProxyAuto = 1
@@ -76,20 +76,20 @@ class V2RayUserConfig(BaseDataItem):
                 return self.current_version != ''
 
         def __init__(self):
-            self.log: V2RayUserConfig.AdvanceConfig.Log = V2RayUserConfig.AdvanceConfig.Log()
-            self.inbound : V2RayUserConfig.AdvanceConfig.InBound = V2RayUserConfig.AdvanceConfig.InBound()
-            self.dns: V2RayUserConfig.AdvanceConfig.DnsConfig = V2RayUserConfig.AdvanceConfig.DnsConfig()
-            self.policys:List[V2RayUserConfig.AdvanceConfig.Policy] = []
-            self.auto_detect: V2RayUserConfig.AdvanceConfig.AutoDetectAndSwitch = V2RayUserConfig.AdvanceConfig.AutoDetectAndSwitch()
-            self.geo_data:V2RayUserConfig.AdvanceConfig.GeoData = V2RayUserConfig.AdvanceConfig.GeoData()
+            self.log: MihomoUserConfig.AdvanceConfig.Log = MihomoUserConfig.AdvanceConfig.Log()
+            self.inbound : MihomoUserConfig.AdvanceConfig.InBound = MihomoUserConfig.AdvanceConfig.InBound()
+            self.dns: MihomoUserConfig.AdvanceConfig.DnsConfig = MihomoUserConfig.AdvanceConfig.DnsConfig()
+            self.policys:List[MihomoUserConfig.AdvanceConfig.Policy] = []
+            self.auto_detect: MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
+            self.geo_data:MihomoUserConfig.AdvanceConfig.GeoData = MihomoUserConfig.AdvanceConfig.GeoData()
             self.proxy_preferred = True
             self.enable_mux = True
             self.block_ad = True
 
     def filename(self):
-        return 'config/v2ray_user_config.json'
+        return 'config/mihomo_user_config.json'
 
     def __init__(self):
         self.proxy_mode:int = self.ProxyMode.ProxyAuto.value
         self.node:Node = Node()
-        self.advance_config:V2RayUserConfig.AdvanceConfig = self.AdvanceConfig()
+        self.advance_config:MihomoUserConfig.AdvanceConfig = self.AdvanceConfig()

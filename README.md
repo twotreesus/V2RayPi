@@ -13,17 +13,18 @@
 - [功能说明](#功能说明)
   - [协议支持](#协议支持)
   - [节点管理](#节点管理)
-  - [Mieru 节点与 Sidecar](#mieru-节点与-sidecar)
-  - [TProxy DNS 与 Mieru](#tproxy-dns-与-mieru)
+  - [DNS 与分流](#dns-与分流)
+  - [自定义路由规则](#自定义路由规则)
   - [实时监控](#实时监控)
   - [配置管理](#配置管理)
+- [从 Xray 版本升级](#从-xray-版本升级)
 - [系统维护](#系统维护)
-  - [卸载](#卸载)
+  - [卸载](#卸载方式)
   - [故障排除](#故障排除)
 
 ## 简介
 
-V2RayPi 是一个基于 V2Ray 的透明代理系统，专为树莓派和其他单板计算机设计。它可以将设备配置为旁路由，实现整个网络的智能代理。
+V2RayPi 是一个基于 [mihomo](https://github.com/MetaCubeX/mihomo) 的透明代理系统，专为树莓派和其他单板计算机设计。它可以将设备配置为旁路由，实现整个网络的智能代理。
 
 ### 工作原理
 
@@ -37,10 +38,10 @@ sequenceDiagram
     participant DomesticNet as 和谐网络
     participant Server as 节点服务器
     participant ForeignNet as 科学网络
-    
+
     Client->>Router: 1. 发送网络请求
     Router->>V2RayPi: 2. 通过DHCP网关重定向请求
-    
+
     alt 智能分流 - 国内网站
         V2RayPi->>DomesticNet: 3a. 直连国内流量
         DomesticNet-->>V2RayPi: 4a. 直连响应
@@ -50,7 +51,7 @@ sequenceDiagram
         ForeignNet-->>Server: 5b. 返回响应
         Server-->>V2RayPi: 6b. 加密代理响应
     end
-    
+
     V2RayPi-->>Router: 7. 返回数据
     Router-->>Client: 8. 转发响应给终端
 ```
@@ -69,19 +70,20 @@ sequenceDiagram
    - 终端设备：无需任何设置，通过 DHCP 自动配置
 
 ### 主要特性
+- **单一内核**：全部协议由 mihomo 原生承载，没有 sidecar 进程、没有本机 SOCKS 串联
 - **透明代理**：终端设备无需任何设置，只需连接到主路由即可
 - **多种代理模式**：支持直连、智能分流、全局代理
-- **多协议支持**：支持 VMess、VLESS（含 Reality）、AnyTLS、Hysteria2、Mieru、Shadowsocks
-- **双订阅格式**：兼容 v2rayN base64 订阅和 Clash YAML 订阅
+- **多协议支持**：VMess、VLESS（含 Reality）、Trojan、Shadowsocks、AnyTLS、Hysteria2、Mieru、TUIC、WireGuard 等
+- **Clash 订阅**：订阅节点原样透传给内核，不做字段转换，因此不会丢失协议参数
 - **节点收藏**：支持收藏常用节点，快速切换
-- **实时监控**：实时显示网络速度和系统性能图表；Linux 旁路由优先使用客户端侧 iptables 计数，避免将代理上游流量与客户端上下行混合
+- **实时监控**：实时显示网络速度和系统性能图表；Linux 旁路由使用客户端侧 iptables 计数，避免将代理上游流量与客户端上下行混合
 - **配置管理**：支持配置备份和恢复，便于迁移和灾难恢复
 - **自动化管理**：自动处理订阅更新和策略配置
-- **一键更新**：内置 xray-core / sing-box / Mieru 及系统更新功能
+- **一键更新**：内置 mihomo 及系统更新功能
 - **跨平台支持**：支持多种硬件平台和操作系统
 - **简单易用**：图形化管理界面，操作直观
 
-原理参考：[透明代理(TPROXY)](https://guide.v2fly.org/app/tproxy.html)
+原理参考：[透明代理(TPROXY)](https://guide.v2fly.org/app/tproxy.html)、[mihomo 文档](https://wiki.metacubex.one/)
 
 TG讨论组：[https://t.me/v2raypi](https://t.me/v2raypi)
 
@@ -103,6 +105,8 @@ TG讨论组：[https://t.me/v2raypi](https://t.me/v2raypi)
 - MacBook 及其他 MacOS 设备
 - 其他 ARM、x86、x64 设备（PC/软路由/电视盒子/开发板/虚拟机）
 
+安装脚本支持的 CPU 架构：x86_64、arm64、armv7、armv6、riscv64（Linux），以及 Intel 与 Apple Silicon（macOS）。
+
 ## 安装指南
 
 ### Linux 安装（支持透明代理）
@@ -110,7 +114,7 @@ TG讨论组：[https://t.me/v2raypi](https://t.me/v2raypi)
 
 ```bash
 # 1. 安装系统
-sudo su root - 
+sudo su root -
 cd /usr/local
 git clone https://github.com/twotreesus/V2RayPi.git
 cd V2RayPi/script
@@ -155,7 +159,7 @@ sudo reboot
 
 完成配置后，浏览器输入 V2RayPi 的地址（如 `192.168.66.200:1086`）即可访问管理面板
 
-> 安装脚本首次安装时**不会**启用 TPROXY iptables 规则，以避免尚未配置可用节点时旁路由断网。首次成功应用节点后，V2RayPi 会自动配置规则并启用 `xray_iptable.service`；之后每次应用节点都会检查该服务，重复安装也会保留已启用状态。
+> 安装脚本首次安装时**不会**启用 TPROXY iptables 规则，以避免尚未配置可用节点时旁路由断网。首次成功应用节点后，V2RayPi 会自动配置规则并启用 `mihomo_iptable.service`；之后每次应用节点都会检查该服务，重复安装也会保留已启用状态。
 
 ### MacOS 安装
 > 注意：MacOS 版本不支持透明代理功能
@@ -205,21 +209,20 @@ sudo supervisorctl restart v2raypi
 1. 在系统页面查看最近更新记录，点击「检查更新」
 2. 有新版本时点击「更新并重启」；更新过程中代理服务不中断
 
-**更新 xray-core / sing-box / Mieru**
-1. 在系统页面对应区块点击「查询」获取最新版本。
-2. 版本不一致时点击「升级」即可。
-3. Mieru 升级只替换客户端二进制文件；若 sidecar 正在运行，新版本会在下一次 Mieru 启动或切换 Mieru 节点时生效。
+**更新 mihomo**
+1. 在系统页面 mihomo 区块点击「查询」获取最新版本。
+2. 版本不一致时点击「升级」即可，升级完成后内核会自动重启。
 
-也可以在命令行安装或更新 Mieru：
+也可以在命令行安装或更新 mihomo：
 ```bash
 # Linux 通常需要 sudo；macOS 如 /usr/local/bin 无写入权限也需要 sudo
-sudo ./script/update_mieru.sh update
+sudo ./script/update_mihomo.sh update
 
 # 查看已安装版本
-./script/update_mieru.sh version
+./script/update_mihomo.sh version
 ```
 
-安装脚本会下载并校验官方发布包，支持 macOS（x86_64、Apple Silicon）以及 Linux 的 x86_64、arm64、armv7 和 riscv64。
+安装脚本会从 GitHub 官方 release 下载对应架构的二进制文件。若该 release 发布了校验值则会验证 SHA-256，否则会明确提示未做校验，并通过「解压成功 + 新二进制可运行」两道检查兜底。
 
 手动更新方式（可选）：
 ```bash
@@ -230,28 +233,59 @@ cd V2RayPi
 git pull
 
 # 重启服务
-sudo systemctl restart v2raypi
+sudo supervisorctl restart v2raypi
 ```
 
 ## 功能说明
 
 ### 协议支持
 
-| 协议 | 核心组件 | 说明 |
-|------|----------|------|
-| VMess | xray-core | V2Ray 原生协议 |
-| VLESS | xray-core | 轻量级协议，支持 Reality 加密 |
-| AnyTLS | sing-box | TLS 伪装协议 |
-| Hysteria2 | sing-box | 基于 QUIC 的代理协议，支持端口跳跃和混淆 |
-| Mieru | mieru sidecar + xray-core | Mieru 提供本地 SOCKS5，Xray 负责透明代理和分流 |
-| Shadowsocks | xray-core | 经典代理协议 |
+全部协议由 mihomo 原生承载，无需 sidecar：
+
+| 协议 | 说明 |
+|------|------|
+| VMess | V2Ray 原生协议 |
+| VLESS | 轻量级协议，支持 Reality 与 XTLS Vision |
+| Trojan | 伪装成 HTTPS 流量 |
+| Shadowsocks / ShadowsocksR | 经典代理协议 |
+| AnyTLS | TLS 伪装协议 |
+| Hysteria / Hysteria2 | 基于 QUIC 的代理协议，支持端口跳跃和混淆 |
+| Mieru | 抗审查协议，支持 TCP/UDP 传输与多路复用等级 |
+| TUIC | 基于 QUIC 的代理协议 |
+| Snell / WireGuard / SSH / SOCKS5 / HTTP | 其他 mihomo 支持的出站 |
+
+订阅中出现上表之外的类型时会被跳过，并在服务日志中记录跳过数量。
 
 ### 节点管理
 
-- **订阅管理**：支持 v2rayN base64 和 Clash YAML 两种订阅格式
-- **手动添加**：支持 vmess://、vless://、anytls://、hysteria2://、hy2://、mierus://、ss:// 链接导入
+- **订阅管理**：仅支持 Clash YAML 格式订阅。节点配置原样保存并交给 mihomo，因此 `reality-opts`、`ws-opts`、`grpc-opts`、`smux` 等参数不会在导入过程中丢失
 - **节点收藏**：收藏常用节点，在收藏列表中快速切换
+- **拷贝节点配置**：节点行的「拷贝节点配置」会把该节点的 Clash YAML 片段复制到剪贴板
 - **速度测试**：支持 TCP 延迟测试，评估节点质量
+
+### DNS 与分流
+
+- mihomo 的 DNS 服务监听 `0.0.0.0:1053`，`config_iptable.sh` 会把局域网和本机的 53 端口查询重定向到该端口
+- 采用 `redir-host` 模式而非 fake-ip：旁路由无法保证所有客户端都使用本机作为 DNS（走 DoH/DoT 的应用会完全绕过），fake-ip 在这种情况下会静默失效，而 redir-host 会退化为按 IP 分流
+- 同时开启域名嗅探（SNI / HTTP Host），让绕过本机 DNS 的连接仍能命中域名类规则
+- 「高级设置」中的远程 DNS 查询会通过代理发出，避免明文查询被污染；节点服务器域名、订阅域名、`geosite:cn`（智能分流模式）以及用户配置的直连域名策略均使用本地 DNS 解析
+
+### 自定义路由规则
+
+域名匹配支持的写法：
+
+| 写法 | 含义 |
+|------|------|
+| `example.com` | 包含匹配，`sina.com` 可匹配 `sina.com.cn`、`www.sina.com` |
+| `keyword:ads` | 同上，写法更明确 |
+| `domain:example.com` | 后缀匹配（推荐），匹配该域名及其子域名 |
+| `full:example.com` | 完整匹配 |
+| `regexp:^ad.*` | 正则匹配 |
+| `geosite:netflix` | 预定义域名列表，取值来自 `geosite.dat` |
+
+IP 匹配支持 `1.2.3.4`、`10.0.0.0/8`、`geoip:cn`、`geoip:!cn`。私有地址已由内置规则直连，无需另行添加。
+
+单条规则写法无法识别时只跳过该条，不影响其余规则和内核启动，跳过原因会记录在服务日志中。
 
 ### 实时监控
 
@@ -264,12 +298,29 @@ sudo systemctl restart v2raypi
 - **备份配置**：一键导出所有配置（订阅、节点、系统设置等），下载为 zip 文件
 - **恢复配置**：从备份文件恢复，便于迁移或灾难恢复
 
+## 从 Xray 版本升级
+
+本版本用 mihomo 替换了原先的 xray-core + sing-box + mieru 三内核结构，有以下行为变更：
+
+1. **需要重新更新一次订阅。** 节点模型已经改变，旧的节点数据无法交给 mihomo，启动时会被自动丢弃并在服务日志中记录数量。订阅地址本身会保留，因此升级后在「订阅」页点一次「全部更新」即可恢复节点列表。
+2. **高级设置会重置为默认值。** 配置文件由 `config/v2ray_user_config.json` 换成了 `config/mihomo_user_config.json`，不做迁移。升级前建议先在「系统维护」导出一份旧配置留档，以便对照着重新填写 DNS、自定义路由规则等设置。
+3. **只支持 Clash YAML 订阅。** v2rayN base64 订阅以及 `vmess://`、`vless://`、`ss://` 等手动添加节点的入口已移除。
+4. **节点二维码按钮已移除。** Clash YAML 片段不适合编码成二维码；订阅地址的复制与二维码按钮保留。
+5. **BitTorrent 直连规则不再存在。** mihomo 没有协议嗅探类规则，无法忠实翻译原先的 `protocol: bittorrent` 规则。如需 BT 直连，可针对 tracker 域名添加自定义路由规则。
+6. **自定义路由规则不支持 `ext:file:tag` 写法**，请改用 `geosite:` / `geoip:`。
+7. **日志由「访问日志 + 错误日志」两栏合并为单栏**，mihomo 只有一个日志流。
+8. **iptables 链名变更**（`V2RAY` → `MIHOMO`，`V2RAY_MASK` → `MIHOMO_MASK`）。`config_iptable.sh` 会自动清理旧链，无需手工处理。流量计数链 `V2RAYPI_TRAFFIC_UP/DOWN` 保持不变。
+
+原地升级后建议执行一次 `sudo reboot`，确保 iptables 与 systemd 状态干净。
+
 ## 卸载方式
 
 ```
 sudo ./script/remove.sh
 sudo reboot
 ```
+
+`remove.sh` 会同时清理旧版本遗留的 xray、sing-box、mieru 二进制、服务文件以及 `mieru` 系统用户，因此从旧版本升级过来的设备也能彻底卸载干净。
 
 ## 故障排除
 
@@ -287,19 +338,20 @@ sudo supervisorctl restart v2raypi
 # 手动强制更新 V2RayPi 服务
 sudo git reset --hard && sudo git pull && sudo supervisorctl restart v2raypi
 
-# 查看 xray-core 日志
-tail -f /var/log/xray/error.log
+# 查看 mihomo 状态与日志
+sudo systemctl status mihomo --no-pager
+tail -f /var/log/mihomo/mihomo.log
+sudo journalctl -u mihomo -o cat -f
 
-# 查看 sing-box 服务状态（AnyTLS/Hysteria2 节点使用）
-sudo systemctl status sing-box
+# 校验当前生成的配置
+mihomo -t -d /etc/mihomo -f /etc/mihomo/config.yaml
 
-# 查看 Mieru 版本和运行状态（Mieru 节点使用）
-mieru version
-pgrep -x mieru
+# 查看生成的配置
+cat /etc/mihomo/config.yaml
 
 # 查看 TPROXY 规则服务是否会在重启后自动恢复
-sudo systemctl is-enabled xray_iptable.service
-sudo systemctl status xray_iptable.service --no-pager
+sudo systemctl is-enabled mihomo_iptable.service
+sudo systemctl status mihomo_iptable.service --no-pager
 ```
 
 ### 常见问题
@@ -307,7 +359,7 @@ sudo systemctl status xray_iptable.service --no-pager
 1. 网络无法访问
    - 检查主路由的 DHCP 网关是否设置为 V2RayPi 的 IP
    - 检查 V2RayPi 旁路由的网络设置是否正确（IP、网关、DNS），自身为静态 IP，网关和 DNS 应该为主路由的 IP
-   - 检查 v2ray-core 是否运行
+   - 检查 mihomo 是否运行：`sudo systemctl status mihomo`
    - 检查订阅节点是否可用（速度测试）
 
 2. 管理面板无法访问
@@ -317,37 +369,38 @@ sudo systemctl status xray_iptable.service --no-pager
 
 3. 节点更新失败
    - 检查订阅地址是否可访问
-   - 检查订阅格式是否正确（支持 v2rayN base64 格式和 Clash YAML 格式）
-   - 尝试手动添加节点（支持 vmess:// / vless:// / anytls:// / hysteria2:// / hy2:// / mierus:// / ss://）
+   - 确认订阅是 Clash YAML 格式（内容包含 `proxies:`），base64 格式订阅不再支持
+   - 查看服务日志，非 Clash 内容与被跳过的节点都会记录原因
 
 4. 系统更新失败
    - 检查网络连接
-   - 手动更新V2RayPi
+   - 手动更新 V2RayPi
 
-5. 透明代理不生效
+5. 应用节点失败
+   - V2RayPi 在写入配置前会用 `mihomo -t` 预检，配置被拒绝时不会覆盖正在运行的配置
+   - 查看 V2RayPi 服务日志，其中会打印 mihomo 的具体报错
+
+6. 透明代理不生效
    - 确认系统是否支持 TPROXY（MacOS 不支持）
-   - 检查 iptables 规则：`sudo iptables -t mangle -L`
+   - 检查 iptables 规则：`sudo iptables -t mangle -L MIHOMO -n -v`
+   - 检查 DNS 重定向：`sudo iptables -t nat -L MIHOMO_DNS -n -v`
    - 重启服务并检查日志
 
-6. 上传/下载速度显示异常
+7. DNS 解析异常
+   - 确认高级设置中的远程 DNS 使用 IP 地址；默认远程 DNS 为 `8.8.8.8`
+   - 确认 53 端口没有被系统服务占用：`ss -lunp | grep ':53 '`、`systemctl is-active systemd-resolved`
+   - 直接向 mihomo 的 DNS 服务发起查询验证：`dig @127.0.0.1 -p 1053 www.google.com`
+   - 使用 `sudo tcpdump -ni any 'port 53'` 观察 DNS 请求是否进入网关
+
+8. 上传/下载速度显示异常
    - Linux 旁路由的监控使用 `V2RAYPI_TRAFFIC_UP` 和 `V2RAYPI_TRAFFIC_DOWN` 两个 mangle 计数链：上传统计客户端进入旁路由的流量，下载统计转发或代理输出到客户端的流量，不再直接使用主机所有网卡的合计值。
    - 检查计数器是否存在：`sudo iptables -t mangle -L V2RAYPI_TRAFFIC_UP -v -x -n` 和 `sudo iptables -t mangle -L V2RAYPI_TRAFFIC_DOWN -v -x -n`。
    - 脚本会按默认路由接口自动识别 LAN 网段；多网卡或特殊拓扑可在执行规则脚本前设置 `V2RAYPI_LAN_CIDR`，例如 `V2RAYPI_LAN_CIDR=10.0.0.0/24 sudo -E ./script/config_iptable.sh`。
    - 如果规则链不存在，页面会暂时显示系统网卡计数器作为兼容回退，并在接口返回的 `network.source` 中标记为 `system`。
 
-7. Mieru 节点无法连接或切换后未生效
-   - 在「系统维护」中确认已安装 Mieru，并检查当前版本。
-   - Linux 安装会创建 `mieru` 专用系统用户；使用 `pgrep -u mieru -x mieru` 确认 sidecar 是否已启动。
-   - 检查 owner bypass 是否存在：`sudo iptables -t mangle -L V2RAY_MASK -n -v`，应看到 `owner UID match mieru` 规则。
-   - 切换 Mieru 节点会自动重新应用配置并重启 Mieru；切换时使用 kill，不依赖可能超时的 Mieru RPC stop。
-   - 检查节点的服务器地址、端口、用户名、密码及传输协议是否正确。
-   - 如果是旧版本升级，先执行 `sudo pkill -KILL -x mieru`，再重启 `v2raypi`，避免旧的 root-owned 进程占用端口。
-   - 使用 `sudo ./script/update_mieru.sh update` 更新客户端后再次切换节点。
-
-7. TProxy 下 DNS 异常（Linux）
-   - 确认高级设置中的远程 DNS 使用 IP 地址；默认远程 DNS 为 `8.8.8.8`。
-   - 使用 `sudo tcpdump -ni any 'udp port 53'` 观察 DNS 请求是否进入网关。
-   - 使用 `mieru get metrics` 查看 Mieru 的 UDP 转发指标；如命令无法连接，请先确认 Mieru sidecar 正在运行。
+9. 内存占用偏高
+   - `geodata-loader` 已设为 `memconservative`，适配小内存设备
+   - 用 `ps -o rss= -C mihomo` 查看实际占用；512MB 设备建议关闭不必要的服务
 
 ### 其他问题
 如果遇到其他问题，可以：

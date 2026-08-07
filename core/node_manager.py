@@ -10,15 +10,14 @@ from typing import List, Dict, Optional
 from datetime import datetime
 import copy
 import time
-import json
 import requests
-import base64
 import yaml
 from urllib.parse import urlparse
 from tcp_latency import measure_latency
 from concurrent import futures
 from .keys import Keyword as K
 from .node import Node
+from .mihomo_config import SUPPORTED_PROXY_TYPES
 from .base_data_item import BaseDataItem
 
 class NodeGroup:
@@ -35,152 +34,65 @@ class NodeManager(BaseDataItem):
     def filename(self):
         return 'config/nodes.json'
 
-    def _parse_node_uri(self, line: str) -> Optional[Node]:
-        if line.startswith(K.mieru_scheme) or line.startswith(K.mierus_scheme):
-            data = Node.mieru_uri_to_data(line)
-            return Node().load_data(data) if data else None
-        if line.startswith(K.anytls_scheme):
-            data = Node.anytls_uri_to_data(line)
-            return Node().load_data(data) if data else None
-        if line.startswith(K.hysteria2_scheme) or line.startswith(K.hy2_scheme):
-            data = Node.hysteria2_uri_to_data(line)
-            return Node().load_data(data) if data else None
-        if line.startswith(K.vless_scheme):
-            data = Node.vless_uri_to_data(line)
-            return Node().load_data(data) if data else None
-        if line.startswith(K.ss_scheme):
-            data = Node.ss_uri_to_data(line)
-            return Node().load_data(data) if data else None
-        if line.startswith(K.vmess_scheme):
-            try:
-                data = json.loads(base64.b64decode(line[len(K.vmess_scheme):]).decode('utf8'))
-                data['protocol'] = 'vmess'
-                return Node().load_data(data)
-            except Exception:
-                return None
-        return None
+    def load(self):
+        manager = super().load()
+        manager._drop_nodes_without_clash_payload()
+        return manager
 
-    def _clash_proxy_to_node(self, proxy: dict) -> Optional[Node]:
-        ptype = proxy.get('type', '')
-        node = Node()
-        node.ps = proxy.get('name', '')
-        node.add = proxy.get('server', '')
-        node.port = proxy.get('port', 0)
+    def _drop_nodes_without_clash_payload(self):
+        """Discard nodes saved before the move to mihomo.
 
-        if ptype == 'anytls':
-            node.protocol = 'anytls'
-            node.password = proxy.get('password', '')
-            node.sni = proxy.get('sni', '') or node.add
-            node.skip_cert_verify = proxy.get('skip-cert-verify', False)
+        Those entries carry the old per-protocol fields but no Clash payload, so
+        they would still be listed and look applicable while producing a config
+        with no outbound.  Dropping them makes it obvious that the subscription
+        has to be added again.
+        """
+        dropped = 0
+        for group in self.subscribes.values():
+            kept = [node for node in group.nodes if getattr(node, 'clash', None)]
+            dropped += len(group.nodes) - len(kept)
+            group.nodes = kept
+        kept_manual = [node for node in self.manual_nodes if getattr(node, 'clash', None)]
+        dropped += len(self.manual_nodes) - len(kept_manual)
+        self.manual_nodes = kept_manual
+        if dropped:
+            print('Dropped {0} node(s) saved by an older V2RayPi version, '
+                  'please update the subscriptions again'.format(dropped))
 
-        elif ptype in ('hysteria2', 'hy2'):
-            node.protocol = 'hysteria2'
-            node.password = proxy.get('password', '') or proxy.get('auth', '')
-            node.sni = proxy.get('sni', '') or node.add
-            node.skip_cert_verify = proxy.get('skip-cert-verify', False)
-            node.alpn = proxy.get('alpn', None)
-            node.obfs = proxy.get('obfs', None)
-            node.obfs_password = proxy.get('obfs-password', None)
-            node.up = proxy.get('up', None)
-            node.down = proxy.get('down', None)
-            node.ports = proxy.get('ports', None)
-            node.hop_interval = proxy.get('hop-interval', None)
-            node.udp = proxy.get('udp', True)
-
-        elif ptype == 'vmess':
-            node.protocol = 'vmess'
-            node.id = proxy.get('uuid', '')
-            node.aid = proxy.get('alterId', 0)
-            node.scy = proxy.get('cipher', 'auto')
-            node.net = proxy.get('network', 'tcp')
-            node.type = 'none'
-            node.tls = 'tls' if proxy.get('tls') else None
-            node.sni = proxy.get('servername', '') or node.add
-            ws_opts = proxy.get('ws-opts', {})
-            node.path = ws_opts.get('path', '')
-            node.host = (ws_opts.get('headers') or {}).get('Host', '')
-
-        elif ptype == 'vless':
-            node.protocol = 'vless'
-            node.id = proxy.get('uuid', '')
-            node.net = proxy.get('network', 'tcp')
-            node.type = 'none'
-            node.flow = proxy.get('flow', None)
-            node.fp = proxy.get('client-fingerprint', 'chrome')
-            node.skip_cert_verify = proxy.get('skip-cert-verify', False)
-            reality_opts = proxy.get('reality-opts', {})
-            node.pbk = reality_opts.get('public-key', '')
-            node.sid = reality_opts.get('short-id', '')
-            if proxy.get('tls'):
-                node.tls = 'reality' if node.pbk else 'tls'
-            else:
-                node.tls = None
-            node.sni = proxy.get('servername', '') or node.add
-            ws_opts = proxy.get('ws-opts', {})
-            headers = ws_opts.get('headers') or {}
-            node.path = ws_opts.get('path', '')
-            node.host = headers.get('Host') or headers.get('host') or node.sni
-
-        elif ptype == 'ss':
-            node.protocol = 'ss'
-            node.password = proxy.get('password', '')
-            node.scy = proxy.get('cipher', 'aes-256-gcm')
-
-        elif ptype == 'mieru':
-            node.protocol = 'mieru'
-            node.username = proxy.get('username', '')
-            node.password = proxy.get('password', '')
-            node.domain_name = proxy.get('domain-name', proxy.get('domainName'))
-            node.profile_name = proxy.get('profile')
-            node.udp = proxy.get('udp', True)
-            node.mtu = proxy.get('mtu')
-            node.multiplexing = proxy.get('multiplexing')
-            node.handshake_mode = proxy.get('handshake-mode', proxy.get('handshakeMode'))
-            node.traffic_pattern = proxy.get('traffic-pattern', proxy.get('trafficPattern'))
-            port_range = proxy.get('port-range', proxy.get('port_range'))
-            binding = {'protocol': proxy.get('transport', proxy.get('protocol', 'TCP'))}
-            if port_range:
-                binding['portRange'] = port_range
-            else:
-                binding['port'] = node.port
-            node.port_bindings = [binding]
-
-        else:
+    def _proxy_to_node(self, proxy: dict) -> Optional[Node]:
+        if not isinstance(proxy, dict):
             return None
-
-        return node
-
-    def _parse_clash_content(self, group: NodeGroup, content: str):
-        try:
-            clash = yaml.safe_load(content)
-        except Exception:
-            return
-        proxies = clash.get('proxies') or []
-        for proxy in proxies:
-            node = self._clash_proxy_to_node(proxy)
-            if node:
-                group.nodes.append(node)
+        if proxy.get('type') not in SUPPORTED_PROXY_TYPES:
+            return None
+        if not proxy.get('name') or not proxy.get('server'):
+            return None
+        return Node.from_clash(proxy)
 
     def update_group(self, group: NodeGroup):
         url = group.subscribe
         r = requests.get(url, headers={'User-Agent': K.subscribe_user_agent})
-        content = r.text
+
+        try:
+            clash = yaml.safe_load(r.text)
+        except Exception as e:
+            print('Subscription {0} is not valid YAML: {1}'.format(url, e))
+            return
+        if not isinstance(clash, dict) or 'proxies' not in clash:
+            print('Subscription {0} is not a Clash configuration, no proxies found'.format(url))
+            return
 
         group.nodes.clear()
-        if 'proxies:' in content:
-            self._parse_clash_content(group, content)
-        else:
-            try:
-                decoded = base64.b64decode(content).decode('utf8')
-            except Exception:
-                return
-            for line in decoded.splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                node = self._parse_node_uri(line)
-                if node:
-                    group.nodes.append(node)
+        skipped = 0
+        for proxy in (clash.get('proxies') or []):
+            node = self._proxy_to_node(proxy)
+            if node:
+                group.nodes.append(node)
+            else:
+                skipped += 1
+        if skipped:
+            # Only the selected node is written into the mihomo config, but an
+            # unsupported entry would still break it once applied.
+            print('Subscription {0}: skipped {1} unsupported node(s)'.format(url, skipped))
 
     def update(self, url):
         group = self.subscribes[url]
@@ -215,12 +127,6 @@ class NodeManager(BaseDataItem):
         else:
             self.manual_nodes.pop(index)
         self.save()
-
-    def add_manual_node(self, url):
-        node = self._parse_node_uri(url.strip())
-        if node:
-            self.manual_nodes.append(node)
-            self.save()
 
     def favorite_node(self, url: str, index: int) -> bool:
         node = self.find_node(url, index)

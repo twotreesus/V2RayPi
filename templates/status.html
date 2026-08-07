@@ -44,6 +44,21 @@
         border-color: #ef6c00;
         background-color: rgba(239, 108, 0, 0.08);
     }
+    .node-type-trojan {
+        color: #c62828;
+        border-color: #c62828;
+        background-color: rgba(198, 40, 40, 0.08);
+    }
+    .node-type-tuic {
+        color: #00695c;
+        border-color: #00695c;
+        background-color: rgba(0, 105, 92, 0.08);
+    }
+    .node-type-other {
+        color: #546e7a;
+        border-color: #546e7a;
+        background-color: rgba(84, 110, 122, 0.08);
+    }
 </style>
 <div id="status_page" class="mdui-container">
     <p></p>
@@ -177,14 +192,15 @@
     }
 
     function protocol_badge(protocol) {
-        protocol = (protocol || "vmess").toLowerCase();
-        if (protocol === "hysteria2") {
-            return { label: "hy2", className: "hy2" };
-        }
-        if (protocol === "mieru") {
-            return { label: "mieru", className: "mieru" };
-        }
-        return { label: protocol, className: protocol };
+        // The protocol comes straight from the Clash `type` field, so any type
+        // mihomo supports can show up here.  Only a few get their own colour;
+        // the rest share a neutral badge instead of an undefined class.
+        protocol = (protocol || "").toLowerCase();
+        var labels = { hysteria2: "hy2", hysteria: "hy1", socks5: "socks", wireguard: "wg" };
+        var styled = ["vmess", "vless", "ss", "anytls", "mieru", "trojan", "tuic", "hy2"];
+        var label = labels[protocol] || protocol || "unknown";
+        var className = styled.indexOf(label) !== -1 ? label : "other";
+        return { label: label, className: className };
     }
 
     $(document).ready(function () {
@@ -214,8 +230,8 @@
 
             mode = data["proxy_mode"];
             $("#proxy_mode").prop("selectedIndex", mode);
-            $("#v2ray_current_ver").html(data["version"]);
-            $("#v2ray_new_ver").html(window.g_new_version);
+            $("#mihomo_current_ver").html(data["version"]);
+            $("#mihomo_new_ver").html(window.g_new_version);
             var badge = protocol_badge(data["protocol"]);
             var typeBadge = '<span class="node-type-badge node-type-' + badge.className + '">' + badge.label + '</span>';
             $("#remark").html(typeBadge + ' <span class="node-name">' + data["ps"] + '</span>');
