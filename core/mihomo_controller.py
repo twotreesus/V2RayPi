@@ -39,19 +39,6 @@ class MihomoController:
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return self.running()
 
-    def reload(self) -> bool:
-        # The service unit maps reload onto SIGHUP, which mihomo uses to re-read
-        # its configuration without dropping established connections.
-        result = subprocess.run(
-            "systemctl reload {0}.service".format(SERVICE_NAME),
-            shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        )
-        if result.returncode != 0:
-            print('mihomo reload failed, falling back to restart: {0}'.format(
-                result.stdout.decode('utf-8').strip()))
-            return False
-        return self.running()
-
     def running(self) -> bool:
         cmd = """ps -ef | grep "mihomo" | grep -v grep | awk '{print $2}'"""
         output = subprocess.check_output(cmd, shell=True).decode('utf-8')
@@ -115,8 +102,6 @@ class MihomoController:
         with open(config_file, 'w+') as f:
             f.write(config)
 
-        if self.reload():
-            return True
         return self.restart()
 
     def test_config(self, config: str) -> bool:
@@ -259,10 +244,6 @@ class MacOSMihomoController(MihomoController):
         cmd = "brew services restart {0}".format(SERVICE_NAME)
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return self.running()
-
-    def reload(self) -> bool:
-        # brew services has no reload verb.
-        return False
 
     def update(self) -> bool:
         was_running = self.running()

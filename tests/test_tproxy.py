@@ -179,11 +179,11 @@ class ApplyConfigTest(unittest.TestCase):
         controller = MihomoController()
         with patch.object(controller, 'test_config', return_value=False), patch(
             'builtins.open',
-        ) as open_mock, patch.object(controller, 'reload') as reload_mock:
+        ) as open_mock, patch.object(controller, 'restart') as restart_mock:
             self.assertFalse(controller.apply_config('mode: nonsense'))
 
         open_mock.assert_not_called()
-        reload_mock.assert_not_called()
+        restart_mock.assert_not_called()
 
     def test_validation_reuses_the_live_config_dir_so_geo_data_is_not_redownloaded(self):
         # mihomo downloads geoip.dat/geosite.dat into the directory given by -d;
@@ -219,13 +219,13 @@ class ApplyConfigTest(unittest.TestCase):
         ):
             self.assertFalse(controller.test_config('mode: rule'))
 
-    def test_reload_failure_falls_back_to_restart(self):
+    def test_valid_config_restarts_mihomo(self):
         controller = MihomoController()
         with patch.object(controller, 'test_config', return_value=True), patch(
             'core.mihomo_controller.os.makedirs',
         ), patch('builtins.open'), patch.object(
-            controller, 'reload', return_value=False,
-        ), patch.object(controller, 'restart', return_value=True) as restart:
+            controller, 'restart', return_value=True,
+        ) as restart:
             self.assertTrue(controller.apply_config('mode: rule'))
 
         restart.assert_called_once_with()

@@ -17,7 +17,7 @@ mihomo 原生支持 vmess / vless(reality) / ss / trojan / **anytls** / **mieru*
 | 决策点 | 选择 |
 |---|---|
 | 透明代理入口 | **TPROXY**，复用改造后的 `config_iptable.sh`（不用 TUN） |
-| mihomo 配置内容 | **仅当前节点**，切换节点 = 重写 config + reload/restart |
+| mihomo 配置内容 | **仅当前节点**，切换节点 = 重写 config + restart |
 | 手动添加节点 | **删除**；「拷贝链接」改为输出该节点的 Clash YAML 片段 |
 | 内部命名 | **全面重命名**（`v2ray_*` → `mihomo_*`，含 systemd 单元与 config 文件名） |
 | 旧配置迁移 | **不做**，README 说明需重新添加订阅 |
@@ -85,13 +85,7 @@ sudo iptables -t mangle -L MIHOMO -n -v      # udp/tcp 53 应命中 RETURN
 sudo iptables -t nat -L MIHOMO_DNS -n -v     # 计数器应增长
 ```
 
-**4. `systemctl reload mihomo`（SIGHUP）是否真的热重载配置** —— 决定切换节点是否需要重启内核。
-
-```bash
-sudo systemctl reload mihomo && sudo journalctl -u mihomo -o cat -n 20
-```
-
-失败时 `MihomoController.apply_config` 会自动回退 `restart()`，功能不受影响，只是切换节点会断一次连接。
+**4. `systemctl reload mihomo`（SIGHUP）不会应用新配置** —— 已在测试 SBC 上确认：命令返回成功且进程仍在运行，但配置没有重新加载。切换节点固定使用 `restart()`，避免把“进程存活”误判为热重载成功。
 
 **5. iptables 遗留链清理在原地升级的设备上生效** —— `cleanup_legacy_chains()` 应清掉旧的 `V2RAY` / `V2RAY_MASK`。
 
@@ -142,8 +136,7 @@ sudo ./script/remove.sh && sudo reboot
 mihomo -h
 mihomo -t -d /etc/mihomo -f /etc/mihomo/config.yaml
 
-# 2. SIGHUP 是否真的热重载配置（决定切换节点用 reload 还是 restart）
-systemctl reload mihomo && journalctl -u mihomo -o cat -n 20
+# 2. SIGHUP 不会重新加载配置，切换节点固定使用 restart
 
 # 3. 稳定版 release 无 checksums.txt，确认 GitHub API 是否返回 asset digest
 curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
@@ -190,7 +183,6 @@ After=network.target nss-lookup.target
 Type=simple
 ExecStartPre=/usr/bin/sleep 1s
 ExecStart=/usr/local/bin/mihomo -d /etc/mihomo
-ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
@@ -245,7 +237,7 @@ MihomoConfig.gen_config(user_config, all_nodes, subscribe_hosts) -> str
 - `version()`：`mihomo -v`
 - `check_new_version()`：GitHub API `MetaCubeX/mihomo/releases/latest`
 - `update()`：`bash ./script/update_mihomo.sh update`
-- `apply_node()`：生成 YAML → `test_config()` 预检 → 写入 → `reload()`（失败回退 `restart()`）
+- `apply_node()`：生成 YAML → `test_config()` 预检 → 写入 → `restart()`
 - `test_config()`：`mihomo -t -d <dir> -f <file>`（阶段 0 确认可用性；不可用则该方法直接返回 True 并记日志）
 - `enable_iptables()`：**沿用现有状态机**（`v2ray_controller.py:126-146` 的 `is-enabled` / `is-active` 三态判断），只把服务名换成 `mihomo_iptable.service`
 - `check_new_geo_data()` / `update_geo_data()`：逻辑不变，落盘目标改为 `MihomoDefaultPath.asset_path()` 下的 `geoip.dat` / `geosite.dat`
