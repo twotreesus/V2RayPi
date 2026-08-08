@@ -19,7 +19,6 @@ class Keyword:
     nodes = 'nodes'
     node_link = 'node_link'
     node_index = 'node_index'
-    groups = 'groups'
     dns = 'dns'
     default_local = 'default_local'
     default_remote = 'default_remote'

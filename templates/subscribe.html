@@ -6,7 +6,7 @@
             <table class="mdui-table">
                 <tbody id="subscribe_body">
                 <tr>
-                    <td colspan="5">
+                    <td colspan="4">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
                                 <strong class="mdui-typo">最近订阅</strong>
@@ -21,17 +21,14 @@
                                     <div>
                                         <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_subscribe()">新增订阅</button>
                                     </div>
-                                    <div id="ping_test" style="display: none">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="ping_test()">ping</button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </td>
                 </tr>
-                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="5"></td></tr>
+                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="4"></td></tr>
                 <tr id="subscribe_template" class="mdui-color-light-blue-50" style="display: none">
-                    <td colspan="5">
+                    <td colspan="4">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-1" style="width: 8%; display: flex; align-items: center;">
                                 <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
@@ -62,7 +59,7 @@
                     </td>
                 </tr>
                 <tr id="manual_template" class="mdui-color-light-blue-50" style="display: none">
-                    <td colspan="5">
+                    <td colspan="4">
                         <div style="width: 100%; display: flex; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
                                 <i class="mdui-icon material-icons group-toggle">expand_more</i>
@@ -87,16 +84,14 @@
     <tbody>
     <tr id="node_header_template" class="mdui-typo-caption-opacity">
         <td style="width: 8%;">序号</td>
-        <td style="width: 37%;">名称</td>
-        <td style="width: 30%;">地址</td>
-        <td style="width: 10%;">延迟</td>
+        <td style="width: 42%;">名称</td>
+        <td style="width: 35%;">地址</td>
         <td style="width: 15%;">操作</td>
     </tr>
     <tr id="node_template">
         <td class="node_index"></td>
         <td class="node_name" style="white-space: nowrap;"></td>
         <td class="node_addr"></td>
-        <td class="node_delay"></td>
         <td>
             <div style="display: flex; gap: 8px; justify-content: flex-start;">
                 <div class="mdui-chip apply_node" title="应用节点">
@@ -309,10 +304,8 @@
             var groups = Object.values(subscribe["subscribes"]);
             if (groups.length === 0) {
                 $("#update_all_subscribe").hide();
-                $("#ping_test").hide();
             } else {
                 $("#update_all_subscribe").show();
-                $("#ping_test").show();
             }
 
             var node_running = subscribe["ps"];
@@ -417,8 +410,6 @@
                     make_node_row(url, node_data, index, j, false);
                 });
             });
-
-            update_ping_result();
 
             if (node_running) {
                 var runningRow = $(".node_running");
@@ -582,45 +573,4 @@
         });
     }
 
-    function ping_test() {
-        message("正在测试，请稍候...")
-        ajax_request({ url: "/subscribe_ping_all" }).then(function (data) {
-            window.g_ping_cache = data["groups"];
-            update_ping_result();
-            message("测试完成")
-        });
-    }
-
-    function update_ping_result() {
-        if (window.g_ping_cache === undefined)
-            return;
-        window.g_ping_cache.forEach(function (group) {
-            list = group["nodes"];
-            url = group["subscribe"];
-            $("#node_list_body tr").filter(function() {
-                return $(this).data("url") === url;
-            }).each(function (index, row) {
-                node_name = $(row).find(".node_name").attr("data-ps");
-                delay = list[node_name];
-
-                td = $(row).find(".node_delay");
-                td.removeClass("mdui-text-color-red");
-                td.removeClass("mdui-text-color-green");
-
-                var content = "";
-                if (delay !== undefined) {
-                    if (-1 === delay) {
-                        content = "☹";
-                        td.addClass("mdui-text-color-red");
-                    }
-                    else {
-                        content = String(delay) + " ms";
-                        td.addClass("mdui-text-color-green");
-                    }
-                }
-
-                td.html(content);
-            });
-        });
-    }
 </script>

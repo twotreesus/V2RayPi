@@ -238,13 +238,6 @@ def subscribe_list_api():
     list.update({K.result : K.ok})
     return jsonify(list)
 
-@app.route('/subscribe_ping_all')
-@require_auth
-def subscribe_ping_all_api():
-    groups = CoreService.node_manager.ping_test_all()
-    return jsonify({K.result : K.ok,
-                    K.groups : groups})
-
 @app.route('/apply_node')
 @require_auth
 def apply_node_api():

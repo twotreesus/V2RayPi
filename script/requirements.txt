@@ -6,7 +6,6 @@ Jinja2
 requests
 six
 wheel
-tcp-latency
 psutil
 apscheduler
 pyyaml

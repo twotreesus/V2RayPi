@@ -261,7 +261,6 @@ sudo supervisorctl restart v2raypi
 - **订阅管理**：仅支持 Clash YAML 格式订阅。节点配置原样保存并交给 mihomo，因此 `reality-opts`、`ws-opts`、`grpc-opts`、`smux` 等参数不会在导入过程中丢失
 - **节点收藏**：收藏常用节点，在收藏列表中快速切换
 - **拷贝节点配置**：节点行的「拷贝节点配置」会把该节点的 Clash YAML 片段复制到剪贴板
-- **速度测试**：支持 TCP 延迟测试，评估节点质量
 
 ### DNS 与分流
 
@@ -360,7 +359,7 @@ sudo systemctl status mihomo_iptable.service --no-pager
    - 检查主路由的 DHCP 网关是否设置为 V2RayPi 的 IP
    - 检查 V2RayPi 旁路由的网络设置是否正确（IP、网关、DNS），自身为静态 IP，网关和 DNS 应该为主路由的 IP
    - 检查 mihomo 是否运行：`sudo systemctl status mihomo`
-   - 检查订阅节点是否可用（速度测试）
+   - 尝试应用其他订阅节点，并查看 mihomo 日志确认连接错误
 
 2. 管理面板无法访问
    - 检查 V2RayPi 服务是否运行

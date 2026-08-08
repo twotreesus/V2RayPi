@@ -635,35 +635,37 @@ class CoreService:
         except Exception as e:
             print('detected connetion failed, detail:\n{0}'.format(e))
 
-        # failed prepare to switch node
-        ping_groups = cls.node_manager.ping_test_all()
-        class NodePingInfo:
-            def __init__(self, group_key:str, node_ps:str, ping:int):
-                self.group_key:str = group_key
-                self.node_ps:str = node_ps
-                self.ping:int = ping
+        candidates = []
+        seen = set()
+        for group_key, group in cls.node_manager.subscribes.items():
+            for node_index, node in enumerate(group.nodes):
+                identity = (node.protocol, node.add, node.port, node.ps)
+                if identity not in seen:
+                    seen.add(identity)
+                    candidates.append((group_key, node_index, node))
+        for node_index, node in enumerate(cls.node_manager.manual_nodes):
+            identity = (node.protocol, node.add, node.port, node.ps)
+            if identity not in seen:
+                seen.add(identity)
+                candidates.append((K.manual, node_index, node))
 
-            def __lt__(self, other):
-                return self.ping < other.ping
+        current = cls.user_config.node
+        current_identity = (current.protocol, current.add, current.port, current.ps)
+        alternatives = [
+            candidate for candidate in candidates
+            if (candidate[2].protocol, candidate[2].add,
+                candidate[2].port, candidate[2].ps) != current_identity
+        ]
+        if not alternatives:
+            print('Auto switch skipped: no alternative node is available')
+            return
 
-        ping_results = []
-        for group in ping_groups:
-            group_key = group[K.subscribe]
-            nodes = group[K.nodes]
-            for node_ps in nodes.keys():
-                ping = nodes[node_ps]
-                info = NodePingInfo(group_key, node_ps, ping)
-                ping_results.append(info)
+        group_key, node_index, node = random.choice(alternatives)
+        if not cls.apply_node(group_key, node_index, restart_auto_detect=False):
+            print('Auto switch failed while applying node: {0}'.format(node.ps))
+            return
 
-        ping_results.sort()
-        best_nodes = ping_results[:5]
-        random.shuffle(best_nodes)
-        best_node = best_nodes[0]
-
-        node_index = cls.node_manager.find_node_index(best_node.group_key, best_node.node_ps)
-        cls.apply_node(best_node.group_key, node_index, restart_auto_detect=False)
-
-        detect.last_switch_time = '{0} ---- {1}'.format(datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), best_node.node_ps)
+        detect.last_switch_time = '{0} ---- {1}'.format(datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), node.ps)
         cls.user_config.save()
 
     @classmethod
