@@ -1,7 +1,6 @@
 # encoding: utf-8
 import sys
 import platform
-from os import path
 
 class MihomoDefaultPath:
     @classmethod
@@ -21,7 +20,10 @@ class MihomoDefaultPath:
     @classmethod
     def log_file(cls) -> str:
         if sys.platform == 'darwin':
-            return path.expanduser('~/Library/Logs/mihomo/mihomo.log')
+            if platform.machine() == 'arm64':
+                return '/opt/homebrew/var/log/mihomo.log'
+            else:
+                return '/usr/local/var/log/mihomo.log'
         else:
             return '/var/log/mihomo/mihomo.log'
 

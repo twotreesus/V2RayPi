@@ -1,7 +1,30 @@
+import os
+import tempfile
 import unittest
 from unittest.mock import Mock, call, patch
 
 from core.mihomo_controller import MihomoController
+from core.mihomo_default_path import MihomoDefaultPath
+
+
+class DefaultPathTest(unittest.TestCase):
+    def test_apple_silicon_uses_homebrew_service_log(self):
+        with patch('core.mihomo_default_path.sys.platform', 'darwin'), patch(
+            'core.mihomo_default_path.platform.machine', return_value='arm64',
+        ):
+            self.assertEqual(
+                MihomoDefaultPath.log_file(),
+                '/opt/homebrew/var/log/mihomo.log',
+            )
+
+    def test_intel_macos_uses_homebrew_service_log(self):
+        with patch('core.mihomo_default_path.sys.platform', 'darwin'), patch(
+            'core.mihomo_default_path.platform.machine', return_value='x86_64',
+        ):
+            self.assertEqual(
+                MihomoDefaultPath.log_file(),
+                '/usr/local/var/log/mihomo.log',
+            )
 
 
 class TproxyServiceTest(unittest.TestCase):
@@ -102,6 +125,30 @@ class CoreServiceTproxyIntegrationTest(unittest.TestCase):
 
         mihomo.enable_iptables.assert_not_called()
 
+    def test_geo_initialization_persists_the_downloaded_release_version(self):
+        from core.core_service import CoreService
+        from core.mihomo_user_config import MihomoUserConfig
+
+        user_config = MihomoUserConfig()
+        mihomo = Mock()
+        mihomo.check_new_geo_data.return_value = '202608080001'
+
+        with patch.object(user_config, 'save') as save, patch.multiple(
+            CoreService,
+            user_config=user_config,
+            mihomo=mihomo,
+        ):
+            CoreService.update_geo_data()
+
+        mihomo.update_geo_data.assert_called_once_with(
+            user_config.advance_config.geo_data.check_url,
+        )
+        self.assertEqual(
+            user_config.advance_config.geo_data.current_version,
+            '202608080001',
+        )
+        save.assert_called_once_with()
+
 
 class ApplyConfigTest(unittest.TestCase):
     def test_invalid_config_is_never_written(self):
@@ -158,6 +205,65 @@ class ApplyConfigTest(unittest.TestCase):
             self.assertTrue(controller.apply_config('mode: rule'))
 
         restart.assert_called_once_with()
+
+
+class GeoDataUpdateTest(unittest.TestCase):
+    def test_downloads_both_databases_before_replacing_existing_files(self):
+        controller = MihomoController()
+        geoip_response = Mock(headers={'content-length': '9'})
+        geoip_response.iter_content.return_value = [b'new-geoip']
+        geosite_response = Mock(headers={'content-length': '11'})
+        geosite_response.iter_content.return_value = [b'new-geosite']
+
+        with tempfile.TemporaryDirectory() as asset_path, patch(
+            'core.mihomo_controller.MihomoDefaultPath.asset_path',
+            return_value=asset_path + '/',
+        ), patch(
+            'core.mihomo_controller.requests.get',
+            side_effect=[geoip_response, geosite_response],
+        ), patch.object(controller, 'restart', return_value=True) as restart:
+            controller.update_geo_data('https://example.com/releases')
+
+            with open(os.path.join(asset_path, 'geoip.dat'), 'rb') as f:
+                self.assertEqual(f.read(), b'new-geoip')
+            with open(os.path.join(asset_path, 'geosite.dat'), 'rb') as f:
+                self.assertEqual(f.read(), b'new-geosite')
+
+        geoip_response.raise_for_status.assert_called_once_with()
+        geosite_response.raise_for_status.assert_called_once_with()
+        restart.assert_called_once_with()
+
+    def test_failed_download_keeps_existing_databases_unchanged(self):
+        controller = MihomoController()
+        geoip_response = Mock(headers={'content-length': '9'})
+        geoip_response.iter_content.return_value = [b'new-geoip']
+        geosite_response = Mock()
+        geosite_response.raise_for_status.side_effect = RuntimeError('download failed')
+
+        with tempfile.TemporaryDirectory() as asset_path:
+            for filename, content in (
+                ('geoip.dat', b'old-geoip'),
+                ('geosite.dat', b'old-geosite'),
+            ):
+                with open(os.path.join(asset_path, filename), 'wb') as f:
+                    f.write(content)
+
+            with patch(
+                'core.mihomo_controller.MihomoDefaultPath.asset_path',
+                return_value=asset_path + '/',
+            ), patch(
+                'core.mihomo_controller.requests.get',
+                side_effect=[geoip_response, geosite_response],
+            ), patch.object(controller, 'restart') as restart:
+                with self.assertRaisesRegex(RuntimeError, 'download failed'):
+                    controller.update_geo_data('https://example.com/releases')
+
+            with open(os.path.join(asset_path, 'geoip.dat'), 'rb') as f:
+                self.assertEqual(f.read(), b'old-geoip')
+            with open(os.path.join(asset_path, 'geosite.dat'), 'rb') as f:
+                self.assertEqual(f.read(), b'old-geosite')
+
+        restart.assert_not_called()
 
 
 if __name__ == '__main__':

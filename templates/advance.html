@@ -168,10 +168,11 @@
                     </td>
                     <td colspan="3">
                         <div class="mdui-typo-caption-opacity">
-                            设置当未命中任何规则时，默认直连还是代理，关闭即是「直连优先」，例如:
+                            设置未命中任何规则时的默认策略；关闭即是「直连优先」。
                             <ul>
-                                <li>在「直连优先」+ 国外域名代理规则 的情况下，可实现类似GFW模式</li>
-                                <li>在「代理优先」+ 国内域名直连规则 的情况下，可实现大陆白名单模式</li>
+                                <li>「智能分流」会内置中国域名和中国 IP 直连规则。</li>
+                                <li>关闭「代理优先」且 GEO 数据可用时，会自动将境外域名和 IP 代理，实现类似 GFW 模式。</li>
+                                <li>自定义规则优先于内置 GEO 规则，可用于覆盖默认行为。</li>
                             </ul>
                         </div>
                     </td>
@@ -390,7 +391,7 @@
                                         <li>正则表达式: 由<code>"regexp:"</code>开始，余下部分是一个正则表达式。当此正则表达式匹配目标域名时，该规则生效。例如"regexp:\\.goo.*\\.com$"匹配"www.google.com"、"fonts.googleapis.com"，但不匹配"google.com"。</li>
                                         <li>预定义域名列表：由<code>"geosite:"</code>开头，余下部分是一个名称，如<code>geosite:google</code>或者<code>geosite:cn</code>，取值来自「三方 GEO 数据库」中的 <code>geosite.dat</code>。</li>
                                     </ul>
-                                    <p><code>ext:file:tag</code> 写法不再支持，请改用 <code>geosite:</code>。</p>
+                                    <p><code>ext:file:tag</code> 写法不再支持：域名规则请改用 <code>geosite:</code>，IP 规则请改用 <code>geoip:</code>。</p>
                                 </div>
                             </div>
                         </td>

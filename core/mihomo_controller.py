@@ -179,30 +179,64 @@ class MihomoController:
         return True
 
     def check_new_geo_data(self, url) -> str:
-        headers = requests.head(url + '/latest').headers
-        dest_url = headers['location']
+        response = requests.head(url + '/latest', allow_redirects=False, timeout=30)
+        response.raise_for_status()
+        dest_url = response.headers['location']
         version = dest_url.split('/')[-1]
         return version
 
     def update_geo_data(self, url):
-        geoip_url = url + '/latest/download/geoip.dat'
-        r = requests.get(geoip_url)
-        geoip = ''
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            f.write(r.content)
-            geoip = f.name
-
-        geosite_url = url + '/latest/download/geosite.dat'
-        r = requests.get(geosite_url)
-        geosite = ''
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            f.write(r.content)
-            geosite = f.name
-
         asset_path = MihomoDefaultPath.asset_path()
         os.makedirs(asset_path, exist_ok=True)
-        shutil.move(geoip, asset_path + 'geoip.dat')
-        shutil.move(geosite, asset_path + 'geosite.dat')
+
+        temporary_files = []
+        try:
+            for filename in ('geoip.dat', 'geosite.dat'):
+                response = requests.get(
+                    url + '/latest/download/' + filename,
+                    stream=True, timeout=60,
+                )
+                response.raise_for_status()
+                total = int(response.headers.get('content-length', 0))
+                downloaded = 0
+                print('Downloading {0}...'.format(filename), flush=True)
+                with tempfile.NamedTemporaryFile(
+                    mode='wb', dir=asset_path, prefix=filename + '.',
+                    suffix='.tmp', delete=False,
+                ) as output:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        if not chunk:
+                            continue
+                        output.write(chunk)
+                        downloaded += len(chunk)
+                        if total:
+                            progress = downloaded * 100 // total
+                            print(
+                                '\rDownloading {0}: {1}% ({2}/{3} MiB)'.format(
+                                    filename, progress,
+                                    downloaded // (1024 * 1024),
+                                    total // (1024 * 1024),
+                                ),
+                                end='', flush=True,
+                            )
+                    if total:
+                        print()
+                    if output.tell() == 0:
+                        raise ValueError('Downloaded {0} is empty'.format(filename))
+                print('Downloaded {0} ({1} MiB)'.format(
+                    filename, downloaded // (1024 * 1024),
+                ), flush=True)
+                temporary_files.append((output.name, asset_path + filename))
+
+            for source, destination in temporary_files:
+                os.replace(source, destination)
+            temporary_files = []
+        finally:
+            for source, _ in temporary_files:
+                try:
+                    os.unlink(source)
+                except OSError:
+                    pass
 
         self.restart()
 

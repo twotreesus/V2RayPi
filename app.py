@@ -6,6 +6,7 @@ import threading
 import time
 import functools
 from flask import Flask, render_template, jsonify, request, Response, make_response
+from werkzeug.serving import WSGIRequestHandler
 
 from core.core_service import CoreService
 from core.keys import Keyword as K
@@ -18,6 +19,14 @@ CoreService.load()
 app = Flask(__name__, static_url_path='/static')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
+
+
+class V2RayPiRequestHandler(WSGIRequestHandler):
+    def log_request(self, code='-', size='-'):
+        if self.path.split('?', 1)[0] in ('/get_status', '/get_performance'):
+            return
+        super().log_request(code, size)
+
 
 # Authentication decorator
 def require_auth(f):
@@ -505,4 +514,8 @@ def login_api():
     return response
 
 CoreService.traffic_sample_start()
-app.run(host='0.0.0.0', port=CoreService.app_config.port)
+app.run(
+    host='0.0.0.0',
+    port=CoreService.app_config.port,
+    request_handler=V2RayPiRequestHandler,
+)
