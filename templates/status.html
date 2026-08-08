@@ -159,7 +159,7 @@
                         <div class="mdui-row">
                             <div class="mdui-col-sm-3">
                                 <label for="proxy_mode"></label>
-                                <select id="proxy_mode" class="mdui-select" mdui-select="{position: 'bottom'}">
+                                <select id="proxy_mode" class="mdui-select">
                                     <option value="0" data-i18n="status.mode.direct">直连</option>
                                     <option value="1" data-i18n="status.mode.smart">智能分流</option>
                                     <option value="2" data-i18n="status.mode.global">全局代理</option>
@@ -252,6 +252,8 @@
     }
 
     $(document).ready(function () {
+        window.g_proxy_mode_select = new mdui.Select("#proxy_mode", { position: "bottom" });
+
         $("#proxy_mode").change(function () {
             $("#switch_mode").show();
         })
@@ -277,7 +279,8 @@
             }
 
             mode = data["proxy_mode"];
-            $("#proxy_mode").prop("selectedIndex", mode);
+            $("#proxy_mode").val(String(mode));
+            window.g_proxy_mode_select.handleUpdate();
             $("#mihomo_current_ver").html(data["version"]);
             $("#mihomo_new_ver").html(window.g_new_version);
             var badge = protocol_badge(data["protocol"]);
