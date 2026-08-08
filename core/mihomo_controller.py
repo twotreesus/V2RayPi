@@ -1,6 +1,7 @@
 # encoding: utf-8
 """Process and configuration control for the mihomo core."""
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -66,10 +67,12 @@ class MihomoController:
             return ''
         if result.returncode != 0:
             return ''
-        # `mihomo -v` prints e.g. "Mihomo Meta v1.19.29 linux arm64 with go1.24".
-        for token in result.stdout.split():
-            if token.startswith('v') and any(char.isdigit() for char in token):
-                return token
+        match = re.search(
+            r'\bv?(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)\b',
+            result.stdout,
+        )
+        if match:
+            return 'v' + match.group(1)
         return ''
 
     def check_new_version(self) -> str:

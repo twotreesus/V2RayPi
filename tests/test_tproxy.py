@@ -27,6 +27,30 @@ class DefaultPathTest(unittest.TestCase):
             )
 
 
+class MihomoVersionTest(unittest.TestCase):
+    def test_homebrew_version_without_v_prefix_is_normalized(self):
+        completed = Mock(
+            returncode=0,
+            stdout='Mihomo Meta 1.19.29 darwin arm64 with go1.26.5',
+        )
+        with patch(
+            'core.mihomo_controller.subprocess.run',
+            return_value=completed,
+        ):
+            self.assertEqual(MihomoController().version(), 'v1.19.29')
+
+    def test_official_version_with_v_prefix_is_preserved(self):
+        completed = Mock(
+            returncode=0,
+            stdout='Mihomo Meta v1.19.29 linux arm64 with go1.24',
+        )
+        with patch(
+            'core.mihomo_controller.subprocess.run',
+            return_value=completed,
+        ):
+            self.assertEqual(MihomoController().version(), 'v1.19.29')
+
+
 class TproxyServiceTest(unittest.TestCase):
     def test_first_successful_node_application_configures_and_enables_service(self):
         controller = MihomoController()
