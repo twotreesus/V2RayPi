@@ -43,7 +43,7 @@ def require_auth(f):
             if auth_header.startswith('Bearer '):
                 session = auth_header[7:]
         if not session or not CoreService.verify_session(session):
-            return jsonify({K.result: K.session_error, 'message': 'Session invalid or expired'})
+            return jsonify({K.result: K.session_error, 'error': 'session_expired'})
 
         return f(*args, **kwargs)
     return decorated
@@ -74,20 +74,22 @@ def system_page():
 @require_auth
 def update_password_api():
     result = K.failed
-    message = ''
-    
     data = request.get_json()
     if not data or 'current_password' not in data or 'new_password' not in data:
-        message = '当前密码和新密码不能为空'
-        return jsonify({ K.result: result, 'message': message })
+        return jsonify({
+            K.result: result,
+            'error': 'password_fields_required',
+        })
     
     current_password = data['current_password']
     new_password = data['new_password']
     
     # update password
     if not CoreService.update_password(current_password, new_password):
-        message = '当前密码验证失败'
-        return jsonify({ K.result: result, 'message': message })
+        return jsonify({
+            K.result: result,
+            'error': 'current_password_invalid',
+        })
         
     result = K.ok
     response = make_response(jsonify({ K.result: result, 'relogin': True }))
@@ -203,11 +205,11 @@ def add_manual_node_api():
         if not added:
             return jsonify({
                 K.result: K.failed,
-                'message': '同名节点已在收藏中',
+                'error': 'duplicate_favorite',
             })
         return jsonify({K.result: K.ok})
-    except ValueError as error:
-        return jsonify({K.result: K.failed, 'message': str(error)})
+    except ValueError:
+        return jsonify({K.result: K.failed, 'error': 'invalid_node_url'})
 
 @app.route('/remove_subscribe')
 @require_auth
@@ -276,8 +278,11 @@ def get_node_link_api():
         index = int(request.args.get(K.node_index))
         link = CoreService.node_manager.find_node(url, index).link
         return jsonify({K.result: K.ok, K.node_link: link})
-    except ValueError as error:
-        return jsonify({K.result: K.failed, 'message': str(error)})
+    except ValueError:
+        return jsonify({
+            K.result: K.failed,
+            'error': 'unsupported_node_share',
+        })
 
 @app.route('/delete_node')
 @require_auth
@@ -467,7 +472,7 @@ def shutdown_host_api():
 def export_config_api():
     session = request.cookies.get(K.session)
     if not session or not CoreService.verify_session(session):
-        return jsonify({K.result: K.session_error, 'message': 'Session invalid or expired'})
+        return jsonify({K.result: K.session_error, 'error': 'session_expired'})
     data = CoreService.export_config()
     from datetime import datetime
     filename = 'v2raypi-config-{}.zip'.format(datetime.now().strftime('%Y%m%d%H%M%S'))
@@ -480,17 +485,17 @@ def export_config_api():
 @require_auth
 def import_config_api():
     if 'file' not in request.files:
-        return jsonify({K.result: K.failed, 'message': 'No file provided'})
+        return jsonify({K.result: K.failed, 'error': 'file_required'})
     f = request.files['file']
     if not f.filename.endswith('.zip'):
-        return jsonify({K.result: K.failed, 'message': 'File must be a .zip'})
+        return jsonify({K.result: K.failed, 'error': 'zip_required'})
     try:
         data = f.read()
         if CoreService.import_config(data):
             return jsonify({K.result: K.ok})
-        return jsonify({K.result: K.failed, 'message': 'Invalid backup file'})
+        return jsonify({K.result: K.failed, 'error': 'invalid_backup'})
     except Exception:
-        return jsonify({K.result: K.failed, 'message': 'Import failed'})
+        return jsonify({K.result: K.failed, 'error': 'import_failed'})
 
 # Session check and refresh API
 @app.route('/api/refresh')
@@ -499,7 +504,10 @@ def refresh_api():
     # Refresh session
     session = request.cookies.get(K.session)
     if not CoreService.refresh_session(session):
-        return jsonify({ K.result: K.session_error })
+        return jsonify({
+            K.result: K.session_error,
+            'error': 'session_expired',
+        })
     
     return jsonify({ K.result: K.ok })
 
@@ -507,20 +515,16 @@ def refresh_api():
 @app.route('/api/login', methods=['POST'])
 def login_api():
     result = K.failed
-    message = ''
-    
     data = request.get_json()
     if not data or K.password not in data:
-        message = 'Password is required'
-        return jsonify({ K.result: result, 'message': message })
+        return jsonify({K.result: result, 'error': 'password_required'})
     
     password = data[K.password]
     
     # Generate session token
     session = CoreService.generate_session(password)
     if not session:
-        message = 'Invalid password'
-        return jsonify({ K.result: result, 'message': message })
+        return jsonify({K.result: result, 'error': 'invalid_password'})
     
     # Create response with session cookie
     response = make_response(jsonify({ K.result: K.ok }))

@@ -1,28 +1,89 @@
+<script>
+    I18n.register({
+        "subscribe.recent": {zh: "最近订阅", en: "Recent subscription"},
+        "subscribe.update_all": {zh: "全部更新", en: "Update all"},
+        "subscribe.add": {zh: "新增订阅", en: "Add subscription"},
+        "subscribe.add_node": {zh: "添加节点", en: "Add node"},
+        "subscribe.address": {zh: "订阅地址", en: "Subscription URL"},
+        "subscribe.copy": {zh: "复制", en: "Copy"},
+        "subscribe.qr_code": {zh: "二维码", en: "QR code"},
+        "subscribe.update": {zh: "更新", en: "Update"},
+        "subscribe.delete": {zh: "删除", en: "Delete"},
+        "subscribe.favorites": {zh: "收藏", en: "Favorites"},
+        "subscribe.column.index": {zh: "序号", en: "No."},
+        "subscribe.column.name": {zh: "名称", en: "Name"},
+        "subscribe.column.address": {zh: "地址", en: "Address"},
+        "subscribe.column.actions": {zh: "操作", en: "Actions"},
+        "subscribe.tooltip.copy_url": {zh: "复制订阅地址", en: "Copy subscription URL"},
+        "subscribe.tooltip.show_subscription_qr": {zh: "显示订阅地址二维码", en: "Show subscription URL QR code"},
+        "subscribe.tooltip.favorite": {zh: "添加到收藏", en: "Add to favorites"},
+        "subscribe.tooltip.copy_link": {zh: "复制分享链接", en: "Copy share link"},
+        "subscribe.tooltip.show_node_qr": {zh: "显示节点二维码", en: "Show node QR code"},
+        "subscribe.tooltip.delete_node": {zh: "删除节点", en: "Delete node"},
+        "subscribe.tooltip.remove_favorite": {zh: "取消收藏", en: "Remove from favorites"},
+        "subscribe.group": {zh: "订阅", en: "Sub"},
+        "subscribe.url_copied": {zh: "订阅地址已复制", en: "Subscription URL copied"},
+        "subscribe.switch.prompt": {zh: "切换到节点：{name}？", en: "Switch to node: {name}?"},
+        "subscribe.switch.title": {zh: "切换节点", en: "Switch node"},
+        "subscribe.confirm": {zh: "确认", en: "Confirm"},
+        "subscribe.cancel": {zh: "取消", en: "Cancel"},
+        "subscribe.apply.in_progress": {zh: "正在应用节点...", en: "Applying node..."},
+        "subscribe.apply.success": {zh: "应用成功", en: "Node applied"},
+        "subscribe.apply.failed": {zh: "应用失败", en: "Failed to apply node"},
+        "subscribe.link_copied": {zh: "节点分享链接已复制", en: "Node share link copied"},
+        "subscribe.link_unavailable": {zh: "该节点无法生成分享链接", en: "A share link cannot be generated for this node"},
+        "subscribe.qr_unavailable": {zh: "该节点无法生成二维码", en: "A QR code cannot be generated for this node"},
+        "subscribe.favorite.added": {zh: "已添加到收藏", en: "Added to favorites"},
+        "subscribe.favorite.exists": {zh: "已在收藏中", en: "Already in favorites"},
+        "subscribe.favorite.confirm_remove": {zh: "确认取消收藏？", en: "Remove this node from favorites?"},
+        "subscribe.favorite.remove_title": {zh: "取消收藏", en: "Remove favorite"},
+        "subscribe.node.confirm_delete": {zh: "确认删除？", en: "Delete this node?"},
+        "subscribe.node.delete_title": {zh: "删除节点", en: "Delete node"},
+        "subscribe.favorite.removed": {zh: "已取消收藏", en: "Removed from favorites"},
+        "subscribe.node.deleted": {zh: "节点已删除", en: "Node deleted"},
+        "subscribe.update.in_progress": {zh: "正在更新订阅节点...", en: "Updating subscription nodes..."},
+        "subscribe.update.success": {zh: "更新成功", en: "Update successful"},
+        "subscribe.update.failed": {zh: "更新失败", en: "Update failed"},
+        "subscribe.prompt.url": {zh: "请输入订阅地址：<br><small style='color:#888'>仅支持 Clash YAML 格式订阅</small>", en: "Enter the subscription URL:<br><small style='color:#888'>Only Clash YAML subscriptions are supported</small>"},
+        "subscribe.prompt.add_title": {zh: "新增订阅", en: "Add subscription"},
+        "subscribe.add.in_progress": {zh: "正在订阅新的节点列表...", en: "Subscribing to the new node list..."},
+        "subscribe.add.success": {zh: "订阅成功", en: "Subscription added"},
+        "subscribe.add.failed": {zh: "订阅失败", en: "Failed to add subscription"},
+        "subscribe.prompt.node_link": {zh: "请输入节点分享链接：<br><small style='color:#888'>支持 VMess、VLESS、SS、Trojan、Hysteria2、AnyTLS 和 Mieru</small>", en: "Enter the node share link:<br><small style='color:#888'>Supports VMess, VLESS, SS, Trojan, Hysteria2, AnyTLS, and Mieru</small>"},
+        "subscribe.prompt.add_node_title": {zh: "添加节点", en: "Add node"},
+        "subscribe.node.added": {zh: "节点已添加到收藏", en: "Node added to favorites"},
+        "subscribe.node.invalid_link": {zh: "节点链接无效", en: "Invalid node link"},
+        "subscribe.remove.confirm": {zh: "确认删除？", en: "Delete this subscription?"},
+        "subscribe.remove.title": {zh: "删除订阅", en: "Delete subscription"},
+        "subscribe.remove.success": {zh: "订阅已删除", en: "Subscription deleted"}
+    });
+</script>
+
 <div class="mdui-container">
     <p></p>
     <div class="mdui-row">
         <div class="mdui-table-fluid">
-            <!-- 订阅列表表格 -->
+            <!-- Subscription list table -->
             <table class="mdui-table">
                 <tbody id="subscribe_body">
                 <tr>
                     <td colspan="4">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
-                                <strong class="mdui-typo">最近订阅</strong>
+                                <strong class="mdui-typo" data-i18n="subscribe.recent">最近订阅</strong>
                                 <span id="last_subscribe" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;"></span>
                             </div>
                             <div style="flex: 1;"></div>
                             <div style="display: flex; align-items: center;">
                                 <div style="display: flex; gap: 8px; justify-content: flex-end; padding-right: 8px;">
                                     <div id="update_all_subscribe" style="display: none">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_all_subscribe()">全部更新</button>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.update_all" onclick="update_all_subscribe()">全部更新</button>
                                     </div>
                                     <div>
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_subscribe()">新增订阅</button>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.add" onclick="add_subscribe()">新增订阅</button>
                                     </div>
                                     <div>
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_manual_node()">添加节点</button>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.add_node" onclick="add_manual_node()">添加节点</button>
                                     </div>
                                 </div>
                             </div>
@@ -36,7 +97,7 @@
                             <div class="mdui-col-xs-1" style="width: 8%; display: flex; align-items: center;">
                                 <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
                                     <i class="mdui-icon material-icons group-toggle">expand_more</i>
-                                    <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">订阅地址</strong>
+                                    <strong class="mdui-typo subscribe-index" data-i18n="subscribe.address" style="white-space: nowrap;">订阅地址</strong>
                                 </div>
                             </div>
                             <div style="flex: 1; min-width: 0; display: flex; align-items: center;">
@@ -45,16 +106,16 @@
                             <div style="flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;">
                                 <div style="display: flex; gap: 8px;">
                                     <div>
-                                        <button class="copy_url mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" mdui-tooltip="{'content': '复制订阅地址'}">复制</button>
+                                        <button class="copy_url mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.copy" data-i18n-tooltip="subscribe.tooltip.copy_url">复制</button>
                                     </div>
                                     <div>
-                                        <button class="show_subscribe_qr mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" mdui-tooltip="{'content': '显示订阅地址二维码'}">二维码</button>
+                                        <button class="show_subscribe_qr mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.qr_code" data-i18n-tooltip="subscribe.tooltip.show_subscription_qr">二维码</button>
                                     </div>
                                     <div>
-                                        <button class="update_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple">更新</button>
+                                        <button class="update_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.update">更新</button>
                                     </div>
                                     <div>
-                                        <button class="remove_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple">删除</button>
+                                        <button class="remove_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple" data-i18n="subscribe.delete">删除</button>
                                     </div>
                                 </div>
                             </div>
@@ -66,7 +127,7 @@
                         <div style="width: 100%; display: flex; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
                                 <i class="mdui-icon material-icons group-toggle">expand_more</i>
-                                <strong class="mdui-typo subscribe-index" style="white-space: nowrap;">收藏</strong>
+                                <strong class="mdui-typo subscribe-index" data-i18n="subscribe.favorites" style="white-space: nowrap;">收藏</strong>
                             </div>
                             <div style="flex: 1;"></div>
                         </div>
@@ -86,10 +147,10 @@
 <table id="node_row_templates" style="display: none;">
     <tbody>
     <tr id="node_header_template" class="mdui-typo-caption-opacity">
-        <td style="width: 8%;">序号</td>
-        <td style="width: 42%;">名称</td>
-        <td style="width: 35%;">地址</td>
-        <td style="width: 15%;">操作</td>
+        <td style="width: 8%;" data-i18n="subscribe.column.index">序号</td>
+        <td style="width: 42%;" data-i18n="subscribe.column.name">名称</td>
+        <td style="width: 35%;" data-i18n="subscribe.column.address">地址</td>
+        <td style="width: 15%;" data-i18n="subscribe.column.actions">操作</td>
     </tr>
     <tr id="node_template">
         <td class="node_index"></td>
@@ -97,16 +158,16 @@
         <td class="node_addr"></td>
         <td>
             <div style="display: flex; gap: 8px; justify-content: flex-start;">
-                <div class="mdui-chip favorite_node" title="添加到收藏">
+                <div class="mdui-chip favorite_node" data-i18n-title="subscribe.tooltip.favorite" title="添加到收藏">
                     <span class="mdui-chip-icon mdui-color-grey-400"><i class="mdui-icon material-icons">star_border</i></span>
                 </div>
-                <div class="mdui-chip get_node_link" title="复制分享链接">
+                <div class="mdui-chip get_node_link" data-i18n-title="subscribe.tooltip.copy_link" title="复制分享链接">
                     <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">links</i></span>
                 </div>
-                <div class="mdui-chip show_node_qr" title="显示节点二维码">
+                <div class="mdui-chip show_node_qr" data-i18n-title="subscribe.tooltip.show_node_qr" title="显示节点二维码">
                     <span class="mdui-chip-icon mdui-color-grey-700"><i class="mdui-icon material-icons">crop_free</i></span>
                 </div>
-                <div class="mdui-chip delete_node" title="删除节点">
+                <div class="mdui-chip delete_node" data-i18n-title="subscribe.tooltip.delete_node" title="删除节点">
                     <span class="mdui-chip-icon mdui-color-red-500"><i class="mdui-icon material-icons">delete</i></span>
                 </div>
             </div>
@@ -252,7 +313,7 @@
         $("#node_list_body").on("click", ".copy_url", function() {
             var url = $(this).closest("tr").data("url");
             if (copy_to_clipboard(url)) {
-                message("订阅地址已复制");
+                message(t("subscribe.url_copied"));
             }
         });
 
@@ -269,9 +330,12 @@
             var url = row.data("url");
             var index = row.data("index");
             var nodeName = row.find(".node-name-text").text();
-            mdui.confirm("切换到节点：" + nodeName + " ？", function() {
+            mdui.confirm(t("subscribe.switch.prompt", {name: nodeName}), t("subscribe.switch.title"), function() {
                 apply_node(url, index);
-            }, function() {}, { title: "切换节点", confirmText: "确认", cancelText: "取消" });
+            }, function() {}, {
+                confirmText: t("subscribe.confirm"),
+                cancelText: t("subscribe.cancel")
+            });
         });
 
         $("#node_list_body").on("click", ".get_node_link", function() {
@@ -320,7 +384,10 @@
                 url_row.attr("data-url", url);
                 url_row.attr("data-group", index);
                 url_row.find(".url").html(url);
-                url_row.find(".subscribe-index").html("订阅 " + index);
+                url_row.find(".subscribe-index")
+                    .removeAttr("data-i18n")
+                    .html('<span data-i18n="subscribe.group"></span> ' + index);
+                I18n.apply(url_row[0]);
                 url_row.find(".group-toggle").addClass("expanded");
                 url_row.show();
                 var headerTable = $('<table class="mdui-table" style="margin-top: 4px;"><tbody></tbody></table>');
@@ -373,7 +440,9 @@
                 node_row.find(".node_index").html(nodeIndex + 1);
                 if (isFavorite) {
                     node_row.find(".favorite_node").hide();
-                    node_row.find(".delete_node").attr("title", "取消收藏");
+                    node_row.find(".delete_node")
+                        .attr("data-i18n-title", "subscribe.tooltip.remove_favorite")
+                        .attr("title", t("subscribe.tooltip.remove_favorite"));
                     node_row.find(".delete_node .mdui-icon").html("star");
                     node_row.find(".delete_node .mdui-chip-icon")
                         .removeClass("mdui-color-red-500")
@@ -437,10 +506,10 @@
     }
 
     function apply_node(url, index) {
-        pop_toast("正在应用节点...");
+        pop_toast(t("subscribe.apply.in_progress"));
         ajax_request({ url: "/apply_node", data: {subscribe: url, node_index: index} }).then(function(data) {
             if (check_result(data)) {
-                update_toast("应用成功");
+                update_toast(t("subscribe.apply.success"));
                 if (typeof update_header_status === "function") {
                     update_header_status(data);
                 } else if (typeof refresh_header_status === "function") {
@@ -468,7 +537,7 @@
                     }).find(".subscribe-index").addClass("running");
                 }
             } else {
-                update_toast("应用失败");
+                update_toast(t("subscribe.apply.failed"));
             }
         }).always(function() {
             close_toast();
@@ -480,9 +549,9 @@
             if (check_result(data)) {
                 link = data["node_link"];
                 copy_to_clipboard(link);
-                message("节点分享链接已复制");
+                message(t("subscribe.link_copied"));
             } else {
-                message(data["message"] || "该节点无法生成分享链接");
+                message(I18n.apiError(data, "subscribe.link_unavailable"));
             }
         })
     }
@@ -492,7 +561,7 @@
             if (check_result(data)) {
                 show_qr_code(data["node_link"]);
             } else {
-                message(data["message"] || "该节点无法生成二维码");
+                message(I18n.apiError(data, "subscribe.qr_unavailable"));
             }
         })
     }
@@ -507,35 +576,43 @@
     function favorite_node(url, index, $btn) {
         ajax_request({ url: "/favorite_node", data: {subscribe: url, node_index: index} }).then(function(data) {
             if (check_result(data)) {
-                message("已添加到收藏");
+                message(t("subscribe.favorite.added"));
                 refresh();
             } else {
-                message("已在收藏中");
+                message(t("subscribe.favorite.exists"));
             }
         });
     }
 
     function delete_node(url, index) {
         var isFavorite = url === "manual";
-        var prompt = isFavorite ? "确认取消收藏？" : "确认删除？";
-        mdui.confirm(prompt, function () {
+        var prompt = isFavorite
+            ? t("subscribe.favorite.confirm_remove")
+            : t("subscribe.node.confirm_delete");
+        var title = isFavorite
+            ? t("subscribe.favorite.remove_title")
+            : t("subscribe.node.delete_title");
+        mdui.confirm(prompt, title, function () {
             ajax_request({ url: "/delete_node", data: {subscribe:url, node_index:index} }).then(function (data) {
                 if (check_result(data)) {
-                    message(isFavorite ? "已取消收藏" : "节点已删除");
+                    message(isFavorite ? t("subscribe.favorite.removed") : t("subscribe.node.deleted"));
                     refresh();
                 }
             })
+        }, function () {}, {
+            confirmText: t("subscribe.confirm"),
+            cancelText: t("subscribe.cancel")
         });
     }
 
     function update_subscribe(url) {
-        pop_toast("正在更新订阅节点...")
+        pop_toast(t("subscribe.update.in_progress"))
         ajax_request({ url: "/update_subscribe", data: {subscribe:url} }).then(function (data) {
             if (check_result(data)) {
-                update_toast("更新成功");
+                update_toast(t("subscribe.update.success"));
             }
             else {
-                update_toast("更新失败");
+                update_toast(t("subscribe.update.failed"));
             }
         }).always(function () {
             close_toast();
@@ -544,13 +621,13 @@
     }
 
     function update_all_subscribe() {
-        pop_toast("正在更新订阅节点...")
+        pop_toast(t("subscribe.update.in_progress"))
         ajax_request({ url: "/update_all_subscribe" }).then(function (data) {
             if (check_result(data)) {
-                update_toast("更新成功");
+                update_toast(t("subscribe.update.success"));
             }
             else {
-                update_toast("更新失败");
+                update_toast(t("subscribe.update.failed"));
             }
         }).always(function () {
             close_toast();
@@ -559,27 +636,30 @@
     }
 
     function add_subscribe() {
-        mdui.prompt("请输入订阅地址：<br><small style='color:#888'>仅支持 Clash YAML 格式订阅</small>", function (url) {
+        mdui.prompt(t("subscribe.prompt.url"), t("subscribe.prompt.add_title"), function (url) {
             if (!url.length) {
                 return;
             }
-            pop_toast("正在订阅新的节点列表...");
+            pop_toast(t("subscribe.add.in_progress"));
             ajax_request({ url: "/add_subscribe", data: {subscribe:url} }).then(function (data) {
                 if (check_result(data)) {
-                    update_toast("订阅成功");
+                    update_toast(t("subscribe.add.success"));
                 }
                 else {
-                    update_toast("订阅失败");
+                    update_toast(t("subscribe.add.failed"));
                 }
             }).always(function () {
                 close_toast();
                 refresh();
             });
+        }, function () {}, {
+            confirmText: t("subscribe.confirm"),
+            cancelText: t("subscribe.cancel")
         });
     }
 
     function add_manual_node() {
-        mdui.prompt("请输入节点分享链接：<br><small style='color:#888'>支持 VMess、VLESS、SS、Trojan、Hysteria2、AnyTLS 和 Mieru</small>", function (url) {
+        mdui.prompt(t("subscribe.prompt.node_link"), t("subscribe.prompt.add_node_title"), function (url) {
             url = url.trim();
             if (!url.length) {
                 return;
@@ -590,23 +670,29 @@
                 data: JSON.stringify({url: url})
             }).then(function (data) {
                 if (check_result(data)) {
-                    message("节点已添加到收藏");
+                    message(t("subscribe.node.added"));
                     refresh();
                 } else {
-                    message(data["message"] || "节点链接无效");
+                    message(I18n.apiError(data, "subscribe.node.invalid_link"));
                 }
             });
+        }, function () {}, {
+            confirmText: t("subscribe.confirm"),
+            cancelText: t("subscribe.cancel")
         });
     }
 
     function remove_subscribe(url) {
-        mdui.confirm("确认删除？", function () {
+        mdui.confirm(t("subscribe.remove.confirm"), t("subscribe.remove.title"), function () {
             ajax_request({ url: "/remove_subscribe", data: {subscribe:url} }).then(function (data) {
                 if (check_result(data)) {
-                    message("订阅已删除");
+                    message(t("subscribe.remove.success"));
                     refresh();
                 }
             })
+        }, function () {}, {
+            confirmText: t("subscribe.confirm"),
+            cancelText: t("subscribe.cancel")
         });
     }
 

@@ -81,6 +81,7 @@ sequenceDiagram
 - **自动化管理**：自动处理订阅更新和策略配置
 - **一键更新**：内置 mihomo 及系统更新功能
 - **跨平台支持**：支持多种硬件平台和操作系统
+- **中英双语**：首次访问跟随浏览器语言，可在顶栏随时切换并记住选择
 - **简单易用**：图形化管理界面，操作直观
 
 原理参考：[透明代理(TPROXY)](https://guide.v2fly.org/app/tproxy.html)、[mihomo 文档](https://wiki.metacubex.one/)

@@ -1,3 +1,85 @@
+<script>
+    I18n.register({
+        "system.version.current": {zh: "当前版本", en: "Current version"},
+        "system.version.latest": {zh: "最新版本", en: "Latest version"},
+        "system.action.query": {zh: "查询", en: "Check"},
+        "system.action.upgrade": {zh: "升级", en: "Upgrade"},
+        "system.v2raypi.title": {zh: "更新 V2RayPi", en: "Update V2RayPi"},
+        "system.v2raypi.lastUpdate": {zh: "最近更新", en: "Last updated"},
+        "system.v2raypi.check": {zh: "检查更新", en: "Check for updates"},
+        "system.v2raypi.updateRestart": {zh: "更新并重启", en: "Update and restart"},
+        "system.v2raypi.history": {zh: "更新记录", en: "Update history"},
+        "system.v2raypi.currentBranch": {zh: "{branch}（当前）", en: "{branch} (current)"},
+        "system.password.title": {zh: "密码管理", en: "Password management"},
+        "system.password.current": {zh: "当前密码", en: "Current password"},
+        "system.password.currentPlaceholder": {zh: "请输入当前密码", en: "Enter current password"},
+        "system.password.new": {zh: "新密码", en: "New password"},
+        "system.password.newPlaceholder": {zh: "请输入新密码", en: "Enter new password"},
+        "system.password.update": {zh: "更新", en: "Update"},
+        "system.password.currentRequired": {zh: "请输入当前密码", en: "Enter your current password"},
+        "system.password.newRequired": {zh: "请输入新密码", en: "Enter a new password"},
+        "system.password.noSpaces": {zh: "新密码不能包含空格", en: "The new password cannot contain spaces"},
+        "system.password.tooShort": {zh: "新密码长度必须大于等于5位", en: "The new password must be at least 5 characters"},
+        "system.password.success": {zh: "密码更新成功", en: "Password updated"},
+        "system.password.relogin": {zh: "密码已更新，需要重新登录", en: "Password updated. Please sign in again"},
+        "system.password.loginWithNew": {zh: "密码已更改，请使用新密码登录", en: "Password changed. Sign in with your new password"},
+        "system.password.currentInvalid": {zh: "当前密码验证失败", en: "Current password verification failed"},
+        "system.backup.title": {zh: "配置备份", en: "Configuration backup"},
+        "system.backup.export": {zh: "导出配置", en: "Export configuration"},
+        "system.backup.exportHint": {zh: "导出节点、订阅和高级设置为 zip 文件", en: "Export nodes, subscriptions, and advanced settings as a ZIP file"},
+        "system.backup.import": {zh: "导入配置", en: "Import configuration"},
+        "system.backup.importHint": {zh: "导入将完整覆盖配置，请确认后再操作", en: "Importing will completely replace the configuration. Confirm before continuing"},
+        "system.backup.sessionExpired": {zh: "会话已过期，请重新登录", en: "Session expired. Please sign in again"},
+        "system.backup.exportFailed": {zh: "导出失败", en: "Export failed"},
+        "system.backup.importPrompt": {zh: "导入配置将完整覆盖现有配置，确定继续吗？", en: "Importing will completely replace the current configuration. Continue?"},
+        "system.backup.importTitle": {zh: "导入确认", en: "Confirm import"},
+        "system.backup.importSuccess": {zh: "导入成功，页面将刷新", en: "Import successful. The page will refresh"},
+        "system.backup.noFile": {zh: "未提供备份文件", en: "No backup file provided"},
+        "system.backup.zipOnly": {zh: "备份文件必须为 ZIP 格式", en: "The backup file must be a ZIP file"},
+        "system.backup.invalidFile": {zh: "备份文件无效", en: "Invalid backup file"},
+        "system.backup.importFailed": {zh: "导入失败", en: "Import failed"},
+        "system.host.title": {zh: "主机管理", en: "Host management"},
+        "system.host.power": {zh: "电源管理", en: "Power management"},
+        "system.host.reboot": {zh: "重启主机", en: "Reboot host"},
+        "system.host.shutdown": {zh: "关闭主机", en: "Shut down host"},
+        "system.host.rebootPrompt": {zh: "确定要重启主机吗？", en: "Reboot the host?"},
+        "system.host.rebootTitle": {zh: "重启确认", en: "Confirm reboot"},
+        "system.host.rebootWarning": {zh: "警告：重启过程中服务将会停止，确定继续吗？", en: "Warning: Services will stop during the reboot. Continue?"},
+        "system.host.rebooting": {zh: "正在重启主机...", en: "Rebooting host..."},
+        "system.host.rebootSent": {zh: "重启命令已发送，请等待主机重启完成", en: "Reboot command sent. Please wait for the host to restart"},
+        "system.host.rebootFailed": {zh: "重启失败", en: "Reboot failed"},
+        "system.host.shutdownPrompt": {zh: "确定要关闭主机吗？", en: "Shut down the host?"},
+        "system.host.shutdownTitle": {zh: "关机确认", en: "Confirm shutdown"},
+        "system.host.shutdownWarning": {zh: "警告：关机后需要手动开机才能恢复服务，确定继续吗？", en: "Warning: The host must be powered on manually to restore service. Continue?"},
+        "system.host.shuttingDown": {zh: "正在关闭主机...", en: "Shutting down host..."},
+        "system.host.shutdownSent": {zh: "关机命令已发送，请等待主机完全关闭", en: "Shutdown command sent. Please wait for the host to power off"},
+        "system.host.shutdownFailed": {zh: "关机失败", en: "Shutdown failed"},
+        "system.logs.title": {zh: "运行日志", en: "Runtime logs"},
+        "system.update.checking": {zh: "正在检查更新...", en: "Checking for updates..."},
+        "system.update.available": {zh: "发现新的更新", en: "New updates are available"},
+        "system.update.latest": {zh: "已是最新版本", en: "Already up to date"},
+        "system.update.checkFailed": {zh: "检查更新失败", en: "Failed to check for updates"},
+        "system.mihomo.querying": {zh: "正在查询...", en: "Checking..."},
+        "system.mihomo.latest": {zh: "当前已是最新版本无需更新", en: "mihomo is already up to date"},
+        "system.mihomo.available": {zh: "已发布新版本，点击升级按钮更新", en: "A new version is available. Click Upgrade to update"},
+        "system.mihomo.checkFailed": {zh: "检查失败", en: "Check failed"},
+        "system.mihomo.upgrading": {zh: "正在升级...", en: "Upgrading..."},
+        "system.mihomo.upgradeSuccess": {zh: "升级成功", en: "Upgrade successful"},
+        "system.mihomo.upgradeFailed": {zh: "升级失败", en: "Upgrade failed"},
+        "system.update.switchPrompt": {zh: "确定要切换到分支 {branch} 并更新重启服务吗？", en: "Switch to branch {branch}, update, and restart the service?"},
+        "system.update.restartPrompt": {zh: "确定要更新并重启服务吗？", en: "Update and restart the service?"},
+        "system.update.switchWarning": {zh: "警告：将切换到分支 {branch}，本地未提交的改动会被丢弃，且服务将会重启，确定继续吗？", en: "Warning: Switching to branch {branch} will discard uncommitted local changes and restart the service. Continue?"},
+        "system.update.restartWarning": {zh: "警告：更新过程中服务将会重启，确定继续吗？", en: "Warning: The service will restart during the update. Continue?"},
+        "system.update.confirmTitle": {zh: "更新确认", en: "Confirm update"},
+        "system.confirm.again": {zh: "再次确认", en: "Confirm again"},
+        "system.confirm.ok": {zh: "确定", en: "OK"},
+        "system.confirm.cancel": {zh: "取消", en: "Cancel"},
+        "system.update.updating": {zh: "正在更新系统...", en: "Updating system..."},
+        "system.update.restartCountdown": {zh: "更新成功，正在重启服务，{seconds} 秒后刷新页面", en: "Update successful. Restarting service; refreshing in {seconds} seconds"},
+        "system.update.failed": {zh: "更新失败", en: "Update failed"}
+    });
+</script>
+
 <div id="system_page" class="mdui-container">
     <p></p>
     <div class="mdui-row">
@@ -18,7 +100,7 @@
                     <td colspan="2">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">当前版本</span>
+                                <span style="white-space: nowrap;" data-i18n="system.version.current">当前版本</span>
                             </div>
                             <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
                                 <span id="mihomo_current_ver"></span>
@@ -30,16 +112,16 @@
                     <td colspan="2">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">最新版本</span>
+                                <span style="white-space: nowrap;" data-i18n="system.version.latest">最新版本</span>
                             </div>
                             <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <span id="mihomo_new_ver" class="mdui-text-color-blue" style="display: inline-block; min-width: 100px;"></span>
                                     <div id="check_update">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_mihomo_new_ver()">查询</button>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_mihomo_new_ver()" data-i18n="system.action.query">查询</button>
                                     </div>
                                     <div id="update" style="display: none">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_mihomo()">升级</button>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_mihomo()" data-i18n="system.action.upgrade">升级</button>
                                     </div>
                                 </div>
                             </div>
@@ -52,7 +134,7 @@
                     <td colspan="2" class="mdui-typo">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">更新 V2RayPi</h5>
+                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.v2raypi.title">更新 V2RayPi</h5>
                             </div>
                         </div>
                     </td>
@@ -61,7 +143,7 @@
                     <td colspan="2">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">最近更新</span>
+                                <span style="white-space: nowrap;" data-i18n="system.v2raypi.lastUpdate">最近更新</span>
                             </div>
                             <div class="mdui-col-xs-10" style="display: flex; align-items: center; gap: 64px;">
                                 <span id="lastUpdateTime" style="white-space: nowrap; font-size: 14px; color: rgba(0, 0, 0, 0.54);"></span>
@@ -70,10 +152,10 @@
                                         <select id="v2raypi_branch"></select>
                                     </div>
                                     <div>
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2raypi_updates()">检查更新</button>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2raypi_updates()" data-i18n="system.v2raypi.check">检查更新</button>
                                     </div>
                                     <div>
-                                        <button id="update_btn_v2raypi" class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="update_and_restart_v2raypi()" style="display: none">更新并重启</button>
+                                        <button id="update_btn_v2raypi" class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="update_and_restart_v2raypi()" style="display: none" data-i18n="system.v2raypi.updateRestart">更新并重启</button>
                                     </div>
                                 </div>
                             </div>
@@ -84,7 +166,7 @@
                     <td colspan="2">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">更新记录</span>
+                                <span style="white-space: nowrap;" data-i18n="system.v2raypi.history">更新记录</span>
                             </div>
                             <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
                                 <div id="recent_commits" style="display: flex; flex-direction: column; gap: 4px;">
@@ -100,7 +182,7 @@
                     <td colspan="2" class="mdui-typo">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">密码管理</h5>
+                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.password.title">密码管理</h5>
                             </div>
                         </div>
                     </td>
@@ -109,12 +191,12 @@
                     <td colspan="2">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">当前密码</span>
+                                <span style="white-space: nowrap;" data-i18n="system.password.current">当前密码</span>
                             </div>
                             <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <div class="mdui-textfield" style="padding: 0; margin: 0; position: relative;">
-                                        <input class="mdui-textfield-input" type="password" id="current_password" placeholder="请输入当前密码" style="font-size: inherit;"/>
+                                        <input class="mdui-textfield-input" type="password" id="current_password" placeholder="请输入当前密码" data-i18n-placeholder="system.password.currentPlaceholder" style="font-size: inherit; min-width: 220px; padding-right: 40px; box-sizing: border-box;"/>
                                         <i class="mdui-icon material-icons" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center; height: 100%;" onclick="togglePasswordVisibility('current_password')">visibility_off</i>
                                     </div>
                                 </div>
@@ -126,15 +208,15 @@
                     <td colspan="2">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">新密码</span>
+                                <span style="white-space: nowrap;" data-i18n="system.password.new">新密码</span>
                             </div>
                             <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <div class="mdui-textfield" style="padding: 0; margin: 0; position: relative;">
-                                        <input class="mdui-textfield-input" type="password" id="new_password" placeholder="请输入新密码" style="font-size: inherit;"/>
+                                        <input class="mdui-textfield-input" type="password" id="new_password" placeholder="请输入新密码" data-i18n-placeholder="system.password.newPlaceholder" style="font-size: inherit; min-width: 220px; padding-right: 40px; box-sizing: border-box;"/>
                                         <i class="mdui-icon material-icons" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center; height: 100%;" onclick="togglePasswordVisibility('new_password')">visibility_off</i>
                                     </div>
-                                    <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_password()">更新</button>
+                                    <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_password()" data-i18n="system.password.update">更新</button>
                                 </div>
                             </div>
                         </div>
@@ -147,7 +229,7 @@
                     <td colspan="2" class="mdui-typo">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">配置备份</h5>
+                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.backup.title">配置备份</h5>
                             </div>
                         </div>
                     </td>
@@ -155,17 +237,17 @@
                 <tr>
                     <td colspan="2">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center; gap: 8px;">
-                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="export_config()">导出配置</button>
-                            <span style="color: rgba(0,0,0,0.38); font-size: 12px;">导出节点、订阅和高级设置为 zip 文件</span>
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="export_config()" data-i18n="system.backup.export">导出配置</button>
+                            <span style="color: rgba(0,0,0,0.38); font-size: 12px;" data-i18n="system.backup.exportHint">导出节点、订阅和高级设置为 zip 文件</span>
                         </div>
                     </td>
                 </tr>
                 <tr>
                     <td colspan="2">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center; gap: 8px;">
-                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="document.getElementById('import_file').click()">导入配置</button>
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="document.getElementById('import_file').click()" data-i18n="system.backup.import">导入配置</button>
                             <input type="file" id="import_file" accept=".zip" style="display:none" onchange="import_config(this.files[0])">
-                            <span style="color: rgba(0,0,0,0.38); font-size: 12px;">导入将完整覆盖配置，请确认后再操作</span>
+                            <span style="color: rgba(0,0,0,0.38); font-size: 12px;" data-i18n="system.backup.importHint">导入将完整覆盖配置，请确认后再操作</span>
                         </div>
                     </td>
                 </tr>
@@ -176,7 +258,7 @@
                     <td colspan="2" class="mdui-typo">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">主机管理</h5>
+                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.host.title">主机管理</h5>
                             </div>
                         </div>
                     </td>
@@ -185,11 +267,11 @@
                     <td colspan="2">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
                             <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;">电源管理</span>
+                                <span style="white-space: nowrap;" data-i18n="system.host.power">电源管理</span>
                             </div>
                             <div class="mdui-col-xs-10" style="display: flex; gap: 8px; align-items: center;">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="reboot_host()">重启主机</button>
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red mdui-ripple" onclick="shutdown_host()">关闭主机</button>
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="reboot_host()" data-i18n="system.host.reboot">重启主机</button>
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red mdui-ripple" onclick="shutdown_host()" data-i18n="system.host.shutdown">关闭主机</button>
                             </div>
                         </div>
                     </td>
@@ -200,10 +282,10 @@
                 <tr>
                     <td colspan="2" class="mdui-typo">
                         <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-1" style="width: 8%;">
-                                <h5 style="margin: 0;">运行日志</h5>
+                            <div style="width: 15%; min-width: 120px;">
+                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.logs.title">运行日志</h5>
                             </div>
-                            <div class="mdui-col-xs-3" style="display: flex; align-items: center;">
+                            <div style="display: flex; align-items: center; flex: 1;">
                                 <label class="mdui-switch">
                                     <input id="log-switch" type="checkbox"/>
                                     <i class="mdui-switch-icon"></i>
@@ -215,7 +297,7 @@
                 <tr id="log-content" style="display: none;">
                     <td colspan="2" style="padding: 4px 0;">
                         <div style="margin: 0 8px;">
-                            <div style="font-size: 12px; color: rgba(255,255,255,0.5); background: #1e1e1e; padding: 4px 10px; border-radius: 4px 4px 0 0; margin-bottom: -4px;">运行日志</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.5); background: #1e1e1e; padding: 4px 10px; border-radius: 4px 4px 0 0; margin-bottom: -4px;" data-i18n="system.logs.title">运行日志</div>
                             <pre style="max-height: 200px; overflow-x: auto; background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 0 4px 4px 4px; margin: 0;"><code id="log-mihomo-content"></code></pre>
                         </div>
                     </td>
@@ -230,6 +312,38 @@
     //# sourceURL=system.js
     function check_result(data) {
         return data && data["result"] === "ok";
+    }
+
+    function confirm_options() {
+        return {
+            confirmText: t("system.confirm.ok"),
+            cancelText: t("system.confirm.cancel")
+        };
+    }
+
+    function render_v2raypi_branches(response) {
+        var select = $('#v2raypi_branch');
+        var selected = select.val();
+        select.empty();
+        response.branches.forEach(function(branch) {
+            var label = branch === response.current
+                ? t("system.v2raypi.currentBranch", { branch: branch })
+                : branch;
+            select.append($('<option></option>').attr('value', branch).text(label));
+        });
+        if (selected && response.branches.indexOf(selected) !== -1) {
+            select.val(selected);
+        } else if (response.current) {
+            select.val(response.current);
+        }
+        $('#v2raypi_branch_wrapper').show();
+        // The select is populated asynchronously, so mdui cannot auto-init
+        // it. Keep the instance to refresh the widget after option changes.
+        if (window.g_v2raypi_branch_select) {
+            window.g_v2raypi_branch_select.handleUpdate();
+        } else {
+            window.g_v2raypi_branch_select = new mdui.Select(select[0], { position: 'bottom' });
+        }
     }
 
     function refresh() {
@@ -248,23 +362,8 @@
             .done(function(response) {
             if (check_result(response)) {
                 window.g_v2raypi_current_branch = response.current;
-                var select = $('#v2raypi_branch');
-                select.empty();
-                response.branches.forEach(function(branch) {
-                    var label = branch === response.current ? branch + ' (当前)' : branch;
-                    select.append($('<option></option>').attr('value', branch).text(label));
-                });
-                if (response.current) {
-                    select.val(response.current);
-                }
-                $('#v2raypi_branch_wrapper').show();
-                // The select is populated asynchronously, so mdui cannot auto-init
-                // it. Keep the instance to refresh the widget after option changes.
-                if (window.g_v2raypi_branch_select) {
-                    window.g_v2raypi_branch_select.handleUpdate();
-                } else {
-                    window.g_v2raypi_branch_select = new mdui.Select(select[0], { position: 'bottom' });
-                }
+                window.g_v2raypi_branches = response;
+                render_v2raypi_branches(response);
             }
         });
     }
@@ -297,7 +396,7 @@
 
     function check_v2raypi_updates() {
         var branch = $('#v2raypi_branch').val();
-        var toast = pop_toast("正在检查更新...");
+        var toast = pop_toast(t("system.update.checking"));
         ajax_request({ url: "/check_v2raypi_updates", data: { branch: branch } })
             .done(function(response) {
             if (check_result(response)) {
@@ -315,50 +414,50 @@
                 });
                 if (response.commits.length > 0) {
                     $('#update_btn_v2raypi').show();
-                    message("发现新的更新");
+                    message(t("system.update.available"));
                 } else {
                     $('#update_btn_v2raypi').hide();
                     get_v2raypi_recent_commits();
-                    message("已是最新版本");
+                    message(t("system.update.latest"));
                 }
             } else {
-                message("检查更新失败");
+                message(t("system.update.checkFailed"));
             }
             close_toast();
         });
     }
 
     function check_mihomo_new_ver() {
-        message("正在查询...");
+        message(t("system.mihomo.querying"));
         ajax_request({ url: "/check_mihomo_new_ver" })
             .done(function (data) {
             window.g_new_version = data["version"];
             $("#mihomo_new_ver").html(window.g_new_version)
             var current_version = $("#mihomo_current_ver").html();
             if (window.g_new_version === current_version) {
-                message("当前已是最新版本无需更新");
+                message(t("system.mihomo.latest"));
                 $("#check_update").show();
                 $("#update").hide();
             }
             else {
-                message("已发布新版本，点击升级按钮更新");
+                message(t("system.mihomo.available"));
                 $("#check_update").hide();
                 $("#update").show();
             }
         }).fail(function () {
-            message("检查失败");
+            message(t("system.mihomo.checkFailed"));
         });
     }
 
     function update_mihomo() {
-        pop_toast("正在升级...");
+        pop_toast(t("system.mihomo.upgrading"));
         ajax_request({ url: "/update_mihomo" })
             .done(function (data) {
                 if (check_result(data)) {
-                    update_toast("升级成功")
+                    update_toast(t("system.mihomo.upgradeSuccess"))
                 }
                 else {
-                    update_toast("升级失败")
+                    update_toast(t("system.mihomo.upgradeFailed"))
                 }
             })
             .always(function () {
@@ -372,20 +471,20 @@
         var branch = $('#v2raypi_branch').val();
         var switching = branch && branch !== window.g_v2raypi_current_branch;
         var first_message = switching
-            ? '确定要切换到分支 ' + branch + ' 并更新重启服务吗？'
-            : '确定要更新并重启服务吗？';
+            ? t("system.update.switchPrompt", { branch: branch })
+            : t("system.update.restartPrompt");
         var second_message = switching
-            ? '警告：将切换到分支 ' + branch + '，本地未提交的改动会被丢弃，且服务将会重启，确定继续吗？'
-            : '警告：更新过程中服务将会重启，确定继续吗？';
-        mdui.confirm(first_message, '更新确认', function(){
-            mdui.confirm(second_message, '再次确认', function() {
-                pop_toast("正在更新系统...");
+            ? t("system.update.switchWarning", { branch: branch })
+            : t("system.update.restartWarning");
+        mdui.confirm(first_message, t("system.update.confirmTitle"), function(){
+            mdui.confirm(second_message, t("system.confirm.again"), function() {
+                pop_toast(t("system.update.updating"));
                 ajax_request({ url: "/update_and_restart_v2raypi", data: { branch: branch } })
                     .done(function (data) {
                     if (check_result(data)) {
                         var countdown = 10;
                         var timer = setInterval(function() {
-                            update_toast("更新成功，正在重启服务，" + countdown + " 秒后刷新页面");
+                            update_toast(t("system.update.restartCountdown", { seconds: countdown }));
                             countdown--;
                             if (countdown < 0) {
                                 clearInterval(timer);
@@ -395,59 +494,59 @@
                         }, 1000);
                     }
                     else {
-                        update_toast("更新失败");
+                        update_toast(t("system.update.failed"));
                         setTimeout(close_toast, 2000);
                     }
                 }).fail(function () {
-                    update_toast("更新失败");
+                    update_toast(t("system.update.failed"));
                     setTimeout(close_toast, 2000);
                 });
-            });
-        });
+            }, null, confirm_options());
+        }, null, confirm_options());
     }
 
     function reboot_host() {
-        mdui.confirm('确定要重启主机吗？', '重启确认', function(){
-            mdui.confirm('警告：重启过程中服务将会停止，确定继续吗？', '再次确认', function() {
-                pop_toast("正在重启主机...");
+        mdui.confirm(t("system.host.rebootPrompt"), t("system.host.rebootTitle"), function(){
+            mdui.confirm(t("system.host.rebootWarning"), t("system.confirm.again"), function() {
+                pop_toast(t("system.host.rebooting"));
                 ajax_request({ url: "/reboot_host" })
                     .done(function (data) {
                     if (check_result(data)) {
-                        update_toast("重启命令已发送，请等待主机重启完成");
+                        update_toast(t("system.host.rebootSent"));
                         setTimeout(close_toast, 2000);
                     }
                     else {
-                        update_toast("重启失败");
+                        update_toast(t("system.host.rebootFailed"));
                         setTimeout(close_toast, 2000);
                     }
                 }).fail(function () {
-                    update_toast("重启失败");
+                    update_toast(t("system.host.rebootFailed"));
                     setTimeout(close_toast, 2000);
                 });
-            });
-        });
+            }, null, confirm_options());
+        }, null, confirm_options());
     }
 
     function shutdown_host() {
-        mdui.confirm('确定要关闭主机吗？', '关机确认', function(){
-            mdui.confirm('警告：关机后需要手动开机才能恢复服务，确定继续吗？', '再次确认', function() {
-                pop_toast("正在关闭主机...");
+        mdui.confirm(t("system.host.shutdownPrompt"), t("system.host.shutdownTitle"), function(){
+            mdui.confirm(t("system.host.shutdownWarning"), t("system.confirm.again"), function() {
+                pop_toast(t("system.host.shuttingDown"));
                 ajax_request({ url: "/shutdown_host" })
                     .done(function (data) {
                     if (check_result(data)) {
-                        update_toast("关机命令已发送，请等待主机完全关闭");
+                        update_toast(t("system.host.shutdownSent"));
                         setTimeout(close_toast, 2000);
                     }
                     else {
-                        update_toast("关机失败");
+                        update_toast(t("system.host.shutdownFailed"));
                         setTimeout(close_toast, 2000);
                     }
                 }).fail(function () {
-                    update_toast("关机失败");
+                    update_toast(t("system.host.shutdownFailed"));
                     setTimeout(close_toast, 2000);
                 });
-            });
-        });
+            }, null, confirm_options());
+        }, null, confirm_options());
     }
 
     var logEventSource = null;
@@ -499,22 +598,22 @@
     var new_password = $('#new_password').val();
 
     if (!current_password) {
-        message('请输入当前密码');
+        message(t("system.password.currentRequired"));
         return;
     }
 
     if (!new_password) {
-        message('请输入新密码');
+        message(t("system.password.newRequired"));
         return;
     }
 
     if (new_password.indexOf(' ') !== -1) {
-        message('新密码不能包含空格');
+        message(t("system.password.noSpaces"));
         return;
     }
 
     if (new_password.length < 5) {
-        message('新密码长度必须大于等于5位');
+        message(t("system.password.tooShort"));
         return;
     }
 
@@ -528,21 +627,24 @@
     })
         .done(function(response) {
             if (response.result === 'ok') {
-                message('密码更新成功');
+                message(t("system.password.success"));
                 $('#current_password').val('');
                 $('#new_password').val('');
 
                 // Handle session update
                 if (response.relogin) {
                     setTimeout(function() {
-                        message('密码已更新，需要重新登录');
+                        message(t("system.password.relogin"));
                         setTimeout(function() {
-                            show_login_dialog('密码已更改，请使用新密码登录');
+                            show_login_dialog(t("system.password.loginWithNew"));
                         }, 1000);
                     }, 500);
                 }
             } else {
-                message(response.message || '密码更新失败');
+                message(I18n.apiError(
+                    response,
+                    "system.password.currentInvalid"
+                ));
             }
         });
 }
@@ -552,10 +654,17 @@
         fetch('/export_config', {
             headers: { 'Authorization': 'Bearer ' + session }
         }).then(function(res) {
-            if (res.status === 401) {
-                message('会话已过期，请重新登录');
-                return;
+            var contentType = res.headers.get('content-type') || '';
+            if (contentType.indexOf('application/json') !== -1) {
+                return res.json().then(function(data) {
+                    message(I18n.apiError(
+                        data,
+                        "system.backup.exportFailed"
+                    ));
+                    return null;
+                });
             }
+            if (!res.ok) throw new Error('Export failed');
             return res.blob();
         }).then(function(blob) {
             if (!blob) return;
@@ -566,13 +675,13 @@
             a.click();
             URL.revokeObjectURL(url);
         }).catch(function() {
-            message('导出失败');
+            message(t("system.backup.exportFailed"));
         });
     }
 
     function import_config(file) {
         if (!file) return;
-        mdui.confirm('导入配置将完整覆盖现有配置，确定继续吗？', '导入确认', function() {
+        mdui.confirm(t("system.backup.importPrompt"), t("system.backup.importTitle"), function() {
             var formData = new FormData();
             formData.append('file', file);
             $.ajax({
@@ -584,17 +693,20 @@
                 contentType: false,
                 success: function(data) {
                     if (data.result === 'ok') {
-                        message('导入成功，页面将刷新');
+                        message(t("system.backup.importSuccess"));
                         setTimeout(function() { window.location.reload(); }, 1500);
                     } else {
-                        message(data.message || '导入失败');
+                        message(I18n.apiError(
+                            data,
+                            "system.backup.importFailed"
+                        ));
                     }
                 },
                 error: function() {
-                    message('导入失败');
+                    message(t("system.backup.importFailed"));
                 }
             });
-        });
+        }, null, confirm_options());
     }
 
     function getCookie(name) {
@@ -618,6 +730,10 @@ $(document).ready(function() {
 
         mdui.mutation();
     });
+
+    I18n.onChange(function() {
+        if ($('#system_page').length && window.g_v2raypi_branches) {
+            render_v2raypi_branches(window.g_v2raypi_branches);
+        }
+    });
 </script>
-</body>
-</html>

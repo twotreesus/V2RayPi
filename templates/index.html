@@ -9,6 +9,38 @@
     <meta name="format-detection" content="telephone=no" />
     <title>V2RayPi</title>
     <script src="/static/js/jquery-3.5.1.js"></script>
+    <script src="/static/js/i18n.js"></script>
+    <script>
+        I18n.register({
+            "common.language": {zh: "切换语言", en: "Switch language"},
+            "nav.status": {zh: "运行状态", en: "Status"},
+            "nav.subscribe": {zh: "订阅节点", en: "Subscriptions"},
+            "nav.advance": {zh: "高级设置", en: "Advanced"},
+            "nav.system": {zh: "系统维护", en: "System"},
+            "login.title": {zh: "请登录以继续", en: "Sign in to continue"},
+            "login.password": {zh: "管理密码", en: "Admin password"},
+            "login.submit": {zh: "登录", en: "Sign in"},
+            "login.required": {zh: "请输入密码", en: "Enter your password"},
+            "login.invalid": {zh: "密码错误，请重试", en: "Incorrect password, try again"},
+            "login.failed": {zh: "登录失败，请重试", en: "Sign-in failed, try again"},
+            "mode.direct": {zh: "直连", en: "Direct"},
+            "mode.smart": {zh: "分流", en: "Smart"},
+            "mode.global": {zh: "全局", en: "Global"},
+            "error.generic": {zh: "操作失败", en: "Operation failed"},
+            "error.session_expired": {zh: "登录已过期，请重新登录", en: "Your session expired. Sign in again."},
+            "error.password_required": {zh: "请输入密码", en: "Enter your password"},
+            "error.invalid_password": {zh: "密码错误", en: "Incorrect password"},
+            "error.password_fields_required": {zh: "当前密码和新密码不能为空", en: "Current and new passwords are required"},
+            "error.current_password_invalid": {zh: "当前密码验证失败", en: "Current password is incorrect"},
+            "error.duplicate_favorite": {zh: "同名节点已在收藏中", en: "A favorite with the same name already exists"},
+            "error.invalid_node_url": {zh: "节点分享链接无效或不受支持", en: "The node share URL is invalid or unsupported"},
+            "error.unsupported_node_share": {zh: "该节点无法生成分享链接", en: "This node cannot be exported as a share URL"},
+            "error.file_required": {zh: "请选择备份文件", en: "Choose a backup file"},
+            "error.zip_required": {zh: "备份文件必须是 ZIP 格式", en: "The backup file must be a ZIP archive"},
+            "error.invalid_backup": {zh: "备份文件无效", en: "The backup file is invalid"},
+            "error.import_failed": {zh: "配置导入失败", en: "Configuration import failed"}
+        });
+    </script>
     <link rel="stylesheet" href="/static/css/mdui.css">
     <script src="/static/js/mdui.js"></script>
     <link href="/static/css/prism.css" rel="stylesheet" />
@@ -93,6 +125,10 @@
                     <i class="mdui-icon material-icons" style="font-size: 14px; margin-right: 2px;">arrow_downward</i><span id="hs_download" style="font-size: 11px; font-weight: 600;">-</span>
                 </div>
             </div>
+            <button id="language_switch" type="button" class="mdui-btn mdui-btn-dense mdui-ripple mdui-ripple-white" data-i18n-title="common.language" onclick="I18n.toggle()" style="min-width: 42px; color: #fff;">
+                <i class="mdui-icon material-icons" style="font-size: 18px; margin-right: 2px;">translate</i>
+                <span id="language_label">中</span>
+            </button>
             <a href="https://github.com/twotreesus/V2RayPi" target="_blank" class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white" mdui-tooltip="{content: 'Github'}">
                 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 36 36" enable-background="new 0 0 36 36" xml:space="preserve" class="mdui-icon" style="width: 24px;height:24px;">
                             <path fill-rule="evenodd" clip-rule="evenodd" fill="#ffffff" d="M18,1.4C9,1.4,1.7,8.7,1.7,17.7c0,7.2,4.7,13.3,11.1,15.5
@@ -110,37 +146,38 @@
         <div class="mdui-list">
             <div id="status" class="mdui-list-item mdui-ripple mdui-list-item-active">
                 <i class="mdui-list-item-icon mdui-icon material-icons">play_arrow</i>
-                <div class="mdui-list-item-content">运行状态</div>
+                <div class="mdui-list-item-content" data-i18n="nav.status">运行状态</div>
             </div>
             <div id="subscribe" class="mdui-list-item mdui-ripple">
                 <i class="mdui-list-item-icon mdui-icon material-icons">links</i>
-                <div class="mdui-list-item-content">订阅节点</div>
+                <div class="mdui-list-item-content" data-i18n="nav.subscribe">订阅节点</div>
             </div>
             <div id="advance" class="mdui-list-item mdui-ripple">
                 <i class="mdui-list-item-icon mdui-icon material-icons">tune</i>
-                <div class="mdui-list-item-content">高级设置</div>
+                <div class="mdui-list-item-content" data-i18n="nav.advance">高级设置</div>
             </div>
             <div id="system" class="mdui-list-item mdui-ripple">
                 <i class="mdui-list-item-icon mdui-icon material-icons">settings</i>
-                <div class="mdui-list-item-content">系统维护</div>
+                <div class="mdui-list-item-content" data-i18n="nav.system">系统维护</div>
             </div>
         </div>
     </div>
     <!--login dialog-->
     <div id="login_dialog" class="mdui-dialog">
-        <div class="mdui-dialog-title">请登录以继续</div>
+        <div class="mdui-dialog-title" data-i18n="login.title">请登录以继续</div>
         <div class="mdui-dialog-content">
             <div class="mdui-row mdui-valign" style="margin-top: 20px">
                 <div class="mdui-col-xs-2 mdui-valign">
-                    <div class="mdui-typo-subheading" style="line-height: 36px">管理密码</div>
+                    <div class="mdui-typo-subheading" data-i18n="login.password" style="line-height: 36px">管理密码</div>
                 </div>
                 <div class="mdui-col-xs-10">
                     <input id="login_password" class="mdui-textfield-input" type="password" />
                 </div>
             </div>
+            <div id="login_error" class="mdui-text-color-red" style="display: none; margin-top: 8px;"></div>
         </div>
         <div class="mdui-dialog-actions">
-            <button id="login_button" type="button" class="mdui-btn mdui-ripple mdui-color-theme">登录</button>
+            <button id="login_button" type="button" class="mdui-btn mdui-ripple mdui-color-theme" data-i18n="login.submit">登录</button>
         </div>
     </div>
     
@@ -213,6 +250,7 @@
     // login
     function show_login_dialog() {
         $("#login_password").val("");
+        $("#login_error").hide();
         if (!g_login_dialog) {
             g_login_dialog = new mdui.Dialog('#login_dialog', { modal: true, closeOnEsc: false, history: false });
         }
@@ -240,12 +278,12 @@
                 if (data["result"] === "ok") {
                     if (callback) callback(true);
                 } else {
-                    message("密码错误，请重试");
+                    message(t("login.invalid"));
                     setTimeout(show_login_dialog, 1000);
                 }
             })
             .fail(function() {
-                message("登录失败，请重试");
+                message(t("login.failed"));
                 setTimeout(show_login_dialog, 1000);
             });
     }
@@ -337,6 +375,8 @@
                     dataType: "html",
                     success: function(data) {
                         $("#content_page").empty().html(data);
+                        I18n.apply(document.getElementById("content_page"));
+                        mdui.mutation();
                     }
                 })
             }
@@ -347,7 +387,7 @@
     function handle_login_submit() {
         var password = $("#login_password").val();
         if (!password) {
-            $("#login_error").text("请输入密码").show();
+            $("#login_error").text(t("login.required")).show();
             return;
         }
         
@@ -380,6 +420,8 @@
 
     // Hide all content until session is verified
     $(document).ready(function() {
+        I18n.apply(document);
+
         // Initialize event handlers        
         init_events();
         
@@ -394,7 +436,14 @@
             });
     });
 
-    var g_proxy_modes = ['直连', '分流', '全局'];
+    I18n.onChange(function () {
+        var active = $(".mdui-list-item-active");
+        if (active.length) {
+            active.click();
+        }
+    });
+
+    var g_proxy_modes = ['mode.direct', 'mode.smart', 'mode.global'];
 
     function hs_format_speed(kb) {
         if (kb >= 1024) return (kb / 1024).toFixed(2) + ' MB/s';
@@ -417,7 +466,8 @@
     function update_header_status(data) {
         var running = data['running'];
         $('#hs_dot').css('color', running ? '#07c160' : '#ff8888');
-        $('#hs_mode').text(g_proxy_modes[data['proxy_mode']] || '');
+        var modeKey = g_proxy_modes[data['proxy_mode']];
+        $('#hs_mode').text(modeKey ? t(modeKey) : '');
         var protocol = hs_protocol_badge(data['protocol']);
         $('#hs_protocol')
             .text(protocol.label)

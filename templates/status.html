@@ -60,6 +60,54 @@
         background-color: rgba(84, 110, 122, 0.08);
     }
 </style>
+<script>
+    I18n.register({
+        "status.section.runtime": {zh: "运行状态", en: "Runtime Status"},
+        "status.label.runtime": {zh: "运行状态", en: "Status"},
+        "status.state.running": {zh: "运行中", en: "Running"},
+        "status.state.stopped": {zh: "已停止", en: "Stopped"},
+        "status.label.control": {zh: "运行控制", en: "Service Control"},
+        "status.action.start": {zh: "启动", en: "Start"},
+        "status.action.stop": {zh: "停止", en: "Stop"},
+        "status.action.restart": {zh: "重启", en: "Restart"},
+        "status.label.proxy_mode": {zh: "代理模式", en: "Proxy Mode"},
+        "status.mode.direct": {zh: "直连", en: "Direct"},
+        "status.mode.smart": {zh: "智能分流", en: "Smart Routing"},
+        "status.mode.global": {zh: "全局代理", en: "Global Proxy"},
+        "status.action.switch": {zh: "切换", en: "Switch"},
+        "status.section.node": {zh: "节点信息", en: "Node Information"},
+        "status.label.name": {zh: "名称", en: "Name"},
+        "status.label.address": {zh: "地址", en: "Address"},
+        "status.section.performance": {zh: "性能监控", en: "Performance Monitoring"},
+        "status.chart.cpu": {zh: "CPU 占用率", en: "CPU Usage"},
+        "status.chart.cpu_value": {zh: "CPU 占用率  {value}%", en: "CPU Usage  {value}%"},
+        "status.chart.memory": {zh: "内存占用率", en: "Memory Usage"},
+        "status.chart.memory_value": {
+            zh: "内存占用率  {percent}%  ({used} / {total} MB)",
+            en: "Memory Usage  {percent}%  ({used} / {total} MB)"
+        },
+        "status.chart.memory_details": {
+            zh: "总计：{total} MB  已用：{used} MB",
+            en: "Total: {total} MB  Used: {used} MB"
+        },
+        "status.chart.upload": {zh: "上传速度", en: "Upload Speed"},
+        "status.chart.upload_value": {zh: "上传速度  {speed}", en: "Upload Speed  {speed}"},
+        "status.chart.download": {zh: "下载速度", en: "Download Speed"},
+        "status.chart.download_value": {zh: "下载速度  {speed}", en: "Download Speed  {speed}"},
+        "status.toast.starting": {zh: "正在启动...", en: "Starting..."},
+        "status.toast.start_success": {zh: "启动成功", en: "Started successfully"},
+        "status.toast.start_failed": {zh: "启动失败", en: "Failed to start"},
+        "status.toast.stopping": {zh: "正在停止...", en: "Stopping..."},
+        "status.toast.stop_success": {zh: "停止成功", en: "Stopped successfully"},
+        "status.toast.stop_failed": {zh: "停止失败", en: "Failed to stop"},
+        "status.toast.restarting": {zh: "正在重启...", en: "Restarting..."},
+        "status.toast.restart_success": {zh: "重启成功", en: "Restarted successfully"},
+        "status.toast.restart_failed": {zh: "重启失败", en: "Failed to restart"},
+        "status.toast.switching_mode": {zh: "正在切换代理模式...", en: "Switching proxy mode..."},
+        "status.toast.switch_success": {zh: "切换成功", en: "Switched successfully"},
+        "status.toast.switch_failed": {zh: "切换失败", en: "Failed to switch"}
+    });
+</script>
 <div id="status_page" class="mdui-container">
     <p></p>
     <div class="mdui-row">
@@ -68,57 +116,57 @@
                 <tbody>
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <h5 style="margin: 0;">运行状态</h5>
+                        <h5 style="margin: 0;" data-i18n="status.section.runtime">运行状态</h5>
                     </td>
                 </tr>
                 <tr>
-                    <td>运行状态</td>
+                    <td data-i18n="status.label.runtime">运行状态</td>
                     <td>
                         <div class="mdui-row">
                             <div id="running" class="mdui-chip" style="display: none">
                                 <span class="mdui-chip-icon mdui-color-green"><i class="mdui-icon material-icons">play_arrow</i></span>
-                                <span class="mdui-chip-title">运行中</span>
+                                <span class="mdui-chip-title" data-i18n="status.state.running">运行中</span>
                             </div>
                             <div id="stoped" class="mdui-chip" style="display: none">
                                 <span class="mdui-chip-icon mdui-color-red"><i class="mdui-icon material-icons">stop</i></span>
-                                <span class="mdui-chip-title">已停止</span>
+                                <span class="mdui-chip-title" data-i18n="status.state.stopped">已停止</span>
                             </div>
                         </div>
                     </td>
                 </tr>
                 <tr>
-                    <td>运行控制</td>
+                    <td data-i18n="status.label.control">运行控制</td>
                     <td>
                         <div class="mdui-row">
                             <div id="start_service" class="mdui-chip" onclick="start_service()" style="display: none">
                                 <span class="mdui-chip-icon mdui-color-green"><i class="mdui-icon material-icons">play_arrow</i></span>
-                                <span class="mdui-chip-title">启动</span>
+                                <span class="mdui-chip-title" data-i18n="status.action.start">启动</span>
                             </div>
                             <div id="stop_services" class="mdui-chip" onclick="stop_service()" style="display: none">
                                 <span class="mdui-chip-icon mdui-color-red"><i class="mdui-icon material-icons">stop</i></span>
-                                <span class="mdui-chip-title">停止</span>
+                                <span class="mdui-chip-title" data-i18n="status.action.stop">停止</span>
                             </div>
                             <div id="restart_service" class="mdui-chip" onclick="restart_service()" style="display: none">
                                 <span class="mdui-chip-icon mdui-color-yellow-700"><i class="mdui-icon material-icons">settings_backup_restore</i></span>
-                                <span class="mdui-chip-title">重启</span>
+                                <span class="mdui-chip-title" data-i18n="status.action.restart">重启</span>
                             </div>
                         </div>
                     </td>
                 </tr>
                 <tr>
-                    <td>代理模式</td>
+                    <td data-i18n="status.label.proxy_mode">代理模式</td>
                     <td>
                         <div class="mdui-row">
                             <div class="mdui-col-sm-3">
                                 <label for="proxy_mode"></label>
                                 <select id="proxy_mode" class="mdui-select" mdui-select="{position: 'bottom'}">
-                                    <option value="0">直连</option>
-                                    <option value="1">智能分流</option>
-                                    <option value="2">全局代理</option>
+                                    <option value="0" data-i18n="status.mode.direct">直连</option>
+                                    <option value="1" data-i18n="status.mode.smart">智能分流</option>
+                                    <option value="2" data-i18n="status.mode.global">全局代理</option>
                                 </select>
                             </div>
                             <div id="switch_mode" class="mdui-col-sm-3" style="display: none">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="switch_proxy_mode()">切换</button>
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="status.action.switch" onclick="switch_proxy_mode()">切换</button>
                             </div>
                         </div>
                     </td>
@@ -127,21 +175,21 @@
                 <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <h5 style="margin: 0;">节点信息</h5>
+                        <h5 style="margin: 0;" data-i18n="status.section.node">节点信息</h5>
                     </td>
                 </tr>
                 <tr>
-                    <td>名称</td>
+                    <td data-i18n="status.label.name">名称</td>
                     <td id="remark"></td>
                 </tr>
                 <tr>
-                    <td>地址</td>
+                    <td data-i18n="status.label.address">地址</td>
                     <td id="host"></td>
                 </tr>
                 <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <h5 style="margin: 0;">性能监控</h5>
+                        <h5 style="margin: 0;" data-i18n="status.section.performance">性能监控</h5>
                     </td>
                 </tr>
                 <tr>
@@ -267,7 +315,7 @@
                     tooltips: {enabled: false},
                     hover: {mode: null},
                     legend: {display: false},
-                    title: {display: true, text: 'CPU 占用率'},
+                    title: {display: true, text: t("status.chart.cpu")},
                     scales: {
                         xAxes: [{display: false}],
                         yAxes: [{
@@ -305,7 +353,7 @@
                     tooltips: {enabled: false},
                     hover: {mode: null},
                     legend: {display: false},
-                    title: {display: true, text: '内存占用率'},
+                    title: {display: true, text: t("status.chart.memory")},
                     scales: {
                         xAxes: [{display: false}],
                         yAxes: [{
@@ -349,7 +397,7 @@
                     tooltips: {enabled: false},
                     hover: {mode: null},
                     legend: {display: false},
-                    title: {display: true, text: '上传速度'},
+                    title: {display: true, text: t("status.chart.upload")},
                     scales: {
                         xAxes: [{display: false}],
                         yAxes: [{display: true, ticks: {beginAtZero: true, display: false}}]
@@ -377,7 +425,7 @@
                     tooltips: {enabled: false},
                     hover: {mode: null},
                     legend: {display: false},
-                    title: {display: true, text: '下载速度'},
+                    title: {display: true, text: t("status.chart.download")},
                     scales: {
                         xAxes: [{display: false}],
                         yAxes: [{display: true, ticks: {beginAtZero: true, display: false}}]
@@ -399,7 +447,9 @@
             var cpuPadded = [];
             for (var i = 0; i < HISTORY_LEN - cpu_history.length; i++) cpuPadded.push(null);
             cpu_bar.data.datasets[0].data = cpuPadded.concat(cpu_history);
-            cpu_bar.options.title.text = 'CPU 占用率  ' + avg.toFixed(1) + '%';
+            cpu_bar.options.title.text = t("status.chart.cpu_value", {
+                value: avg.toFixed(1)
+            });
             cpu_bar.update();
 
             memory_status = data["memory"];
@@ -408,8 +458,15 @@
             var memPadded = [];
             for (var j = 0; j < HISTORY_LEN - memory_history.length; j++) memPadded.push(null);
             memory_bar.data.datasets[0].data = memPadded.concat(memory_history);
-            memory_bar.data.datasets[0].label = "total: " + memory_status["total"] + " MB  used: " + memory_status["used"] + " MB";
-            memory_bar.options.title.text = '内存占用率  ' + memory_status["percent"].toFixed(1) + '%  (' + memory_status["used"] + ' / ' + memory_status["total"] + ' MB)';
+            memory_bar.data.datasets[0].label = t("status.chart.memory_details", {
+                total: memory_status["total"],
+                used: memory_status["used"]
+            });
+            memory_bar.options.title.text = t("status.chart.memory_value", {
+                percent: memory_status["percent"].toFixed(1),
+                used: memory_status["used"],
+                total: memory_status["total"]
+            });
             memory_bar.update();
 
             var net_status = data["network"];
@@ -431,11 +488,15 @@
             var netMax = allNet.length ? Math.max.apply(null, allNet) : 1;
             var yMax = Math.ceil(netMax * 1.3) || 1;
             upload_bar.data.datasets[0].data = upPadded.concat(upload_history);
-            upload_bar.options.title.text = '上传速度  ' + format_speed(up);
+            upload_bar.options.title.text = t("status.chart.upload_value", {
+                speed: format_speed(up)
+            });
             upload_bar.options.scales.yAxes[0].ticks.max = yMax;
             upload_bar.update();
             download_bar.data.datasets[0].data = downPadded.concat(download_history);
-            download_bar.options.title.text = '下载速度  ' + format_speed(down);
+            download_bar.options.title.text = t("status.chart.download_value", {
+                speed: format_speed(down)
+            });
             download_bar.options.scales.yAxes[0].ticks.max = yMax;
             download_bar.update();
         });
@@ -444,13 +505,13 @@
 
 
     function start_service() {
-        pop_toast("正在启动...");
+        pop_toast(t("status.toast.starting"));
         ajax_request({ url: "/start_service" }).then(function (data) {
             if (check_result(data)) {
-                update_toast("启动成功")
+                update_toast(t("status.toast.start_success"))
             }
             else {
-                update_toast("启动失败")
+                update_toast(t("status.toast.start_failed"))
             }
         }).always(function () {
             close_toast();
@@ -459,13 +520,13 @@
     }
 
     function stop_service() {
-        pop_toast("正在停止...");
+        pop_toast(t("status.toast.stopping"));
         ajax_request({ url: "/stop_service" }).then(function (data) {
             if (check_result(data)) {
-                update_toast("停止成功")
+                update_toast(t("status.toast.stop_success"))
             }
             else {
-                update_toast("停止失败")
+                update_toast(t("status.toast.stop_failed"))
             }
         }).always(function () {
             close_toast();
@@ -474,13 +535,13 @@
     }
 
     function restart_service() {
-        pop_toast("正在重启...");
+        pop_toast(t("status.toast.restarting"));
         ajax_request({ url: "/restart_service" }).then(function (data) {
             if (check_result(data)) {
-                update_toast("重启成功")
+                update_toast(t("status.toast.restart_success"))
             }
             else {
-                update_toast("重启失败")
+                update_toast(t("status.toast.restart_failed"))
             }
         }).always(function () {
             close_toast();
@@ -489,16 +550,16 @@
     }
 
     function switch_proxy_mode() {
-        pop_toast("正在切换代理模式...");
+        pop_toast(t("status.toast.switching_mode"));
         mode = $("#proxy_mode").prop('selectedIndex')
         ajax_request({ url: "/switch_proxy_mode", data: { "mode": mode } })
             .then(function (data) {
                 if (check_result(data)) {
-                    update_toast("切换成功")
+                    update_toast(t("status.toast.switch_success"))
                     $("#switch_mode").hide();
                 }
                 else {
-                    update_toast("切换失败")
+                    update_toast(t("status.toast.switch_failed"))
                 }
             }).always(function () {
                 close_toast();
