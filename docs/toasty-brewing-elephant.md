@@ -34,84 +34,40 @@ mihomo 原生支持 vmess / vless(reality) / ss / trojan / **anytls** / **mieru*
 
 ## 实施状态
 
-代码已在分支 `feat/mihomo` 上完成，阶段 1–5 全部落地。净变化 **−2841 行**（删 4845 / 增 2004），35 个文件。
+代码已在分支 `feat/mihomo` 上完成，阶段 1–5 全部落地。相对 `dev` 共变更 40 个文件，新增 3653 行、删除 5022 行，净减少 1369 行。
 
-### 已在开发机（macOS + 真实 mihomo v1.19.29 二进制）验证通过
+### 最终验收结论
 
-| 项目 | 结果 |
-|---|---|
-| `mihomo -t` / `-v` flag | 均存在，`-t` 可用于 apply 前预检 |
-| GitHub release asset `digest` 字段 | **存在**（`sha256:...`），SHA-256 校验可用，无需退化方案 |
-| `script/update_mihomo.sh install` / `version` | 端到端通过，含下载、校验、原子安装、版本回显 |
-| 7 种协议配置校验 | vless(reality+vision)、hysteria2、anytls、mieru、vmess-ws、ss、trojan **全部通过 `mihomo -t`** |
-| 3 种代理模式 × `proxy_preferred` × `geo_data` 的 12 种组合 | 全部通过 `mihomo -t` |
-| `GEOIP,CN` 大小写 | 大写可用；`GEOIP,JP` 亦可用（需完整的 geoip.dat） |
-| `NOT,((GEOIP,CN)),PROXY` 语法 | 可用，无空格写法被接受 |
-| `GEOSITE,cn` / `category-ads-all` / `geolocation-!cn` | 三者在 Loyalsoldier `geosite.dat` 中均存在 |
-| `nameserver-policy` 含冒号的键 | `geosite:cn`、`geosite:speedtest` YAML 往返正确 |
-| `geodata-mode: true` 缺文件时 | mihomo 自动下载，可自愈 |
-| 单元测试 | 71 个通过（`python3 -m unittest discover tests`） |
-| Flask 层 | 登录/状态/订阅/四个页面全 200；5 个已删路由 404；`/check_mihomo_new_ver` 正常 |
-| 旧 `nodes.json` 加载 | 227 个旧节点被丢弃并记日志，订阅地址保留 |
+验收表共 59 项，已通过 55 项，无失败或阻塞项。迁移的核心目标已经达到，可以进入合并前收尾：
 
-### 仍需在测试 SBC 上验证（开发机无法覆盖）
+- macOS 安装、Homebrew 服务、首次 GEO 数据下载、版本识别、日志读取与本地 SOCKS 代理全部通过。
+- mihomo 配置预检、节点应用与切换、旧节点保护、三种代理模式、代理/直连优先、DNS 与 GEO 分流全部通过。
+- 订阅增删改、收藏、协议 URL 分享与导入、二维码、自定义规则、广告拦截、Mux、日志级别与自动切换全部通过。
+- 系统维护、会话、实时日志、mihomo/V2RayPi 更新、配置导入导出、重启与关机全部通过。
+- Linux SBC 的安装保护、TPROXY TCP/UDP、DNS 劫持、routing-mark 防回环、旧链清理、重启恢复、资源占用与彻底卸载全部通过。
+- 当前单元测试为 85 个，全部通过；7 类协议生成配置均通过真实 mihomo v1.19.29 校验。
 
-按风险从高到低，未通过的项都有已写好的退化方案。
+### 尚未完成的验收
 
-**1. `routing-mark: 255` 是否覆盖 mihomo 自己的 DNS 查询 socket** —— 唯一可能导致回环的点，`config_iptable.sh` 的 nat OUTPUT 段依赖它。
+以下 4 项仍为待验收，不影响架构迁移结论，但应在发布前用真实节点各跑一次：
 
-```bash
-sudo tcpdump -ni any 'udp port 53' &
-dig @127.0.0.1 -p 1053 www.google.com
-```
+1. VMess 节点端到端访问。
+2. VLESS Reality 节点端到端访问。
+3. Shadowsocks 节点端到端访问。
+4. Trojan 节点端到端访问。
 
-若回环：删掉 `config_iptable.sh` 里 `MIHOMO_DNS_OUT` 整段（网关本机 DNS 交回主路由）。代价只影响 V2RayPi 自身出站的域名解析，客户端不受影响。
+Hysteria2、AnyTLS 与 Mieru 已完成真实节点验收。
 
-**2. 53 端口是否被系统服务占用** —— 决定 `dns.listen` 保持 1053 还是可以直接用 53。
+### 验收期间确认并修复的问题
 
-```bash
-ss -lunp | grep ':53 '
-systemctl is-active systemd-resolved
-```
-
-当前实现走 1053 + nat 重定向，不与系统服务抢端口，占用与否都能工作。端口值在 `config_iptable.sh` 为 `DNS_PORT`、在 `mihomo_config.py` 为同名常量。
-
-**3. DNS 是否真的进了 mihomo 的解析器**，而不是被当普通 UDP 流转发到原目的地。
-
-```bash
-sudo tcpdump -ni any 'port 53' &
-dig @<V2RayPi的LAN地址> www.google.com
-sudo iptables -t mangle -L MIHOMO -n -v      # udp/tcp 53 应命中 RETURN
-sudo iptables -t nat -L MIHOMO_DNS -n -v     # 计数器应增长
-```
-
-**4. `systemctl reload mihomo`（SIGHUP）不会应用新配置** —— 已在测试 SBC 上确认：命令返回成功且进程仍在运行，但配置没有重新加载。切换节点固定使用 `restart()`，避免把“进程存活”误判为热重载成功。
-
-**5. iptables 遗留链清理在原地升级的设备上生效** —— `cleanup_legacy_chains()` 应清掉旧的 `V2RAY` / `V2RAY_MASK`。
-
-```bash
-sudo bash script/config_iptable.sh
-sudo iptables -t mangle -L -n | grep -E "^Chain (V2RAY|MIHOMO)"   # 不应再有 V2RAY / V2RAY_MASK
-```
-
-**6. 512MB 设备上的 mihomo RSS 峰值与 geodata 加载耗时**（`geodata-loader: memconservative`）。
-
-```bash
-ps -o rss=,comm= -C mihomo
-grep -i geo /var/log/mihomo/mihomo.log
-```
-
-这是整个改造唯一可能推翻结论的非功能项。记录数值后写入 README。
-
-**7. 全新安装与彻底卸载各跑一次**
-
-```bash
-sudo ./script/install.sh          # 安装后 mihomo_iptable.service 应为 disabled
-sudo systemctl is-enabled mihomo_iptable.service
-sudo ./script/remove.sh && sudo reboot
-```
-
-**8. 浏览器端全流程回归**（见文末「验证方式」清单）
+1. 安装阶段预置 `geoip.dat` / `geosite.dat`，显示下载进度，并在双文件下载成功后原子替换。
+2. 修正 macOS Homebrew 日志路径和无 `v` 前缀的版本输出。
+3. 屏蔽状态与性能轮询接口的访问日志，避免终端刷屏。
+4. 修正全局代理仍受“代理优先”影响的问题；全局模式现在始终以 `MATCH,PROXY` 兜底。
+5. 测试 SBC 证实 SIGHUP 不会应用新配置，节点切换改为固定重启 mihomo。
+6. 移除意义有限的节点 Ping 功能；自动故障切换改为随机选择另一个节点。
+7. 节点分享改为 7 类协议 URL，支持复制、二维码和手动导入收藏。
+8. 优化高级设置与节点列表交互：默认策略改为双选项，点击节点行应用，收藏取消使用星标语义。
 
 ### 实施中偏离计划的三处
 
@@ -518,33 +474,31 @@ cleanup_legacy_chains() {
 }
 ```
 
-### 需要在真机上定论的三点
+### SBC 真机结论
 
-具体命令与退化方案见文首「仍需在测试 SBC 上验证」的第 1–3 项：
-
-- **(a)** `routing-mark: 255` 是否覆盖 mihomo 自己的 DNS 查询 socket。若不覆盖，上面第 5 步的 nat OUTPUT 重定向会让 mihomo 的上游查询打回自己，形成回环。
-- **(b)** `dns.listen` 用 1053 还是 53。当前按 1053 + nat 重定向实现，不与 systemd-resolved / dnsmasq 抢端口。
-- **(c)** 端到端确认 DNS 真的进了 mihomo 的解析器，而不是被当作普通 UDP 流转发到原目的地。
+- `routing-mark: 255` 防回环验证通过，mihomo 自身连接与 DNS 查询未被 OUTPUT 链重复捕获。
+- DNS 保持 1053 + nat 重定向，不与系统 53 端口服务抢占。
+- LAN 客户端 UDP/TCP 53 查询能进入 mihomo，相关 iptables 计数器按预期增长。
 
 ---
 
 ## 验证方式
 
-真机验证按上述阶段 1→5 逐段进行，每段的验证点已列在该段末尾。整体回归清单：
+真机验证已按阶段 1→5 完成。最终回归结果：
 
 **功能面**
-1. 三种代理模式各自生效（直连 / 智能分流 / 全局代理）
-2. 五类协议节点各自能上网：vmess、vless(reality)、hysteria2、anytls、mieru
-3. 订阅：添加、更新单个、全部更新、删除、复制订阅链接与二维码；节点分享 URL 复制、二维码与手动导入
-4. 节点：点击行应用、收藏、取消收藏、删除、复制分享 URL、显示二维码、手动导入 URL
-5. 高级设置：自动切换（含断网后真实触发一次切换）、本地 SOCKS 代理端口、DNS 本地/远程、自定义路由规则增删改、GEO 数据库更新、Mux、广告拦截、日志级别
-6. 系统维护：mihomo 版本查询与升级、V2RayPi 分支列表与自更新、密码修改、配置导出与导入、重启、关机
-7. 日志：SSE 实时日志流可见
+1. 已通过：三种代理模式各自生效（直连 / 智能分流 / 全局代理）。
+2. 已通过：Hysteria2、AnyTLS、Mieru 真实节点；待验收：VMess、VLESS Reality、Shadowsocks、Trojan 真实节点。
+3. 已通过：订阅添加、更新单个、全部更新、删除、复制链接与二维码。
+4. 已通过：节点点击行应用、收藏、取消收藏、删除、分享 URL、二维码与手动导入。
+5. 已通过：自动切换、本地 SOCKS、DNS、自定义规则、GEO 更新、Mux、广告拦截和日志级别。
+6. 已通过：mihomo/V2RayPi 更新、密码修改、配置导入导出、重启和关机。
+7. 已通过：SSE 实时日志流。
 
 **非功能面**
-8. `mihomo` RSS 峰值在最小目标设备（512MB）上可接受，记录数值
-9. 重启设备后 `mihomo.service` 与 `mihomo_iptable.service` 自动恢复，网络自动通
-10. 全新安装（`install.sh`）与彻底卸载（`remove.sh`）各跑一次，确认无残留
+8. 已通过：512MB 目标设备资源占用可接受。
+9. 已通过：设备重启后 mihomo 与 iptables 服务自动恢复。
+10. 已通过：全新安装与彻底卸载无功能性残留。
 
 **单元测试**
 ```bash
