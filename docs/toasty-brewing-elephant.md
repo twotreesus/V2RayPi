@@ -18,7 +18,7 @@ mihomo 原生支持 vmess / vless(reality) / ss / trojan / **anytls** / **mieru*
 |---|---|
 | 透明代理入口 | **TPROXY**，复用改造后的 `config_iptable.sh`（不用 TUN） |
 | mihomo 配置内容 | **仅当前节点**，切换节点 = 重写 config + restart |
-| 手动添加节点 | **删除**；「拷贝链接」改为输出该节点的 Clash YAML 片段 |
+| 手动添加节点 | 支持 7 类协议分享 URL；「拷贝链接」输出协议 URL |
 | 内部命名 | **全面重命名**（`v2ray_*` → `mihomo_*`，含 systemd 单元与 config 文件名） |
 | 旧配置迁移 | **不做**，README 说明需重新添加订阅 |
 
@@ -26,7 +26,7 @@ mihomo 原生支持 vmess / vless(reality) / ss / trojan / **anytls** / **mieru*
 
 - BitTorrent 直连规则消失（mihomo 无协议嗅探类规则），BT 流量将按普通规则分流。
 - 自定义路由规则不再支持 `ext:file:tag` 写法（mihomo 无此机制），需改用 `geosite:`。其余前缀（`domain:` / `full:` / `regexp:` / `geosite:`）与裸字符串语义保持不变。
-- 节点级二维码按钮移除（Clash YAML 片段不适合编码成二维码）；订阅级二维码保留。
+- 节点分享使用协议 URL，支持复制链接与显示二维码；订阅级二维码保留。
 - 日志由「访问日志 + 错误日志」两栏合并为单栏（mihomo 只有一个日志流）。
 - 升级到本分支后需重新添加订阅（旧 `config/*.json` 不迁移）。
 
@@ -252,7 +252,7 @@ MihomoConfig.gen_config(user_config, all_nodes, subscribe_hosts) -> str
 
 ### 阶段 3：节点模型与订阅（只留 Clash）
 
-**改写 `core/node.py`**（408 行 → 约 60 行）。`Node` 保存订阅里的原始 proxy dict，另存少量归一化字段供 UI 与 ping 使用：
+**改写 `core/node.py`**（408 行 → 约 60 行）。`Node` 保存订阅里的原始 proxy dict，另存少量归一化字段供 UI 使用：
 
 ```python
 class Node(BaseDataItem):
@@ -264,13 +264,13 @@ class Node(BaseDataItem):
         self.protocol = None   # = clash['type']，供 UI 徽标使用
 
     @property
-    def link(self) -> str:     # 「拷贝链接」输出该节点的 Clash YAML 片段
-        return yaml.safe_dump([self.clash], sort_keys=False, allow_unicode=True)
+    def link(self) -> str:     # 输出对应协议的分享 URL
+        return encode_node_uri(self.clash)
 ```
 
 `ps` / `add` / `port` / `protocol` 字段名保持不变——`CoreService.status()` 会把 `node.dump()` 合并进响应，模板直接读这些键。
 
-**全部删除**：`_mieru_link` / `mieru_uri_to_data` / `_anytls_link` / `anytls_uri_to_data` / `_hysteria2_link` / `hysteria2_uri_to_data` / `_vless_link` / `vless_uri_to_data` / `_ss_link` / `ss_uri_to_data` 以及 vmess base64 链接生成。
+协议 URL 的编解码集中到 `core/node_uri.py`，支持 VMess、VLESS、Shadowsocks、Trojan、Hysteria2、AnyTLS 与 Mieru。
 
 **改写 `core/node_manager.py`**：
 
@@ -278,32 +278,32 @@ class Node(BaseDataItem):
 - `_clash_proxy_to_node()`（90 行的逐协议字段搬运，`node_manager.py:63-151`）→ `_proxy_to_node()`（约 25 行）：按**支持类型白名单**过滤，通过则原样存 dict
   - 白名单常量放在 `mihomo_config.py` 里与 smux 白名单并列，便于一处维护
   - 白名单外的类型跳过并计数，`update_group` 结束后 log 一行「跳过 N 个不支持的节点」——这是「仅载入当前节点」下防止单个坏节点污染配置的第一道闸
-- **删除 `add_manual_node()`**
-- **保留不动**：`favorite_node` / `find_node` / `find_node_index` / `delete_node` / `all_nodes` / `subscribe_hosts` / `refresh_update_time` / `ping_test_all` / `ping_test_group`（因为只载入当前节点，测速无法走 mihomo 的 `/proxies/{name}/delay`，继续用 `tcp_latency`）
+- `add_manual_node()` 解析单节点分享 URL 并保存到收藏
+- 删除节点 Ping 与延迟显示；保留 `favorite_node` / `find_node` / `delete_node` / `all_nodes` / `subscribe_hosts` / `refresh_update_time`
 
 **改写 `core/core_service.py`**（结构不变，只做重命名与删除）：
 
 - `cls.v2ray` → `cls.mihomo`；`stop_v2ray()` → `stop_mihomo()`；`update_v2ray()` → `update_mihomo()`
-- 删除 `update_singbox()`、`update_mieru()`、`add_manual_node()`
+- 删除 `update_singbox()`、`update_mieru()` 与旧的 `CoreService.add_manual_node()` 包装
 - `status()` 删除 `singbox_version` / `mieru_version` / `mieru_running` 三个键
 - **保留不动**：session 管理、git 自更新与分支切换、`auto_detect_job`（含 `restart_auto_detect` / `auto_detect_start` / `auto_detect_cancel`）、`traffic_monitor` 采样调度、`export_config` / `import_config`、`make_policy`
 
 **`core/keys.py`**：删除 8 个 `*_scheme` 常量（`vmess_scheme` … `mierus_scheme`），其余不动。
 
-**阶段 3 验证**：设备上添加一个真实 Clash 订阅 → 节点列表正确显示各协议徽标 → ping 全部有结果 → 逐个应用 vmess / vless(reality) / hysteria2 / anytls / mieru 节点各自能上网（这一步是替掉两个 sidecar 的核心证明）。
+**阶段 3 验证**：设备上添加一个真实 Clash 订阅 → 节点列表正确显示各协议徽标 → 逐个应用 vmess / vless(reality) / hysteria2 / anytls / mieru 节点各自能上网（这一步是替掉两个 sidecar 的核心证明）。
 
 ### 阶段 4：Web 层与 UI
 
 **`app.py`**：
 
 - `/check_v2ray_new_ver` → `/check_mihomo_new_ver`；`/update_v2ray` → `/update_mihomo`
-- **删除路由**：`/check_singbox_new_ver`、`/update_singbox`、`/check_mieru_new_ver`、`/update_mieru`、`/add_manual_node`
+- **删除路由**：`/check_singbox_new_ver`、`/update_singbox`、`/check_mieru_new_ver`、`/update_mieru`；`/add_manual_node` 改为 POST 分享 URL
 - `/stream_logs`（`app.py:379-438`）：日志源由 access + error 两个文件合并为 `MihomoDefaultPath.log_file()` 单文件，SSE 事件名 `access` / `xray_error` 合并为单个 `mihomo`
 - 其余路由签名与返回结构**保持不变**（`/get_status`、`/get_performance`、`/subscribe_list`、`/apply_node`、`/get_node_link`、`/switch_proxy_mode`、`/get_advance_config`、`/set_advance_config`、`/make_policy`、geo 相关、系统维护相关、鉴权相关）
 
 **`templates/system.html`**：删除 sing-box 卡片（50-91）与 Mieru 卡片（93-134）；Xray 卡片改为 mihomo，把不一致的 `v2ray_*` 命名一并对齐（`v2ray_current_ver` → `mihomo_current_ver`、`check_v2ray_new_ver()` → `check_mihomo_new_ver()`、`update_v2ray()` → `update_mihomo()`）；页内日志查看器（300-316 附近）两栏合一。
 
-**`templates/subscribe.html`**：删除 `#manual_template` 里的「添加」按钮（73）与 `add_manual_node()`（578-595）；`add_subscribe()` 提示文案（559）改为「仅支持 Clash YAML 订阅」；节点行删除「二维码」按钮，「拷贝链接」改为复制 YAML 片段（订阅组头部的复制/二维码保持不变）。
+**`templates/subscribe.html`**：订阅仅支持 Clash YAML；节点分享改为协议 URL，支持复制与二维码；支持将单节点分享 URL 手动添加到收藏。
 
 **`templates/status.html`**：`#v2ray_current_ver` 相关标签改为 mihomo。
 
@@ -313,7 +313,7 @@ class Node(BaseDataItem):
 
 **`templates/log.html`**：该模板调用 `/get_access_log` 与 `/get_error_log`，这两个路由在 `app.py` 中已不存在（现有日志功能实际在 system.html 内），属死代码——一并删除。
 
-**阶段 4 验证**：浏览器走完全流程——登录、状态页图表、切换三种代理模式、订阅增删改与更新、节点应用与收藏、拷贝 YAML、高级设置全部字段保存与重置、自定义规则增删、GEO 更新、mihomo 版本查询与升级、V2RayPi 分支切换与自更新、配置导出导入、重启/关机。
+**阶段 4 验证**：浏览器走完全流程——登录、状态页图表、切换三种代理模式、订阅增删改与更新、节点应用与收藏、分享 URL 复制与二维码、高级设置全部字段保存与重置、自定义规则增删、GEO 更新、mihomo 版本查询与升级、V2RayPi 分支切换与自更新、配置导出导入、重启/关机。
 
 ### 阶段 5：测试与文档
 
@@ -535,8 +535,8 @@ cleanup_legacy_chains() {
 **功能面**
 1. 三种代理模式各自生效（直连 / 智能分流 / 全局代理）
 2. 五类协议节点各自能上网：vmess、vless(reality)、hysteria2、anytls、mieru
-3. 订阅：添加、更新单个、全部更新、删除、复制订阅链接与二维码
-4. 节点：应用、收藏、取消收藏、删除、拷贝 YAML 片段、ping 全部
+3. 订阅：添加、更新单个、全部更新、删除、复制订阅链接与二维码；节点分享 URL 复制、二维码与手动导入
+4. 节点：点击行应用、收藏、取消收藏、删除、复制分享 URL、显示二维码、手动导入 URL
 5. 高级设置：自动切换（含断网后真实触发一次切换）、本地 SOCKS 代理端口、DNS 本地/远程、自定义路由规则增删改、GEO 数据库更新、Mux、广告拦截、日志级别
 6. 系统维护：mihomo 版本查询与升级、V2RayPi 分支列表与自更新、密码修改、配置导出与导入、重启、关机
 7. 日志：SSE 实时日志流可见

@@ -260,7 +260,7 @@ sudo supervisorctl restart v2raypi
 
 - **订阅管理**：仅支持 Clash YAML 格式订阅。节点配置原样保存并交给 mihomo，因此 `reality-opts`、`ws-opts`、`grpc-opts`、`smux` 等参数不会在导入过程中丢失
 - **节点收藏**：收藏常用节点，在收藏列表中快速切换
-- **节点分享与导入**：节点行可复制协议分享 URL；也可手动添加 VMess、VLESS、Shadowsocks、Trojan、Hysteria2、AnyTLS 或 Mieru URL 到收藏
+- **节点分享与导入**：节点行可复制协议分享 URL 或显示二维码；也可手动添加 VMess、VLESS、Shadowsocks、Trojan、Hysteria2、AnyTLS 或 Mieru URL 到收藏
 
 ### DNS 与分流
 
@@ -304,11 +304,10 @@ IP 匹配支持 `1.2.3.4`、`10.0.0.0/8`、`geoip:cn`、`geoip:!cn`。私有地�
 1. **需要重新更新一次订阅。** 节点模型已经改变，旧的节点数据无法交给 mihomo，启动时会被自动丢弃并在服务日志中记录数量。订阅地址本身会保留，因此升级后在「订阅」页点一次「全部更新」即可恢复节点列表。
 2. **高级设置会重置为默认值。** 配置文件由 `config/v2ray_user_config.json` 换成了 `config/mihomo_user_config.json`，不做迁移。升级前建议先在「系统维护」导出一份旧配置留档，以便对照着重新填写 DNS、自定义路由规则等设置。
 3. **订阅只支持 Clash YAML 格式。** v2rayN base64 订阅不再支持；单个节点仍可通过 VMess、VLESS、Shadowsocks、Trojan、Hysteria2、AnyTLS 或 Mieru 分享 URL 手动添加到收藏。
-4. **节点二维码按钮已移除。** 节点分享改为复制协议 URL；订阅地址的复制与二维码按钮保留。
-5. **BitTorrent 直连规则不再存在。** mihomo 没有协议嗅探类规则，无法忠实翻译原先的 `protocol: bittorrent` 规则。如需 BT 直连，可针对 tracker 域名添加自定义路由规则。
-6. **自定义路由规则不支持 `ext:file:tag` 写法**，请改用 `geosite:` / `geoip:`。
-7. **日志由「访问日志 + 错误日志」两栏合并为单栏**，mihomo 只有一个日志流。
-8. **iptables 链名变更**（`V2RAY` → `MIHOMO`，`V2RAY_MASK` → `MIHOMO_MASK`）。`config_iptable.sh` 会自动清理旧链，无需手工处理。流量计数链 `V2RAYPI_TRAFFIC_UP/DOWN` 保持不变。
+4. **BitTorrent 直连规则不再存在。** mihomo 没有协议嗅探类规则，无法忠实翻译原先的 `protocol: bittorrent` 规则。如需 BT 直连，可针对 tracker 域名添加自定义路由规则。
+5. **自定义路由规则不支持 `ext:file:tag` 写法**，请改用 `geosite:` / `geoip:`。
+6. **日志由「访问日志 + 错误日志」两栏合并为单栏**，mihomo 只有一个日志流。
+7. **iptables 链名变更**（`V2RAY` → `MIHOMO`，`V2RAY_MASK` → `MIHOMO_MASK`）。`config_iptable.sh` 会自动清理旧链，无需手工处理。流量计数链 `V2RAYPI_TRAFFIC_UP/DOWN` 保持不变。
 
 原地升级后建议执行一次 `sudo reboot`，确保 iptables 与 systemd 状态干净。
 

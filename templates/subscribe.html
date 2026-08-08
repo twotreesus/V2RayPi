@@ -97,14 +97,14 @@
         <td class="node_addr"></td>
         <td>
             <div style="display: flex; gap: 8px; justify-content: flex-start;">
-                <div class="mdui-chip apply_node" title="应用节点">
-                    <span class="mdui-chip-icon mdui-color-green-500"><i class="mdui-icon material-icons">check</i></span>
-                </div>
                 <div class="mdui-chip favorite_node" title="添加到收藏">
                     <span class="mdui-chip-icon mdui-color-grey-400"><i class="mdui-icon material-icons">star_border</i></span>
                 </div>
                 <div class="mdui-chip get_node_link" title="复制分享链接">
                     <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">links</i></span>
+                </div>
+                <div class="mdui-chip show_node_qr" title="显示节点二维码">
+                    <span class="mdui-chip-icon mdui-color-grey-700"><i class="mdui-icon material-icons">crop_free</i></span>
                 </div>
                 <div class="mdui-chip delete_node" title="删除节点">
                     <span class="mdui-chip-icon mdui-color-red-500"><i class="mdui-icon material-icons">delete</i></span>
@@ -145,10 +145,6 @@
     }
     .node_running td.node_name {
         text-align: left;
-    }
-    .node_running .apply_node .mdui-chip-icon {
-        color: white !important;
-        background-color: #FF9800 !important;
     }
     .subscribe-index {
         display: inline-block;
@@ -265,11 +261,6 @@
             show_qr_code(url);
         });
 
-        $("#node_list_body").on("click", ".apply_node", function() {
-            var row = $(this).closest("tr");
-            apply_node(row.data("url"), row.data("index"));
-        });
-
         $("#node_list_body").on("click", "tr[data-url]", function(e) {
             if ($(e.target).closest(".mdui-chip").length) return;
             if ($(this).data("index") === undefined) return;
@@ -286,6 +277,11 @@
         $("#node_list_body").on("click", ".get_node_link", function() {
             var row = $(this).closest("tr");
             get_node_link(row.data("url"), row.data("index"));
+        });
+
+        $("#node_list_body").on("click", ".show_node_qr", function() {
+            var row = $(this).closest("tr");
+            show_node_qr(row.data("url"), row.data("index"));
         });
 
         $("#node_list_body").on("click", ".delete_node", function() {
@@ -377,6 +373,11 @@
                 node_row.find(".node_index").html(nodeIndex + 1);
                 if (isFavorite) {
                     node_row.find(".favorite_node").hide();
+                    node_row.find(".delete_node").attr("title", "取消收藏");
+                    node_row.find(".delete_node .mdui-icon").html("star");
+                    node_row.find(".delete_node .mdui-chip-icon")
+                        .removeClass("mdui-color-red-500")
+                        .addClass("mdui-color-yellow-700");
                 } else if (favoriteNames.indexOf(node_data["ps"]) !== -1) {
                     node_row.find(".favorite_node .mdui-icon").html("star");
                     node_row.find(".favorite_node .mdui-chip-icon").removeClass("mdui-color-grey-400").addClass("mdui-color-yellow-700");
@@ -387,7 +388,6 @@
                 node_row.find(".node_addr").html(node_data["add"]);
                 if (node_data["ps"] === node_running) {
                     node_row.addClass("node_running");
-                    node_row.find(".apply_node .mdui-icon").html("vpn_key");
                 }
                 currentNodesTbody.append(node_row);
                 currentNodesDiv.show();
@@ -424,7 +424,7 @@
                         if (ps) {
                             $("#node_list_body tr").filter(function() {
                                 return $(this).data("url") !== 'manual' && $(this).find(".node_name").data("ps") === ps;
-                            }).addClass("node_running").find(".apply_node .mdui-icon").html("vpn_key");
+                            }).addClass("node_running");
                         }
                     } else {
                         $("#node_list_body tr").filter(function() {
@@ -446,14 +446,13 @@
                 } else if (typeof refresh_header_status === "function") {
                     refresh_header_status();
                 }
-                $(".node_running").removeClass("node_running").find(".apply_node .mdui-icon").html("check");
+                $(".node_running").removeClass("node_running");
                 $(".subscribe-index").removeClass("running");
 
                 var current_node = $("#node_list_body tr").filter(function() {
                     return $(this).data("url") === url && $(this).data("index") === index;
                 });
                 current_node.addClass("node_running");
-                current_node.find(".apply_node .mdui-icon").html("vpn_key");
 
                 if (url === "manual") {
                     $("#real_manual .subscribe-index").addClass("running");
@@ -461,7 +460,7 @@
                     if (ps) {
                         $("#node_list_body tr").filter(function() {
                             return $(this).data("url") !== 'manual' && $(this).find(".node_name").data("ps") === ps;
-                        }).addClass("node_running").find(".apply_node .mdui-icon").html("vpn_key");
+                        }).addClass("node_running");
                     }
                 } else {
                     $("#node_list_body tr").filter(function() {
@@ -488,6 +487,16 @@
         })
     }
 
+    function show_node_qr(url, index) {
+        ajax_request({ url: "/get_node_link", data: {subscribe:url, node_index:index} }).then(function (data) {
+            if (check_result(data)) {
+                show_qr_code(data["node_link"]);
+            } else {
+                message(data["message"] || "该节点无法生成二维码");
+            }
+        })
+    }
+
     function show_qr_code(text) {
         $("#qr_code").empty().qrcode(text);
         toast = new mdui.Dialog("#qr_toast", { destroyOnClosed:true });
@@ -507,10 +516,12 @@
     }
 
     function delete_node(url, index) {
-        mdui.confirm("确认删除？", function () {
+        var isFavorite = url === "manual";
+        var prompt = isFavorite ? "确认取消收藏？" : "确认删除？";
+        mdui.confirm(prompt, function () {
             ajax_request({ url: "/delete_node", data: {subscribe:url, node_index:index} }).then(function (data) {
                 if (check_result(data)) {
-                    message("节点已删除");
+                    message(isFavorite ? "已取消收藏" : "节点已删除");
                     refresh();
                 }
             })
