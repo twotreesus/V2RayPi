@@ -15,6 +15,7 @@ import yaml
 from urllib.parse import urlparse
 from .keys import Keyword as K
 from .node import Node
+from .node_uri import parse_node_uri
 from .mihomo_config import SUPPORTED_PROXY_TYPES
 from .base_data_item import BaseDataItem
 
@@ -131,6 +132,14 @@ class NodeManager(BaseDataItem):
         if any(n.ps == node.ps for n in self.manual_nodes):
             return False
         self.manual_nodes.append(copy.deepcopy(node))
+        self.save()
+        return True
+
+    def add_manual_node(self, uri: str) -> bool:
+        node = Node.from_clash(parse_node_uri(uri))
+        if any(existing.ps == node.ps for existing in self.manual_nodes):
+            return False
+        self.manual_nodes.append(node)
         self.save()
         return True
 

@@ -189,15 +189,26 @@ class FavoriteTest(unittest.TestCase):
 
         self.assertEqual(len(manager.manual_nodes), 1)
 
+    def test_share_url_can_be_added_directly_to_favorites(self):
+        manager = NodeManager()
+        uri = 'anytls://password@example.com:443/?sni=cdn.example.com#AnyTLS'
+        with patch.object(manager, 'save') as save:
+            self.assertTrue(manager.add_manual_node(uri))
+            self.assertFalse(manager.add_manual_node(uri))
+
+        self.assertEqual(len(manager.manual_nodes), 1)
+        self.assertEqual(manager.manual_nodes[0].clash['type'], 'anytls')
+        self.assertEqual(manager.manual_nodes[0].clash['sni'], 'cdn.example.com')
+        save.assert_called_once_with()
+
 
 class NodeLinkTest(unittest.TestCase):
-    def test_link_is_a_clash_yaml_fragment(self):
+    def test_link_is_a_protocol_share_url(self):
         node = Node.from_clash({'name': '日本 01', 'type': 'hysteria2',
                                 'server': 'jp.example.com', 'port': 443, 'password': 'p'})
-        parsed = yaml.safe_load(node.link)
 
-        self.assertEqual(parsed, [node.clash])
-        self.assertIn('日本 01', node.link)
+        self.assertTrue(node.link.startswith('hysteria2://'))
+        self.assertIn('%E6%97%A5%E6%9C%AC%2001', node.link)
 
     def test_empty_node_has_no_link(self):
         self.assertEqual(Node().link, '')

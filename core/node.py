@@ -6,9 +6,8 @@ Date:       2020年7月29日  31周星期三 21:32
 Desc:
 """
 
-import yaml
-
 from .base_data_item import BaseDataItem
+from .node_uri import encode_node_uri
 
 
 class Node(BaseDataItem):
@@ -16,7 +15,7 @@ class Node(BaseDataItem):
 
     The original Clash proxy mapping is kept verbatim so it can be handed to
     mihomo without per-protocol field translation.  The flat fields alongside
-    it are the ones the web UI and the latency test read.
+    it are the fields used by the web UI.
     """
 
     def __init__(self):
@@ -40,5 +39,4 @@ class Node(BaseDataItem):
     def link(self) -> str:
         if not self.clash:
             return ''
-        return yaml.safe_dump([self.clash], sort_keys=False, allow_unicode=True,
-                              default_flow_style=False)
+        return encode_node_uri(self.clash)

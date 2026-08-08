@@ -194,6 +194,21 @@ def favorite_node_api():
         pass
     return jsonify({K.result: result})
 
+@app.route('/add_manual_node', methods=['POST'])
+@require_auth
+def add_manual_node_api():
+    try:
+        data = request.get_json() or {}
+        added = CoreService.node_manager.add_manual_node(data.get(K.url, ''))
+        if not added:
+            return jsonify({
+                K.result: K.failed,
+                'message': '同名节点已在收藏中',
+            })
+        return jsonify({K.result: K.ok})
+    except ValueError as error:
+        return jsonify({K.result: K.failed, 'message': str(error)})
+
 @app.route('/remove_subscribe')
 @require_auth
 def remove_subscribe_api():
@@ -256,12 +271,13 @@ def apply_node_api():
 @app.route('/get_node_link')
 @require_auth
 def get_node_link_api():
-    url = request.args.get(K.subscribe)
-    index = request.args.get(K.node_index)
-    index = int(index)
-    link = CoreService.node_manager.find_node(url, index).link
-    return jsonify({ K.result: K.ok,
-                     K.node_link: link})
+    try:
+        url = request.args.get(K.subscribe)
+        index = int(request.args.get(K.node_index))
+        link = CoreService.node_manager.find_node(url, index).link
+        return jsonify({K.result: K.ok, K.node_link: link})
+    except ValueError as error:
+        return jsonify({K.result: K.failed, 'message': str(error)})
 
 @app.route('/delete_node')
 @require_auth

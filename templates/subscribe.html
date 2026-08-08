@@ -21,6 +21,9 @@
                                     <div>
                                         <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_subscribe()">新增订阅</button>
                                     </div>
+                                    <div>
+                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="add_manual_node()">添加节点</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -100,7 +103,7 @@
                 <div class="mdui-chip favorite_node" title="添加到收藏">
                     <span class="mdui-chip-icon mdui-color-grey-400"><i class="mdui-icon material-icons">star_border</i></span>
                 </div>
-                <div class="mdui-chip get_node_link" title="拷贝节点配置">
+                <div class="mdui-chip get_node_link" title="复制分享链接">
                     <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">links</i></span>
                 </div>
                 <div class="mdui-chip delete_node" title="删除节点">
@@ -478,7 +481,9 @@
             if (check_result(data)) {
                 link = data["node_link"];
                 copy_to_clipboard(link);
-                message("节点配置已复制到剪贴板");
+                message("节点分享链接已复制");
+            } else {
+                message(data["message"] || "该节点无法生成分享链接");
             }
         })
     }
@@ -558,6 +563,27 @@
             }).always(function () {
                 close_toast();
                 refresh();
+            });
+        });
+    }
+
+    function add_manual_node() {
+        mdui.prompt("请输入节点分享链接：<br><small style='color:#888'>支持 VMess、VLESS、SS、Trojan、Hysteria2、AnyTLS 和 Mieru</small>", function (url) {
+            url = url.trim();
+            if (!url.length) {
+                return;
+            }
+            ajax_request({
+                url: "/add_manual_node",
+                type: "POST",
+                data: JSON.stringify({url: url})
+            }).then(function (data) {
+                if (check_result(data)) {
+                    message("节点已添加到收藏");
+                    refresh();
+                } else {
+                    message(data["message"] || "节点链接无效");
+                }
             });
         });
     }

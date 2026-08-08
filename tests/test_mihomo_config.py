@@ -5,6 +5,7 @@ import yaml
 from core.mihomo_config import MihomoConfig, PROXY_TAG, TPROXY_PORT, DNS_PORT
 from core.mihomo_user_config import MihomoUserConfig
 from core.node import Node
+from core.node_uri import parse_node_uri
 
 
 def make_node(**overrides):
@@ -367,10 +368,10 @@ class YamlRoundTripTest(unittest.TestCase):
         self.assertIn('geosite:cn', policy)
         self.assertIn('geosite:speedtest', policy)
 
-    def test_unicode_node_names_are_not_escaped(self):
+    def test_unicode_node_names_survive_share_url_round_trip(self):
         user_config = MihomoUserConfig()
         user_config.node = make_node()
-        self.assertIn('香港 01', user_config.node.link)
+        self.assertEqual(parse_node_uri(user_config.node.link)['name'], '香港 01')
 
 
 if __name__ == '__main__':
