@@ -267,7 +267,11 @@ class MihomoConfig:
                 rules.append('GEOSITE,geolocation-!cn,{0}'.format(PROXY_TAG))
                 rules.append('NOT,((GEOIP,CN)),{0}'.format(PROXY_TAG))
 
-        rules.append('MATCH,{0}'.format(PROXY_TAG if advance.proxy_preferred else DIRECT_TAG))
+        fallback = PROXY_TAG
+        if (user_config.proxy_mode == MihomoUserConfig.ProxyMode.ProxyAuto.value
+                and not advance.proxy_preferred):
+            fallback = DIRECT_TAG
+        rules.append('MATCH,{0}'.format(fallback))
 
         return rules
 

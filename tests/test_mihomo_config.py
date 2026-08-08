@@ -171,7 +171,10 @@ class RulesTest(unittest.TestCase):
         self.assertNotIn('GEOIP,CN,DIRECT,no-resolve', rules)
         self.assertEqual(rules[-1], 'MATCH,PROXY')
 
-    def test_fallback_follows_proxy_preferred(self):
+        user_config.advance_config.proxy_preferred = False
+        self.assertEqual(generate(user_config)['rules'][-1], 'MATCH,PROXY')
+
+    def test_smart_routing_fallback_follows_proxy_preferred(self):
         user_config = self._config()
         self.assertEqual(generate(user_config)['rules'][-1], 'MATCH,PROXY')
 

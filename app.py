@@ -387,6 +387,12 @@ def stream_logs_api():
 
             except GeneratorExit:
                 break
+            except OSError:
+                # The Homebrew service can rotate or briefly replace its log
+                # between the size check and open. Keep the SSE connection
+                # alive and resume from the current file on the next pass.
+                log_pos = file_size(log_path)
+                yield ': heartbeat\n\n'
 
     return Response(generate(), mimetype='text/event-stream',
                     headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})

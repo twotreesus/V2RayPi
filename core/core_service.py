@@ -563,7 +563,7 @@ class CoreService:
             commits = []
             if result.stdout.strip():
                 for commit in result.stdout.strip().split('\n'):
-                    timestamp, date, message = commit.split('|')
+                    timestamp, date, message = commit.split('|', 2)
                     if not same_branch or int(timestamp) > local_timestamp:
                         commits.append(f"{date}|{message}")
             return commits

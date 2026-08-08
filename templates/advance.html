@@ -1,4 +1,40 @@
 <link rel="stylesheet" href="/static/css/Chart.css">
+<style>
+    #advance_table > tbody > tr > td:first-child {
+        white-space: nowrap;
+    }
+
+    .routing-preference-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .routing-preference-option {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .routing-preference-option:has(input:checked) {
+        background: #e3f2fd;
+        border-color: #2196f3;
+    }
+
+    .routing-preference-option input {
+        margin-top: 3px;
+    }
+
+    .routing-preference-title {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+</style>
 <div id="advance_page" class="mdui-container">
     <div id="action_bar_wrapper" style="position: fixed; top: 80px; right: 16px; z-index: 99; pointer-events: none; display: flex; justify-content: flex-end;">
         <div id="action_bar" style="pointer-events: all; margin-right: 16px; background: #e3f2fd; border: 1px solid rgba(0,0,0,0.12); border-radius: 4px; padding: 12px 16px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
@@ -159,22 +195,25 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>代理优先</td>
-                    <td colspan="2">
-                        <label class="mdui-switch">
-                            <input id="proxy_preferred" type="checkbox" checked onchange="proxy_preferred_change()"/>
-                            <i class="mdui-switch-icon"></i>
-                        </label>
-                    </td>
-                    <td colspan="3">
-                        <div class="mdui-typo-caption-opacity">
-                            设置未命中任何规则时的默认策略；关闭即是「直连优先」。
-                            <ul>
-                                <li>「智能分流」会内置中国域名和中国 IP 直连规则。</li>
-                                <li>关闭「代理优先」且 GEO 数据可用时，会自动将境外域名和 IP 代理，实现类似 GFW 模式。</li>
-                                <li>自定义规则优先于内置 GEO 规则，可用于覆盖默认行为。</li>
-                            </ul>
+                    <td>默认策略</td>
+                    <td colspan="5">
+                        <div class="routing-preference-options">
+                            <label class="routing-preference-option">
+                                <input id="proxy_preferred_proxy" name="routing_preference" type="radio" value="proxy" checked onchange="proxy_preferred_change()"/>
+                                <span>
+                                    <span class="routing-preference-title">代理优先</span>
+                                    <span class="mdui-typo-caption-opacity">国内网站直接连接，其他未识别的网站默认走代理。适合希望海外网站更容易打开的用户。</span>
+                                </span>
+                            </label>
+                            <label class="routing-preference-option">
+                                <input id="proxy_preferred_direct" name="routing_preference" type="radio" value="direct" onchange="proxy_preferred_change()"/>
+                                <span>
+                                    <span class="routing-preference-title">直连优先</span>
+                                    <span class="mdui-typo-caption-opacity">已识别的海外网站走代理，其他网站默认直接连接。更节省代理流量，但少数海外网站可能无法打开。</span>
+                                </span>
+                            </label>
                         </div>
+                        <div class="mdui-typo-caption-opacity" style="margin-top: 8px">仅在「智能分流」模式下生效；自定义规则始终优先于这里选择的默认策略。</div>
                     </td>
                 </tr>
                 <tr>
@@ -547,7 +586,8 @@
         // rule
 
         var proxy_preferred = g_config_local['proxy_preferred'];
-        $("#proxy_preferred").prop('checked', proxy_preferred);
+        $("#proxy_preferred_proxy").prop('checked', proxy_preferred);
+        $("#proxy_preferred_direct").prop('checked', !proxy_preferred);
 
         var block_ad = g_config_local['block_ad'];
         $("#block_ad").prop('checked', block_ad);
@@ -766,7 +806,7 @@
     }
 
     function proxy_preferred_change() {
-        g_config_local['proxy_preferred'] = $("#proxy_preferred").prop('checked');
+        g_config_local['proxy_preferred'] = $("#proxy_preferred_proxy").prop('checked');
         refresh_local();
     }
 
