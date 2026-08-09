@@ -45,86 +45,17 @@
     <script src="/static/js/mdui.js"></script>
     <link href="/static/css/prism.css" rel="stylesheet" />
     <script src="/static/js/prism.js"></script>
-    <style>
-        html {
-            overflow-y: scroll;
-        }
-        #content_page {
-            overflow-x: hidden;
-            padding-bottom: 40px;
-        }
-        .mdui-list-item-active {
-            background-color: #07c160 !important;
-        }
-        .mdui-list-item-active,
-        .mdui-list-item-active .mdui-list-item-icon,
-        .mdui-list-item-active .mdui-list-item-content {
-            color: #fff !important;
-        }
-        .mdui-btn.mdui-color-theme-accent,
-        .mdui-btn.mdui-color-theme-accent:hover,
-        .mdui-btn.mdui-color-theme-a100,
-        .mdui-btn.mdui-color-theme-a100:hover {
-            background-color: #0288d1 !important;
-            color: #fff !important;
-        }
-        .mdui-btn.mdui-color-theme {
-            background-color: #07c160 !important;
-            color: #fff !important;
-        }
-        .mdui-color-green,
-        .mdui-color-green-300,
-        .mdui-color-green-500 {
-            background-color: #07c160 !important;
-        }
-        .mdui-text-color-green {
-            color: #07c160 !important;
-        }
-        .node-type-badge {
-            display: inline-block;
-            font-size: 10px;
-            font-weight: 600;
-            line-height: 1;
-            padding: 1px 4px;
-            border-radius: 3px;
-            border: 1px solid;
-            vertical-align: middle;
-        }
-        .node-type-vmess  { color: #1976d2; border-color: #1976d2; background-color: rgba(25,118,210,0.08); }
-        .node-type-vless  { color: #7b1fa2; border-color: #7b1fa2; background-color: rgba(123,31,162,0.08); }
-        .node-type-anytls { color: #0097a7; border-color: #0097a7; background-color: rgba(0,151,167,0.08); }
-        .node-type-hy2    { color: #2e7d32; border-color: #2e7d32; background-color: rgba(46,125,50,0.08); }
-        .node-type-ss     { color: #e91e63; border-color: #e91e63; background-color: rgba(233,30,99,0.08); }
-        .node-type-mieru  { color: #ef6c00; border-color: #ef6c00; background-color: rgba(239,108,0,0.08); }
-        .node-type-trojan { color: #c62828; border-color: #c62828; background-color: rgba(198,40,40,0.08); }
-        .node-type-tuic   { color: #00695c; border-color: #00695c; background-color: rgba(0,105,92,0.08); }
-        .node-type-other  { color: #546e7a; border-color: #546e7a; background-color: rgba(84,110,122,0.08); }
-    </style>
+    <link rel="stylesheet" href="/static/css/app.css">
 </head>
 
 <body class="mdui-appbar-with-toolbar mdui-theme-primary-teal mdui-theme-accent-light-blue mdui-loaded mdui-drawer-body-left">
     <!--head bar-->
     <header class="mdui-appbar mdui-appbar-fixed">
-        <div class="mdui-toolbar" style="background-color: #263238; color: #fff; align-items: center;">
+        <div class="mdui-toolbar app-toolbar">
             <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white" mdui-drawer="{target: '#main-drawer', swipe: true}"><i class="mdui-icon material-icons">menu</i></span>
-            <a href="./" class="mdui-typo-headline mdui-hidden-xs">V2RayPi</a>
-            <a id="head_title" href="" class="mdui-typo-title"></a>
+            <a href="./" class="mdui-typo-headline mdui-hidden-xs app-title">V2RayPi</a>
+            <a id="head_title" href="" class="mdui-typo-title app-title"></a>
             <div class="mdui-toolbar-spacer"></div>
-            <div id="header_status" style="display: none; align-items: center; font-size: 12px; white-space: nowrap; margin-right: 8px; border-radius: 10px; height: 26px; align-self: center; overflow: hidden;">
-                <div style="display: flex; align-items: center; gap: 6px; padding: 0 10px; height: 100%; background: #fff; color: rgba(0,0,0,0.75); min-width: 160px;">
-                    <span id="hs_dot" style="font-size: 24px; flex-shrink: 0; line-height: 12px; position: relative; top: -1px;">●</span>
-                    <span id="hs_mode" style="flex-shrink: 0; font-weight: 600;"></span>
-                    <span style="opacity: 0.4; flex-shrink: 0;">|</span>
-                    <span id="hs_protocol" class="node-type-badge" style="flex-shrink: 0; display: none; margin-right: 0;"></span>
-                    <span id="hs_node" style="font-weight: 600;"></span>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: center; padding: 0 10px; height: 100%; background: #FF9800; color: #fff; width: 100px; flex-shrink: 0;">
-                    <i class="mdui-icon material-icons" style="font-size: 14px; margin-right: 2px;">arrow_upward</i><span id="hs_upload" style="font-size: 11px; font-weight: 600;">-</span>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: center; padding: 0 10px; height: 100%; background: #07c160; color: #fff; width: 100px; flex-shrink: 0;">
-                    <i class="mdui-icon material-icons" style="font-size: 14px; margin-right: 2px;">arrow_downward</i><span id="hs_download" style="font-size: 11px; font-weight: 600;">-</span>
-                </div>
-            </div>
             <button id="language_switch" type="button" class="mdui-btn mdui-btn-dense mdui-ripple mdui-ripple-white" data-i18n-title="common.language" onclick="I18n.toggle()" style="min-width: 42px; color: #fff;">
                 <i class="mdui-icon material-icons" style="font-size: 18px; margin-right: 2px;">translate</i>
                 <span id="language_label">中</span>
@@ -139,6 +70,24 @@
             c0,0.4,0.3,0.9,1.1,0.8c6.5-2.2,11.1-8.3,11.1-15.5C34.3,8.7,27,1.4,18,1.4z"></path>
                         </svg>
             </a>
+        </div>
+        <!--status bar: its own row so the toolbar never has to squeeze on phones-->
+        <div id="header_status" class="status-bar">
+            <div class="status-bar-info">
+                <span id="hs_dot" class="status-bar-dot">●</span>
+                <span id="hs_mode" class="status-bar-mode"></span>
+                <span class="status-bar-sep">|</span>
+                <span id="hs_protocol" class="node-type-badge" style="display: none;"></span>
+                <span id="hs_node" class="status-bar-node"></span>
+            </div>
+            <div class="status-bar-traffic">
+                <span class="status-bar-speed status-bar-up">
+                    <i class="mdui-icon material-icons">arrow_upward</i><span id="hs_upload">-</span>
+                </span>
+                <span class="status-bar-speed status-bar-down">
+                    <i class="mdui-icon material-icons">arrow_downward</i><span id="hs_download">-</span>
+                </span>
+            </div>
         </div>
     </header>
     <!--menu-->
@@ -166,13 +115,9 @@
     <div id="login_dialog" class="mdui-dialog">
         <div class="mdui-dialog-title" data-i18n="login.title">请登录以继续</div>
         <div class="mdui-dialog-content">
-            <div class="mdui-row mdui-valign" style="margin-top: 20px">
-                <div class="mdui-col-xs-2 mdui-valign">
-                    <div class="mdui-typo-subheading" data-i18n="login.password" style="line-height: 36px">管理密码</div>
-                </div>
-                <div class="mdui-col-xs-10">
-                    <input id="login_password" class="mdui-textfield-input" type="password" />
-                </div>
+            <div style="margin-top: 12px">
+                <div class="mdui-typo-caption-opacity" data-i18n="login.password">管理密码</div>
+                <input id="login_password" class="mdui-textfield-input" type="password" style="width: 100%" />
             </div>
             <div id="login_error" class="mdui-text-color-red" style="display: none; margin-top: 8px;"></div>
         </div>
@@ -186,11 +131,9 @@
     <!--toast-->
     <div id="toast" class="mdui-dialog">
         <div class="mdui-dialog-content">
-            <div class="mdui-row mdui-valign">
-                <div class="mdui-col-md-1 mdui-valign">
-                    <div class="mdui-spinner"></div>
-                </div>
-                <div id="toast_message" class="mdui-col">Hello World !</div>
+            <div class="action-group">
+                <div class="mdui-spinner"></div>
+                <div id="toast_message" class="action-group-value">Hello World !</div>
             </div>
         </div>
     </div>
@@ -474,7 +417,8 @@
             .attr('class', 'node-type-badge node-type-' + protocol.className)
             .toggle(!!protocol.label);
         $('#hs_node').text(data['ps'] || '');
-        $('#header_status').css('display', 'flex');
+        $('#header_status').addClass('is-visible');
+        $(document.body).addClass('with-status-bar');
     }
 
     // Must match SMOOTH_LEN in status.html so both views average the same

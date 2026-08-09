@@ -10,10 +10,13 @@
         "subscribe.update": {zh: "更新", en: "Update"},
         "subscribe.delete": {zh: "删除", en: "Delete"},
         "subscribe.favorites": {zh: "收藏", en: "Favorites"},
-        "subscribe.column.index": {zh: "序号", en: "No."},
-        "subscribe.column.name": {zh: "名称", en: "Name"},
-        "subscribe.column.address": {zh: "地址", en: "Address"},
-        "subscribe.column.actions": {zh: "操作", en: "Actions"},
+        "subscribe.action.favorite": {zh: "收藏", en: "Favorite"},
+        "subscribe.action.copy": {zh: "复制", en: "Copy"},
+        "subscribe.action.qr": {zh: "二维码", en: "QR"},
+        "subscribe.action.delete": {zh: "删除", en: "Delete"},
+        "subscribe.action.unfavorite": {zh: "取消收藏", en: "Unfavorite"},
+        "subscribe.tooltip.node_actions": {zh: "选择节点操作", en: "Choose node action"},
+        "subscribe.tooltip.subscription_actions": {zh: "选择订阅操作", en: "Choose subscription action"},
         "subscribe.tooltip.copy_url": {zh: "复制订阅地址", en: "Copy subscription URL"},
         "subscribe.tooltip.show_subscription_qr": {zh: "显示订阅地址二维码", en: "Show subscription URL QR code"},
         "subscribe.tooltip.favorite": {zh: "添加到收藏", en: "Add to favorites"},
@@ -67,24 +70,18 @@
             <table class="mdui-table">
                 <tbody id="subscribe_body">
                 <tr>
-                    <td colspan="4">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                    <td colspan="4" class="subscribe-head-cell">
+                        <div class="subscribe-toolbar">
+                            <div class="subscribe-toolbar-title">
                                 <strong class="mdui-typo" data-i18n="subscribe.recent">最近订阅</strong>
-                                <span id="last_subscribe" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;"></span>
+                                <span id="last_subscribe"></span>
                             </div>
-                            <div style="flex: 1;"></div>
-                            <div style="display: flex; align-items: center;">
-                                <div style="display: flex; gap: 8px; justify-content: flex-end; padding-right: 8px;">
-                                    <div id="update_all_subscribe" style="display: none">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.update_all" onclick="update_all_subscribe()">全部更新</button>
-                                    </div>
-                                    <div>
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.add" onclick="add_subscribe()">新增订阅</button>
-                                    </div>
-                                    <div>
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.add_node" onclick="add_manual_node()">添加节点</button>
-                                    </div>
+                            <div class="action-group action-group-end">
+                                <div id="update_all_subscribe" style="display: none">
+                                    <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.update_all" onclick="update_all_subscribe()">全部更新</button>
+                                </div>
+                                <div>
+                                    <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.add" onclick="add_subscribe()">新增订阅</button>
                                 </div>
                             </div>
                         </div>
@@ -92,50 +89,63 @@
                 </tr>
                 <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="4"></td></tr>
                 <tr id="subscribe_template" class="mdui-color-light-blue-50" style="display: none">
-                    <td colspan="4">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-1" style="width: 8%; display: flex; align-items: center;">
-                                <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
-                                    <i class="mdui-icon material-icons group-toggle">expand_more</i>
-                                    <strong class="mdui-typo subscribe-index" data-i18n="subscribe.address" style="white-space: nowrap;">订阅地址</strong>
-                                </div>
+                    <td colspan="4" class="subscribe-head-cell">
+                        <div class="subscribe-head subscription-row">
+                            <div class="subscribe-head-toggle toggle-row">
+                                <i class="mdui-icon material-icons group-toggle">expand_more</i>
+                                <strong class="mdui-typo subscribe-index" data-i18n="subscribe.address">订阅地址</strong>
                             </div>
-                            <div style="flex: 1; min-width: 0; display: flex; align-items: center;">
-                                <strong class="url" style="display: block; max-width: 64ch; word-break: break-all; white-space: normal;"></strong>
-                            </div>
-                            <div style="flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;">
-                                <div style="display: flex; gap: 8px;">
-                                    <div>
-                                        <button class="copy_url mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.copy" data-i18n-tooltip="subscribe.tooltip.copy_url">复制</button>
-                                    </div>
-                                    <div>
-                                        <button class="show_subscribe_qr mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.qr_code" data-i18n-tooltip="subscribe.tooltip.show_subscription_qr">二维码</button>
-                                    </div>
-                                    <div>
-                                        <button class="update_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.update">更新</button>
-                                    </div>
-                                    <div>
-                                        <button class="remove_subscribe mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red-400 mdui-ripple" data-i18n="subscribe.delete">删除</button>
-                                    </div>
+                            <strong class="url subscribe-head-url"></strong>
+                            <div class="action-group action-group-end">
+                                <div class="mdui-chip subscribe_actions" data-i18n-title="subscribe.tooltip.subscription_actions" title="选择订阅操作">
+                                    <span class="mdui-chip-icon mdui-color-grey-500"><i class="mdui-icon material-icons">more_horiz</i></span>
                                 </div>
+                                <ul class="mdui-menu horizontal-actions-menu subscribe-actions-menu">
+                                    <li class="mdui-menu-item copy_url" data-i18n-title="subscribe.tooltip.copy_url" title="复制订阅地址">
+                                        <a href="javascript:;" class="mdui-ripple">
+                                            <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">content_copy</i></span>
+                                            <span data-i18n="subscribe.copy">复制</span>
+                                        </a>
+                                    </li>
+                                    <li class="mdui-menu-item show_subscribe_qr" data-i18n-title="subscribe.tooltip.show_subscription_qr" title="显示订阅地址二维码">
+                                        <a href="javascript:;" class="mdui-ripple">
+                                            <span class="mdui-chip-icon mdui-color-grey-700"><i class="mdui-icon material-icons">crop_free</i></span>
+                                            <span data-i18n="subscribe.qr_code">二维码</span>
+                                        </a>
+                                    </li>
+                                    <li class="mdui-menu-item update_subscribe">
+                                        <a href="javascript:;" class="mdui-ripple">
+                                            <span class="mdui-chip-icon mdui-color-teal-500"><i class="mdui-icon material-icons">refresh</i></span>
+                                            <span data-i18n="subscribe.update">更新</span>
+                                        </a>
+                                    </li>
+                                    <li class="mdui-menu-item remove_subscribe">
+                                        <a href="javascript:;" class="mdui-ripple">
+                                            <span class="mdui-chip-icon mdui-color-red-500"><i class="mdui-icon material-icons">delete</i></span>
+                                            <span data-i18n="subscribe.delete">删除</span>
+                                        </a>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </td>
                 </tr>
                 <tr id="manual_template" class="mdui-color-light-blue-50" style="display: none">
-                    <td colspan="4">
-                        <div style="width: 100%; display: flex; align-items: center;">
-                            <div style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="toggle-row">
+                    <td colspan="4" class="subscribe-head-cell">
+                        <div class="subscribe-head favorite-row">
+                            <div class="subscribe-head-toggle toggle-row">
                                 <i class="mdui-icon material-icons group-toggle">expand_more</i>
-                                <strong class="mdui-typo subscribe-index" data-i18n="subscribe.favorites" style="white-space: nowrap;">收藏</strong>
+                                <strong class="mdui-typo subscribe-index" data-i18n="subscribe.favorites">收藏</strong>
                             </div>
-                            <div style="flex: 1;"></div>
+                            <div class="action-group action-group-end">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.add_node" onclick="add_manual_node()">添加节点</button>
+                            </div>
                         </div>
                     </td>
                 </tr>
                 </tbody>
             </table>
-            
+
             <!-- Node list container: each group renders its own independent table -->
             <div id="node_list_body" style="margin-top: 8px;"></div>
         </div>
@@ -146,30 +156,47 @@
 <!-- Hidden node row templates -->
 <table id="node_row_templates" style="display: none;">
     <tbody>
-    <tr id="node_header_template" class="mdui-typo-caption-opacity">
-        <td style="width: 8%;" data-i18n="subscribe.column.index">序号</td>
-        <td style="width: 42%;" data-i18n="subscribe.column.name">名称</td>
-        <td style="width: 35%;" data-i18n="subscribe.column.address">地址</td>
-        <td style="width: 15%;" data-i18n="subscribe.column.actions">操作</td>
-    </tr>
-    <tr id="node_template">
-        <td class="node_index"></td>
-        <td class="node_name" style="white-space: nowrap;"></td>
-        <td class="node_addr"></td>
-        <td>
-            <div style="display: flex; gap: 8px; justify-content: flex-start;">
-                <div class="mdui-chip favorite_node" data-i18n-title="subscribe.tooltip.favorite" title="添加到收藏">
-                    <span class="mdui-chip-icon mdui-color-grey-400"><i class="mdui-icon material-icons">star_border</i></span>
+    <tr id="node_template" class="node-row">
+        <td class="node_index" style="width: 64px;">
+            <div class="node-protocol"></div>
+        </td>
+        <td class="node_name">
+            <div class="node-details">
+                <div class="node-name-text"></div>
+                <div class="node_addr"></div>
+            </div>
+        </td>
+        <td style="width: 64px;">
+            <div class="action-group action-group-end">
+                <div class="mdui-chip node_actions" data-i18n-title="subscribe.tooltip.node_actions" title="选择节点操作">
+                    <span class="mdui-chip-icon mdui-color-grey-500"><i class="mdui-icon material-icons">more_horiz</i></span>
                 </div>
-                <div class="mdui-chip get_node_link" data-i18n-title="subscribe.tooltip.copy_link" title="复制分享链接">
-                    <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">links</i></span>
-                </div>
-                <div class="mdui-chip show_node_qr" data-i18n-title="subscribe.tooltip.show_node_qr" title="显示节点二维码">
-                    <span class="mdui-chip-icon mdui-color-grey-700"><i class="mdui-icon material-icons">crop_free</i></span>
-                </div>
-                <div class="mdui-chip delete_node" data-i18n-title="subscribe.tooltip.delete_node" title="删除节点">
-                    <span class="mdui-chip-icon mdui-color-red-500"><i class="mdui-icon material-icons">delete</i></span>
-                </div>
+                <ul class="mdui-menu horizontal-actions-menu node-actions-menu">
+                    <li class="mdui-menu-item favorite_node" data-i18n-title="subscribe.tooltip.favorite" title="添加到收藏">
+                        <a href="javascript:;" class="mdui-ripple">
+                            <span class="mdui-chip-icon mdui-color-grey-400"><i class="mdui-icon material-icons">star_border</i></span>
+                            <span data-i18n="subscribe.action.favorite">收藏</span>
+                        </a>
+                    </li>
+                    <li class="mdui-menu-item get_node_link" data-i18n-title="subscribe.tooltip.copy_link" title="复制分享链接">
+                        <a href="javascript:;" class="mdui-ripple">
+                            <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">links</i></span>
+                            <span data-i18n="subscribe.action.copy">复制</span>
+                        </a>
+                    </li>
+                    <li class="mdui-menu-item show_node_qr" data-i18n-title="subscribe.tooltip.show_node_qr" title="显示节点二维码">
+                        <a href="javascript:;" class="mdui-ripple">
+                            <span class="mdui-chip-icon mdui-color-grey-700"><i class="mdui-icon material-icons">crop_free</i></span>
+                            <span data-i18n="subscribe.action.qr">二维码</span>
+                        </a>
+                    </li>
+                    <li class="mdui-menu-item delete_node" data-i18n-title="subscribe.tooltip.delete_node" title="删除节点">
+                        <a href="javascript:;" class="mdui-ripple">
+                            <span class="mdui-chip-icon mdui-color-red-500"><i class="mdui-icon material-icons">delete</i></span>
+                            <span class="delete-node-label" data-i18n="subscribe.action.delete">删除</span>
+                        </a>
+                    </li>
+                </ul>
             </div>
         </td>
     </tr>
@@ -212,70 +239,57 @@
         background-color: rgba(0, 0, 0, 0.1);
         padding: 4px 8px;
         border-radius: 4px;
+        white-space: nowrap;
         transition: all 0.3s ease;
     }
     .subscribe-index.running {
         background-color: #FF9800;
         color: white !important;
     }
-    .url {
-        margin-left: 24px;
+    .horizontal-actions-menu {
+        display: flex;
+        width: auto;
+        min-width: 0;
+        padding: 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+        border-radius: 10px;
+        transform: translate(12px, -50%) scaleX(0.88);
+        transform-origin: right center;
+        transition: transform 180ms ease-out, opacity 180ms ease-out, visibility 180ms;
     }
-    .node-type-badge {
-        display: inline-block;
-        font-size: 10px;
-        font-weight: 600;
-        line-height: 1;
-        padding: 1px 4px;
-        border-radius: 3px;
-        border: 1px solid;
-        margin-right: 10px;
-        vertical-align: middle;
+    .horizontal-actions-menu.is-open {
+        transform: translate(0, -50%) scaleX(1);
+        visibility: visible;
+        opacity: 1;
     }
-    .node-type-vmess {
-        color: #1976d2;
-        border-color: #1976d2;
-        background-color: rgba(25, 118, 210, 0.08);
+    .horizontal-actions-menu .mdui-menu-item {
+        flex: 0 0 auto;
+        border-radius: 8px;
+        overflow: hidden;
     }
-    .node-type-vless {
-        color: #7b1fa2;
-        border-color: #7b1fa2;
-        background-color: rgba(123, 31, 162, 0.08);
+    .horizontal-actions-menu .mdui-menu-item > a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 40px;
+        gap: 8px;
+        padding: 0 10px;
+        font-size: 13px;
+        white-space: nowrap;
+        border-radius: 8px;
     }
-    .node-type-anytls {
-        color: #0097a7;
-        border-color: #0097a7;
-        background-color: rgba(0, 151, 167, 0.08);
+    .horizontal-actions-menu .mdui-menu-item-active,
+    .horizontal-actions-menu .mdui-menu-item > a:hover,
+    .horizontal-actions-menu .mdui-menu-item > a:active {
+        border-radius: 8px;
     }
-    .node-type-hy2 {
-        color: #2e7d32;
-        border-color: #2e7d32;
-        background-color: rgba(46, 125, 50, 0.08);
-    }
-    .node-type-ss {
-        color: #e91e63;
-        border-color: #e91e63;
-        background-color: rgba(233, 30, 99, 0.08);
-    }
-    .node-type-mieru {
-        color: #ef6c00;
-        border-color: #ef6c00;
-        background-color: rgba(239, 108, 0, 0.08);
-    }
-    .node-type-trojan {
-        color: #c62828;
-        border-color: #c62828;
-        background-color: rgba(198, 40, 40, 0.08);
-    }
-    .node-type-tuic {
-        color: #00695c;
-        border-color: #00695c;
-        background-color: rgba(0, 105, 92, 0.08);
-    }
-    .node-type-other {
-        color: #546e7a;
-        border-color: #546e7a;
-        background-color: rgba(84, 110, 122, 0.08);
+    .horizontal-actions-menu .mdui-chip-icon {
+        flex-shrink: 0;
+        margin: 0;
     }
 </style>
 
@@ -283,7 +297,6 @@
 <script src="/static/js/jquery.qrcode.js"></script>
 <script type="text/javascript">
     //# sourceURL=subscribe.js
-
     $(document).ready(function () {
         mdui.mutation();
 
@@ -303,15 +316,18 @@
         });
 
         $("#node_list_body").on("click", ".update_subscribe", function() {
+            close_horizontal_action_menus();
             update_subscribe($(this).closest("tr").data("url"));
         });
 
         $("#node_list_body").on("click", ".remove_subscribe", function() {
+            close_horizontal_action_menus();
             remove_subscribe($(this).closest("tr").data("url"));
         });
 
         $("#node_list_body").on("click", ".copy_url", function() {
             var url = $(this).closest("tr").data("url");
+            close_horizontal_action_menus();
             if (copy_to_clipboard(url)) {
                 message(t("subscribe.url_copied"));
             }
@@ -319,11 +335,12 @@
 
         $("#node_list_body").on("click", ".show_subscribe_qr", function() {
             var url = $(this).closest("tr").data("url");
+            close_horizontal_action_menus();
             show_qr_code(url);
         });
 
         $("#node_list_body").on("click", "tr[data-url]", function(e) {
-            if ($(e.target).closest(".mdui-chip").length) return;
+            if ($(e.target).closest(".mdui-chip, .horizontal-actions-menu").length) return;
             if ($(this).data("index") === undefined) return;
             if ($(this).hasClass("node_running")) return;
             var row = $(this);
@@ -338,28 +355,59 @@
             });
         });
 
+        $("#node_list_body").on("click", ".node_actions, .subscribe_actions", function(e) {
+            e.stopPropagation();
+            var menu = $(this).siblings(".horizontal-actions-menu");
+            var shouldOpen = !menu.hasClass("is-open");
+            close_horizontal_action_menus();
+            if (!shouldOpen) return;
+
+            var anchorRect = this.getBoundingClientRect();
+            menu.css({
+                top: anchorRect.top + anchorRect.height / 2,
+                right: window.innerWidth - anchorRect.left + 8,
+                left: "auto"
+            }).addClass("is-open");
+        });
+
         $("#node_list_body").on("click", ".get_node_link", function() {
             var row = $(this).closest("tr");
+            close_horizontal_action_menus();
             get_node_link(row.data("url"), row.data("index"));
         });
 
         $("#node_list_body").on("click", ".show_node_qr", function() {
             var row = $(this).closest("tr");
+            close_horizontal_action_menus();
             show_node_qr(row.data("url"), row.data("index"));
         });
 
         $("#node_list_body").on("click", ".delete_node", function() {
             var row = $(this).closest("tr");
+            close_horizontal_action_menus();
             delete_node(row.data("url"), row.data("index"));
         });
 
         $("#node_list_body").on("click", ".favorite_node", function() {
             var row = $(this).closest("tr");
-            favorite_node(row.data("url"), row.data("index"), $(this));
+            close_horizontal_action_menus();
+            favorite_node(row.data("url"), row.data("index"));
         });
+
+        $(document)
+            .off("click.nodeActions")
+            .on("click.nodeActions", function(e) {
+                if (!$(e.target).closest(".node_actions, .subscribe_actions, .horizontal-actions-menu").length) {
+                    close_horizontal_action_menus();
+                }
+            });
 
         refresh();
     });
+
+    function close_horizontal_action_menus() {
+        $(".horizontal-actions-menu.is-open").removeClass("is-open");
+    }
 
     function refresh() {
         ajax_request({ url: "/subscribe_list" }).then(function (subscribe) {
@@ -390,9 +438,9 @@
                 I18n.apply(url_row[0]);
                 url_row.find(".group-toggle").addClass("expanded");
                 url_row.show();
-                var headerTable = $('<table class="mdui-table" style="margin-top: 4px;"><tbody></tbody></table>');
+                var headerTable = $('<table class="mdui-table node-table" style="margin-top: 4px;"><tbody></tbody></table>');
                 headerTable.find("tbody").append(url_row);
-                var nodesTable = $('<table class="mdui-table"><tbody></tbody></table>');
+                var nodesTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
                 var nodesDiv = $('<div class="group-' + index + '" style="display:none;"></div>').append(nodesTable);
                 nodeListBody.append($('<div></div>').append(headerTable).append(nodesDiv));
                 currentNodesDiv = nodesDiv;
@@ -405,19 +453,13 @@
                 manual_head.attr("data-group", groupIndex);
                 manual_head.find(".group-toggle").addClass("expanded");
                 manual_head.show();
-                var headerTable = $('<table class="mdui-table"><tbody></tbody></table>');
+                var headerTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
                 headerTable.find("tbody").append(manual_head);
-                var nodesTable = $('<table class="mdui-table"><tbody></tbody></table>');
+                var nodesTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
                 var nodesDiv = $('<div class="group-' + groupIndex + '" style="display:none;"></div>').append(nodesTable);
                 nodeListBody.append($('<div></div>').append(headerTable).append(nodesDiv));
                 currentNodesDiv = nodesDiv;
                 currentNodesTbody = nodesTable.find("tbody");
-            }
-
-            function make_node_head(groupIndex) {
-                var node_head_row = $("#node_header_template").clone();
-                node_head_row.attr("id", "real_header_" + groupIndex);
-                currentNodesTbody.append(node_head_row);
             }
 
             function protocol_badge(protocol) {
@@ -437,9 +479,12 @@
                 node_row.attr("id", "real_node_" + groupIndex + "_" + nodeIndex);
                 node_row.attr("data-url", url);
                 node_row.attr("data-index", nodeIndex);
-                node_row.find(".node_index").html(nodeIndex + 1);
+                node_row.data("favorite", isFavorite);
                 if (isFavorite) {
                     node_row.find(".favorite_node").hide();
+                    node_row.find(".delete_node .delete-node-label")
+                        .attr("data-i18n", "subscribe.action.unfavorite")
+                        .text(t("subscribe.action.unfavorite"));
                     node_row.find(".delete_node")
                         .attr("data-i18n-title", "subscribe.tooltip.remove_favorite")
                         .attr("title", t("subscribe.tooltip.remove_favorite"));
@@ -449,11 +494,15 @@
                         .addClass("mdui-color-yellow-700");
                 } else if (favoriteNames.indexOf(node_data["ps"]) !== -1) {
                     node_row.find(".favorite_node .mdui-icon").html("star");
-                    node_row.find(".favorite_node .mdui-chip-icon").removeClass("mdui-color-grey-400").addClass("mdui-color-yellow-700");
+                    node_row.find(".favorite_node .mdui-chip-icon")
+                        .removeClass("mdui-color-grey-400")
+                        .addClass("mdui-color-yellow-700");
                 }
                 var badge = protocol_badge(node_data["protocol"]);
                 var typeBadge = '<span class="node-type-badge node-type-' + badge.className + '">' + badge.label + '</span>';
-                node_row.find(".node_name").attr("data-ps", node_data["ps"]).html(typeBadge + ' <span class="node-name-text">' + node_data["ps"] + '</span>');
+                node_row.find(".node-protocol").html(typeBadge);
+                node_row.find(".node_name").attr("data-ps", node_data["ps"]);
+                node_row.find(".node-name-text").text(node_data["ps"]);
                 node_row.find(".node_addr").html(node_data["add"]);
                 if (node_data["ps"] === node_running) {
                     node_row.addClass("node_running");
@@ -467,7 +516,6 @@
             make_manual_head(manualGroup);
             var manuals = subscribe["manual_nodes"];
             if (manuals.length > 0) {
-                make_node_head(manualGroup);
                 manuals.forEach(function(node_data, j) {
                     make_node_row('manual', node_data, manualGroup, j, true);
                 });
@@ -477,7 +525,6 @@
                 var url = group["subscribe"];
                 var index = i + 1;
                 make_group_head(url, index);
-                make_node_head(index);
                 group["nodes"].forEach(function(node_data, j) {
                     make_node_row(url, node_data, index, j, false);
                 });
@@ -573,7 +620,7 @@
         mdui.mutation();
     }
 
-    function favorite_node(url, index, $btn) {
+    function favorite_node(url, index) {
         ajax_request({ url: "/favorite_node", data: {subscribe: url, node_index: index} }).then(function(data) {
             if (check_result(data)) {
                 message(t("subscribe.favorite.added"));
@@ -586,19 +633,23 @@
 
     function delete_node(url, index) {
         var isFavorite = url === "manual";
-        var prompt = isFavorite
-            ? t("subscribe.favorite.confirm_remove")
-            : t("subscribe.node.confirm_delete");
-        var title = isFavorite
-            ? t("subscribe.favorite.remove_title")
-            : t("subscribe.node.delete_title");
-        mdui.confirm(prompt, title, function () {
+
+        function request_delete() {
             ajax_request({ url: "/delete_node", data: {subscribe:url, node_index:index} }).then(function (data) {
                 if (check_result(data)) {
                     message(isFavorite ? t("subscribe.favorite.removed") : t("subscribe.node.deleted"));
                     refresh();
                 }
             })
+        }
+
+        if (isFavorite) {
+            request_delete();
+            return;
+        }
+
+        mdui.confirm(t("subscribe.node.confirm_delete"), t("subscribe.node.delete_title"), function () {
+            request_delete();
         }, function () {}, {
             confirmText: t("subscribe.confirm"),
             cancelText: t("subscribe.cancel")

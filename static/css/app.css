@@ -1,0 +1,975 @@
+/* Shared layout for the V2RayPi web UI.
+   Holds the theme overrides, the top bar and the responsive rules that let
+   every page collapse from a wide two-column table into a single column
+   stack on phones. Page specific tweaks live at the bottom of this file. */
+
+:root {
+    --appbar-height: 56px;
+    --statusbar-height: 0px;
+    --brand-green: #07c160;
+    --brand-blue: #0288d1;
+    --brand-dark: #263238;
+    --brand-orange: #ff9800;
+    --button-gap: 8px;
+    --page-control-inset: 24px;
+    --system-label-column: 112px;
+}
+
+@media (min-width: 600px) {
+    :root {
+        --appbar-height: 64px;
+    }
+}
+
+@media (orientation: landscape) and (max-width: 959px) {
+    :root {
+        --appbar-height: 48px;
+    }
+}
+
+@media (max-width: 599px) {
+    :root {
+        --page-control-inset: 12px;
+    }
+}
+
+html {
+    overflow-y: scroll;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+/* The status bar is only shown after login, so the top offset has to follow
+   its visibility instead of being hard coded. */
+body.with-status-bar {
+    --statusbar-height: 40px;
+}
+
+body.mdui-appbar-with-toolbar {
+    padding-top: calc(var(--appbar-height) + var(--statusbar-height));
+}
+
+@media (min-width: 1024px) {
+    .mdui-appbar-with-toolbar .mdui-drawer {
+        top: calc(var(--appbar-height) + var(--statusbar-height));
+    }
+}
+
+#content_page {
+    overflow-x: hidden;
+    padding-bottom: 56px;
+}
+
+/* ---------------------------------------------------------------- theme */
+
+.mdui-list-item-active {
+    background-color: var(--brand-green) !important;
+}
+
+.mdui-list-item-active,
+.mdui-list-item-active .mdui-list-item-icon,
+.mdui-list-item-active .mdui-list-item-content {
+    color: #fff !important;
+}
+
+.mdui-btn {
+    border-radius: 6px;
+}
+
+.mdui-btn.mdui-color-theme-accent,
+.mdui-btn.mdui-color-theme-accent:hover,
+.mdui-btn.mdui-color-theme-a100,
+.mdui-btn.mdui-color-theme-a100:hover {
+    background-color: var(--brand-blue) !important;
+    color: #fff !important;
+}
+
+.mdui-btn.mdui-color-theme {
+    background-color: var(--brand-green) !important;
+    color: #fff !important;
+}
+
+.mdui-color-green,
+.mdui-color-green-300,
+.mdui-color-green-500 {
+    background-color: var(--brand-green) !important;
+}
+
+.mdui-text-color-green {
+    color: var(--brand-green) !important;
+}
+
+/* ----------------------------------------------------------- node badge */
+
+.node-type-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1;
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.node-type-vmess  { color: #fff; border-color: #1976d2; background-color: #1976d2; }
+.node-type-vless  { color: #fff; border-color: #7b1fa2; background-color: #7b1fa2; }
+.node-type-anytls { color: #fff; border-color: #0097a7; background-color: #0097a7; }
+.node-type-hy2    { color: #fff; border-color: #2e7d32; background-color: #2e7d32; }
+.node-type-ss     { color: #fff; border-color: #e91e63; background-color: #e91e63; }
+.node-type-mieru  { color: #fff; border-color: #ef6c00; background-color: #ef6c00; }
+.node-type-trojan { color: #fff; border-color: #c62828; background-color: #c62828; }
+.node-type-tuic   { color: #fff; border-color: #00695c; background-color: #00695c; }
+.node-type-other  { color: #fff; border-color: #546e7a; background-color: #546e7a; }
+
+/* --------------------------------------------------------- app bar area */
+
+.app-toolbar {
+    background-color: var(--brand-dark);
+    color: #fff;
+    align-items: center;
+}
+
+.app-toolbar .app-title {
+    white-space: nowrap;
+}
+
+.status-bar {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    height: var(--statusbar-height, 40px);
+    padding: 4px 12px;
+    box-sizing: border-box;
+    background: var(--brand-dark);
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.status-bar.is-visible {
+    display: flex;
+}
+
+.status-bar-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 190px);
+    height: 80%;
+    transform: translateY(-3px);
+    padding: 0 10px;
+    border-radius: 999px;
+    background: #fff;
+    color: rgba(0, 0, 0, 0.75);
+}
+
+.status-bar-dot {
+    flex-shrink: 0;
+    font-size: 22px;
+    line-height: 12px;
+    position: relative;
+    top: -1px;
+}
+
+.status-bar-mode {
+    flex-shrink: 0;
+    font-weight: 600;
+}
+
+.status-bar-sep {
+    flex-shrink: 0;
+    opacity: 0.4;
+}
+
+.status-bar-node {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-bar-traffic {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: auto;
+    height: 80%;
+    transform: translateY(-3px);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.status-bar-speed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    align-self: stretch;
+    min-width: 84px;
+    padding: 0 10px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.status-bar-speed .mdui-icon {
+    font-size: 14px;
+}
+
+.status-bar-up {
+    background: var(--brand-orange);
+}
+
+.status-bar-down {
+    background: var(--brand-green);
+}
+
+@media (max-width: 599px) {
+    .status-bar {
+        gap: 6px;
+        padding: 4px 8px;
+    }
+
+    .status-bar-info {
+        max-width: calc(100% - 142px);
+        padding: 0 8px;
+    }
+
+    .status-bar-sep {
+        display: none;
+    }
+
+    .status-bar-traffic {
+        min-width: 0;
+    }
+
+    .status-bar-speed {
+        min-width: 64px;
+        padding: 0 6px;
+        font-size: 10px;
+    }
+}
+
+/* ------------------------------------------------- floating page actions */
+
+#advance_page {
+    padding-top: 64px;
+}
+
+/* Keep advanced-setting actions directly below the fixed application bar. */
+.page-action-bar {
+    position: fixed;
+    top: calc(var(--appbar-height) + var(--statusbar-height) + 8px);
+    right: var(--page-control-inset);
+    z-index: 99;
+    display: flex;
+    justify-content: flex-end;
+    pointer-events: none;
+}
+
+.page-action-bar-inner {
+    pointer-events: auto;
+    background: #e3f2fd;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    padding: 8px 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* On phones the action bar spans the full width below the application bar. */
+@media (max-width: 599px) {
+    .page-action-bar {
+        right: 0;
+        left: 0;
+    }
+
+    .page-action-bar-inner {
+        flex: 1;
+        border-radius: 6px;
+        border-left: 0;
+        border-right: 0;
+        border-top: 0;
+        padding: 8px var(--page-control-inset);
+    }
+}
+
+/* ----------------------------------------------------- stacked tables */
+
+/* The distance between a control and the page edge comes from the cell padding
+   and nothing else. mdui gives a cell that is both first and last no padding on
+   the right, so every trailing cell restates the inset here; the extra class name
+   outranks mdui while staying below the page level rules further down. */
+.mdui-table.rwd-table > tbody > tr > td:last-child,
+.mdui-table.node-table > tbody > tr > td:last-child,
+.mdui-table td.subscribe-head-cell {
+    padding-right: var(--page-control-inset);
+}
+
+/* On wide screens the label column stays as narrow as its text. */
+@media (min-width: 600px) {
+    .rwd-table > tbody > tr > td:first-child:not(:only-child) {
+        white-space: nowrap;
+    }
+}
+
+/* Wide "label | value" tables become a vertical stack: the first cell turns
+   into a caption above its value so nothing has to scroll sideways. */
+@media (max-width: 599px) {
+    .mdui-table-fluid {
+        overflow-x: visible;
+    }
+
+    .mdui-table td {
+        padding: 10px var(--page-control-inset);
+    }
+
+    /* mdui indents the first two cells by 24px, which is too much once the table
+       is stacked into a single column. */
+    .mdui-table.rwd-table > tbody > tr > td,
+    .mdui-table td.subscribe-head-cell {
+        padding-left: var(--page-control-inset);
+    }
+
+    .rwd-table,
+    .rwd-table > tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .rwd-table > tbody > tr {
+        display: block;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .rwd-table > tbody > tr > td {
+        display: block;
+        width: auto !important;
+        max-width: none !important;
+        border-bottom: 0;
+        white-space: normal !important;
+    }
+
+    .rwd-table > tbody > tr > td:first-child:not(:only-child) {
+        padding-bottom: 0;
+        color: rgba(0, 0, 0, 0.54);
+        font-size: 12px;
+        line-height: 18px;
+    }
+
+    /* Section separators keep their thin coloured band. */
+    .rwd-table > tbody > tr.mdui-color-grey-100 > td {
+        height: 8px;
+        padding: 0;
+    }
+}
+
+/* Section heading plus its explanation: side by side when there is room,
+   stacked when there is not. */
+.section-head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+}
+
+.section-head h5,
+.section-head h6 {
+    margin: 0;
+}
+
+.section-head h5 {
+    white-space: nowrap;
+}
+
+.section-head h6 {
+    flex: 1;
+    min-width: 240px;
+}
+
+.advance-section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.advance-section-head h5 {
+    white-space: normal;
+}
+
+.advance-section-head h6 {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 18px;
+}
+
+/* ------------------------------------------------------- control groups */
+
+/* Every cluster of controls in a cell uses this single container: --button-gap
+   is the only spacing between them and none of them ever carries an auto margin,
+   which is what used to make several buttons split the free space between them. */
+.action-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: var(--button-gap);
+    min-width: 0;
+}
+
+/* Controls keep the size they were rendered at; only the value below gives way,
+   so a tight row shortens its text instead of dropping a button to a new line. */
+.action-group > * {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+/* The value, input or caption the controls belong to. A shared minimum keeps the
+   buttons of neighbouring rows in the same column on wide screens; on phones it
+   absorbs the free space so the buttons end at the cell padding. */
+.action-group-value {
+    flex-shrink: 1;
+    min-width: 100px;
+}
+
+/* Groups made of controls only: they hug the right edge on every screen. */
+.action-group-end {
+    justify-content: flex-end;
+    margin-left: auto;
+}
+
+/* A control that must keep the width it was measured at, such as a select whose
+   options must stay readable, so it never gives way like a value does. */
+.action-group-fixed {
+    max-width: 100%;
+}
+
+@media (max-width: 599px) {
+    .action-group {
+        justify-content: flex-end;
+    }
+
+    .action-group-value {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /* Stays on the left of its line and pushes the rest of the group right. */
+    .action-group-fixed {
+        margin-right: auto;
+    }
+
+    /* Rows whose controls need more room than the value column: the group wraps
+       and reaches back under the label so it starts at the label's left edge. */
+    .action-group-wide {
+        flex-wrap: wrap;
+        width: calc(100% + var(--system-label-column));
+        margin-left: calc(-1 * var(--system-label-column));
+    }
+
+    /* Keeps the label's line to itself, so the rest of the group wraps below. */
+    .action-group-wide > .action-group-lead {
+        flex: 0 0 calc(100% - var(--system-label-column));
+        margin-left: var(--system-label-column);
+    }
+}
+
+/* -------------------------------------------------------- status page */
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 16px;
+}
+
+/* Chart titles carry the current value, so give them room instead of packing
+   four charts into a narrow screen. */
+@media (max-width: 1023px) {
+    .chart-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 599px) {
+    .rwd-table > tbody > tr.status-runtime-row {
+        display: grid;
+        grid-template-columns: 88px minmax(0, 1fr);
+        align-items: center;
+    }
+
+    .rwd-table > tbody > tr.status-runtime-row > td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .rwd-table > tbody > tr.status-runtime-row > td:first-child {
+        padding-bottom: 10px;
+        white-space: nowrap !important;
+    }
+
+    .chart-grid {
+        padding-right: 0;
+    }
+}
+
+@media (max-width: 479px) {
+    .chart-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
+}
+
+/* ----------------------------------------------------- subscribe page */
+
+.subscribe-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--button-gap);
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.subscribe-toolbar-title {
+    display: flex;
+    align-items: center;
+    gap: var(--button-gap);
+    min-width: 0;
+}
+
+.subscribe-toolbar-title #last_subscribe {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+}
+
+.subscribe-head {
+    display: flex;
+    align-items: center;
+    gap: var(--button-gap);
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.subscribe-head-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.subscribe-head-url {
+    flex: 1;
+    min-width: 0;
+    display: block;
+    max-width: 64ch;
+    margin-left: 24px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.node-row > td.node_name {
+    min-width: 0;
+    padding-left: 8px;
+}
+
+.node_index {
+    padding-right: 8px !important;
+    padding-left: 8px !important;
+    text-align: center;
+}
+
+.node_index .node-type-badge {
+    margin-right: 0;
+}
+
+.node-protocol {
+    width: 100%;
+    text-align: center;
+    transform: translateX(3px);
+}
+
+.node-details {
+    min-width: 0;
+}
+
+.node-name-text {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.node_addr {
+    margin-top: 4px;
+    overflow: hidden;
+    color: rgba(0, 0, 0, 0.54);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 18px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#qr_code canvas,
+#qr_code img {
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 599px) {
+    .subscription-row,
+    .favorite-row {
+        flex-wrap: nowrap;
+    }
+
+    .subscription-row .subscribe-head-toggle,
+    .subscribe-head .action-group {
+        flex-shrink: 0;
+    }
+
+    .subscribe-head-url {
+        flex-basis: 100%;
+        max-width: none;
+        margin-left: 0;
+        font-size: 12px;
+    }
+
+    .subscription-row .subscribe-head-url {
+        flex-basis: auto;
+    }
+
+    /* Protocol and actions keep their natural width while node details use
+       the remaining space and truncate when needed. */
+    .node-table,
+    .node-table > tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .node-table > tbody > tr {
+        display: block;
+    }
+
+    .node-table > tbody > tr > td {
+        display: block;
+        width: auto !important;
+        white-space: normal !important;
+    }
+
+    .node-table > tbody > tr.node-row {
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr) auto;
+        align-items: center;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .node-table > tbody > tr.node-row > td {
+        display: block;
+        width: auto !important;
+        border-bottom: 0;
+        padding: 2px var(--page-control-inset);
+        white-space: normal !important;
+    }
+
+    .node-table > tbody > tr.node-row > td.node_index {
+        display: flex;
+        grid-column: 1;
+        align-self: stretch;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+    }
+
+    .node-table > tbody > tr.node-row > td.node_name {
+        grid-column: 2;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        padding-left: 6px;
+        overflow: hidden;
+        font-weight: 500;
+    }
+
+    .node-table > tbody > tr.node-row > td:last-child {
+        grid-column: 3;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        padding-left: 6px;
+    }
+}
+
+/* ------------------------------------------------------- advance page */
+
+.advance-number-input {
+    max-width: 50px;
+    text-align: center;
+}
+
+@media (max-width: 599px) {
+    #advance_table > tbody > tr.advance-inline-row {
+        display: grid;
+        grid-template-columns: 104px minmax(0, 1fr);
+        align-items: center;
+    }
+
+    #advance_table > tbody > tr.advance-help-row {
+        display: grid;
+        grid-template-columns: 88px minmax(64px, 96px) minmax(0, 1fr);
+        align-items: center;
+    }
+
+    #advance_table > tbody > tr.advance-inline-row.advance-dns-row,
+    #advance_table > tbody > tr.advance-inline-row.advance-mobile-stacked-row {
+        display: block;
+    }
+
+    #advance_table > tbody > tr.advance-inline-row.advance-dns-row > td:first-child,
+    #advance_table > tbody > tr.advance-inline-row.advance-mobile-stacked-row > td:first-child {
+        padding-bottom: 0;
+    }
+
+    #advance_table > tbody > tr.advance-rule-actions-row {
+        display: grid;
+        grid-template-columns: 88px minmax(0, 1fr);
+        align-items: center;
+    }
+
+    #advance_table > tbody > tr.advance-rule-actions-row > td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    #advance_table > tbody > tr.advance-rule-actions-row > td:first-child {
+        padding-bottom: 10px;
+        white-space: nowrap !important;
+    }
+
+    #advance_table > tbody > tr.advance-rule-actions-row > td:last-child {
+        grid-column: 1 / -1;
+        padding-top: 0;
+    }
+
+    #advance_table > tbody > tr.advance-inline-row > td,
+    #advance_table > tbody > tr.advance-help-row > td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    #advance_table > tbody > tr.advance-inline-row > td:first-child,
+    #advance_table > tbody > tr.advance-help-row > td:first-child {
+        padding-bottom: 10px;
+        white-space: nowrap !important;
+    }
+
+    /* Rule rows keep their own compact layout instead of the generic stack:
+       index, type and policy stay on one line, the match values and the
+       action chips get a full width line each. */
+    .rwd-table > tbody > tr.rule-header-row {
+        display: none;
+    }
+
+    .rwd-table > tbody > tr.rule-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 6px 0;
+    }
+
+    .rwd-table > tbody > tr.rule-row > td {
+        display: block;
+        width: auto !important;
+        padding: 2px 6px;
+        border-bottom: 0;
+    }
+
+    .rwd-table > tbody > tr.rule-row > td.rule_index {
+        padding-left: var(--page-control-inset);
+        color: rgba(0, 0, 0, 0.54);
+        font-size: 12px;
+    }
+
+    .rwd-table > tbody > tr.rule-row > td.rule_contents {
+        flex-basis: 100%;
+        padding-left: var(--page-control-inset);
+        word-break: break-all;
+    }
+
+    /* Rule dialog: the three columns become full width fields. */
+    .rule-dialog-table,
+    .rule-dialog-table > tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .rule-dialog-table > tbody > tr {
+        display: block;
+    }
+
+    .rule-dialog-table > tbody > tr > td {
+        display: block;
+        width: auto !important;
+        padding: 6px 8px;
+        border-bottom: 0;
+    }
+
+    .rule-dialog-table > tbody > tr.rule-dialog-header {
+        display: none;
+    }
+
+    .rule-dialog-table select,
+    .rule-dialog-table textarea {
+        width: 100%;
+    }
+}
+
+/* --------------------------------------------------------- system page */
+
+.system-commits {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.system-password-field {
+    position: relative;
+    padding: 0;
+    margin: 0;
+}
+
+.system-password-field .mdui-textfield-input {
+    font-size: inherit;
+    min-width: 220px;
+    padding-right: 40px;
+    box-sizing: border-box;
+}
+
+.system-password-field .mdui-icon {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    transform: none;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.system-hint {
+    color: rgba(0, 0, 0, 0.38);
+    font-size: 12px;
+}
+
+.system-log-pre {
+    max-height: 200px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 10px;
+    border-radius: 0 4px 4px 4px;
+    margin: 0;
+}
+
+.system-log-pre code {
+    white-space: inherit;
+    overflow-wrap: inherit;
+    word-break: inherit;
+}
+
+.system-log-title {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    background: #1e1e1e;
+    padding: 4px 10px;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: -4px;
+}
+
+@media (max-width: 599px) {
+    .rwd-table > tbody > tr.system-inline-row {
+        display: grid;
+        grid-template-columns: var(--system-label-column) minmax(0, 1fr);
+        align-items: center;
+    }
+
+    .rwd-table > tbody > tr.system-inline-row.system-mobile-stacked-row {
+        display: block;
+    }
+
+    .rwd-table > tbody > tr.system-inline-row.system-mobile-stacked-row > td:first-child {
+        padding-bottom: 0;
+    }
+
+    .rwd-table > tbody > tr.system-inline-row > td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .rwd-table > tbody > tr.system-inline-row > td:first-child {
+        padding-bottom: 10px;
+        white-space: nowrap !important;
+    }
+
+    .system-inline-row .system-password-field {
+        flex: 0 0 calc(100% - 96px);
+        width: calc(100% - 96px);
+        max-width: 220px;
+        min-width: 0;
+    }
+
+    /* Both rows keep their field on the left so the two fields line up, which
+       leaves the update button at the far edge of its row. */
+    .system-password-row .action-group {
+        justify-content: space-between;
+    }
+
+    /* Last updated: the timestamp shares the label's line, so the label sits on
+       its baseline instead of being centred over the wrapped controls. */
+    .rwd-table > tbody > tr.system-inline-row.system-update-row {
+        align-items: baseline;
+    }
+
+    /* The caption reads better before its button on a narrow screen. */
+    .system-backup-actions .action-group-value {
+        order: 1;
+    }
+
+    .system-backup-actions .mdui-btn {
+        order: 2;
+    }
+
+    .system-password-field,
+    .system-password-field .mdui-textfield-input {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .system-commits {
+        font-size: 12px;
+    }
+
+    .system-log-pre {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+}

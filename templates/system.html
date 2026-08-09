@@ -84,46 +84,28 @@
     <p></p>
     <div class="mdui-row">
         <div class="mdui-table-fluid">
-            <table class="mdui-table">
+            <table class="mdui-table rwd-table system-table">
                 <tbody>
                 <!-- mihomo Core Update -->
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;">mihomo</h5>
-                            </div>
-                        </div>
+                        <h5 style="margin: 0;">mihomo</h5>
                     </td>
                 </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;" data-i18n="system.version.current">当前版本</span>
-                            </div>
-                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <span id="mihomo_current_ver"></span>
-                            </div>
-                        </div>
-                    </td>
+                <tr class="system-inline-row">
+                    <td data-i18n="system.version.current">当前版本</td>
+                    <td><span id="mihomo_current_ver"></span></td>
                 </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;" data-i18n="system.version.latest">最新版本</span>
+                <tr class="system-inline-row">
+                    <td data-i18n="system.version.latest">最新版本</td>
+                    <td>
+                        <div class="action-group">
+                            <span id="mihomo_new_ver" class="action-group-value mdui-text-color-blue"></span>
+                            <div id="check_update">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_mihomo_new_ver()" data-i18n="system.action.query">查询</button>
                             </div>
-                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <span id="mihomo_new_ver" class="mdui-text-color-blue" style="display: inline-block; min-width: 100px;"></span>
-                                    <div id="check_update">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_mihomo_new_ver()" data-i18n="system.action.query">查询</button>
-                                    </div>
-                                    <div id="update" style="display: none">
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_mihomo()" data-i18n="system.action.upgrade">升级</button>
-                                    </div>
-                                </div>
+                            <div id="update" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_mihomo()" data-i18n="system.action.upgrade">升级</button>
                             </div>
                         </div>
                     </td>
@@ -132,47 +114,28 @@
                 <!-- System Control -->
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.v2raypi.title">更新 V2RayPi</h5>
+                        <h5 style="margin: 0;" data-i18n="system.v2raypi.title">更新 V2RayPi</h5>
+                    </td>
+                </tr>
+                <tr class="system-inline-row system-update-row">
+                    <td data-i18n="system.v2raypi.lastUpdate">最近更新</td>
+                    <td>
+                        <div class="action-group action-group-wide">
+                            <span id="lastUpdateTime" class="action-group-lead" style="font-size: 14px; color: rgba(0, 0, 0, 0.54);"></span>
+                            <div id="v2raypi_branch_wrapper" class="action-group-fixed" style="display: none;">
+                                <select id="v2raypi_branch"></select>
                             </div>
+                            <div>
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2raypi_updates()" data-i18n="system.v2raypi.check">检查更新</button>
+                            </div>
+                            <button id="update_btn_v2raypi" class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="update_and_restart_v2raypi()" style="display: none" data-i18n="system.v2raypi.updateRestart">更新并重启</button>
                         </div>
                     </td>
                 </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;" data-i18n="system.v2raypi.lastUpdate">最近更新</span>
-                            </div>
-                            <div class="mdui-col-xs-10" style="display: flex; align-items: center; gap: 64px;">
-                                <span id="lastUpdateTime" style="white-space: nowrap; font-size: 14px; color: rgba(0, 0, 0, 0.54);"></span>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <div id="v2raypi_branch_wrapper" style="min-width: 140px; display: none;">
-                                        <select id="v2raypi_branch"></select>
-                                    </div>
-                                    <div>
-                                        <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_v2raypi_updates()" data-i18n="system.v2raypi.check">检查更新</button>
-                                    </div>
-                                    <div>
-                                        <button id="update_btn_v2raypi" class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="update_and_restart_v2raypi()" style="display: none" data-i18n="system.v2raypi.updateRestart">更新并重启</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;" data-i18n="system.v2raypi.history">更新记录</span>
-                            </div>
-                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <div id="recent_commits" style="display: flex; flex-direction: column; gap: 4px;">
-                                </div>
-                            </div>
-                        </div>
+                <tr class="system-inline-row system-mobile-stacked-row">
+                    <td data-i18n="system.v2raypi.history">更新记录</td>
+                    <td>
+                        <div id="recent_commits" class="system-commits"></div>
                     </td>
                 </tr>
                 <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
@@ -180,45 +143,29 @@
                 <!-- Password Management -->
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.password.title">密码管理</h5>
+                        <h5 style="margin: 0;" data-i18n="system.password.title">密码管理</h5>
+                    </td>
+                </tr>
+                <tr class="system-inline-row system-password-row">
+                    <td data-i18n="system.password.current">当前密码</td>
+                    <td>
+                        <div class="action-group">
+                            <div class="mdui-textfield system-password-field">
+                                <input class="mdui-textfield-input" type="password" id="current_password" placeholder="请输入当前密码" data-i18n-placeholder="system.password.currentPlaceholder"/>
+                                <i class="mdui-icon material-icons" onclick="togglePasswordVisibility('current_password')">visibility_off</i>
                             </div>
                         </div>
                     </td>
                 </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;" data-i18n="system.password.current">当前密码</span>
+                <tr class="system-inline-row system-password-row">
+                    <td data-i18n="system.password.new">新密码</td>
+                    <td>
+                        <div class="action-group">
+                            <div class="mdui-textfield system-password-field">
+                                <input class="mdui-textfield-input" type="password" id="new_password" placeholder="请输入新密码" data-i18n-placeholder="system.password.newPlaceholder"/>
+                                <i class="mdui-icon material-icons" onclick="togglePasswordVisibility('new_password')">visibility_off</i>
                             </div>
-                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <div class="mdui-textfield" style="padding: 0; margin: 0; position: relative;">
-                                        <input class="mdui-textfield-input" type="password" id="current_password" placeholder="请输入当前密码" data-i18n-placeholder="system.password.currentPlaceholder" style="font-size: inherit; min-width: 220px; padding-right: 40px; box-sizing: border-box;"/>
-                                        <i class="mdui-icon material-icons" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center; height: 100%;" onclick="togglePasswordVisibility('current_password')">visibility_off</i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;" data-i18n="system.password.new">新密码</span>
-                            </div>
-                            <div class="mdui-col-xs-10" style="width: 85%; display: flex; align-items: center;">
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <div class="mdui-textfield" style="padding: 0; margin: 0; position: relative;">
-                                        <input class="mdui-textfield-input" type="password" id="new_password" placeholder="请输入新密码" data-i18n-placeholder="system.password.newPlaceholder" style="font-size: inherit; min-width: 220px; padding-right: 40px; box-sizing: border-box;"/>
-                                        <i class="mdui-icon material-icons" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center; height: 100%;" onclick="togglePasswordVisibility('new_password')">visibility_off</i>
-                                    </div>
-                                    <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_password()" data-i18n="system.password.update">更新</button>
-                                </div>
-                            </div>
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_password()" data-i18n="system.password.update">更新</button>
                         </div>
                     </td>
                 </tr>
@@ -227,27 +174,23 @@
                 <!-- Backup & Restore -->
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.backup.title">配置备份</h5>
-                            </div>
-                        </div>
+                        <h5 style="margin: 0;" data-i18n="system.backup.title">配置备份</h5>
                     </td>
                 </tr>
                 <tr>
                     <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center; gap: 8px;">
+                        <div class="action-group system-backup-actions">
                             <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="export_config()" data-i18n="system.backup.export">导出配置</button>
-                            <span style="color: rgba(0,0,0,0.38); font-size: 12px;" data-i18n="system.backup.exportHint">导出节点、订阅和高级设置为 zip 文件</span>
+                            <span class="action-group-value system-hint" data-i18n="system.backup.exportHint">导出节点、订阅和高级设置为 zip 文件</span>
                         </div>
                     </td>
                 </tr>
                 <tr>
                     <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center; gap: 8px;">
+                        <div class="action-group system-backup-actions">
                             <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="document.getElementById('import_file').click()" data-i18n="system.backup.import">导入配置</button>
                             <input type="file" id="import_file" accept=".zip" style="display:none" onchange="import_config(this.files[0])">
-                            <span style="color: rgba(0,0,0,0.38); font-size: 12px;" data-i18n="system.backup.importHint">导入将完整覆盖配置，请确认后再操作</span>
+                            <span class="action-group-value system-hint" data-i18n="system.backup.importHint">导入将完整覆盖配置，请确认后再操作</span>
                         </div>
                     </td>
                 </tr>
@@ -256,23 +199,15 @@
                 <!-- Host Management -->
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%;">
-                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.host.title">主机管理</h5>
-                            </div>
-                        </div>
+                        <h5 style="margin: 0;" data-i18n="system.host.title">主机管理</h5>
                     </td>
                 </tr>
-                <tr>
-                    <td colspan="2">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div class="mdui-col-xs-2" style="width: 15%; display: flex; align-items: center;">
-                                <span style="white-space: nowrap;" data-i18n="system.host.power">电源管理</span>
-                            </div>
-                            <div class="mdui-col-xs-10" style="display: flex; gap: 8px; align-items: center;">
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="reboot_host()" data-i18n="system.host.reboot">重启主机</button>
-                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red mdui-ripple" onclick="shutdown_host()" data-i18n="system.host.shutdown">关闭主机</button>
-                            </div>
+                <tr class="system-inline-row">
+                    <td data-i18n="system.host.power">电源管理</td>
+                    <td>
+                        <div class="action-group">
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="reboot_host()" data-i18n="system.host.reboot">重启主机</button>
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red mdui-ripple" onclick="shutdown_host()" data-i18n="system.host.shutdown">关闭主机</button>
                         </div>
                     </td>
                 </tr>
@@ -281,24 +216,20 @@
                 <!-- System Logs -->
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <div class="mdui-row" style="width: 100%; display: flex; align-items: center;">
-                            <div style="width: 15%; min-width: 120px;">
-                                <h5 style="margin: 0; white-space: nowrap;" data-i18n="system.logs.title">运行日志</h5>
-                            </div>
-                            <div style="display: flex; align-items: center; flex: 1;">
-                                <label class="mdui-switch">
-                                    <input id="log-switch" type="checkbox"/>
-                                    <i class="mdui-switch-icon"></i>
-                                </label>
-                            </div>
+                        <div class="action-group">
+                            <h5 class="action-group-value" style="margin: 0; white-space: nowrap;" data-i18n="system.logs.title">运行日志</h5>
+                            <label class="mdui-switch">
+                                <input id="log-switch" type="checkbox"/>
+                                <i class="mdui-switch-icon"></i>
+                            </label>
                         </div>
                     </td>
                 </tr>
                 <tr id="log-content" style="display: none;">
                     <td colspan="2" style="padding: 4px 0;">
                         <div style="margin: 0 8px;">
-                            <div style="font-size: 12px; color: rgba(255,255,255,0.5); background: #1e1e1e; padding: 4px 10px; border-radius: 4px 4px 0 0; margin-bottom: -4px;" data-i18n="system.logs.title">运行日志</div>
-                            <pre style="max-height: 200px; overflow-x: auto; background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 0 4px 4px 4px; margin: 0;"><code id="log-mihomo-content"></code></pre>
+                            <div class="system-log-title" data-i18n="system.logs.title">运行日志</div>
+                            <pre class="system-log-pre"><code id="log-mihomo-content"></code></pre>
                         </div>
                     </td>
                 </tr>

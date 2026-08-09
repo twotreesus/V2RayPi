@@ -1,12 +1,18 @@
 <link rel="stylesheet" href="/static/css/Chart.css">
 <style>
-    #advance_table > tbody > tr > td:first-child {
+    /* Fixed layout keeps the six columns inside the container: long help
+       texts wrap instead of pushing the table past the page edge. */
+    #advance_table {
+        table-layout: fixed;
+    }
+
+    #advance_table > tbody > tr > td:first-child:not(:only-child) {
         white-space: nowrap;
     }
 
     .routing-preference-options {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 12px;
     }
 
@@ -36,8 +42,8 @@
     }
 </style>
 <div id="advance_page" class="mdui-container">
-    <div id="action_bar_wrapper" style="position: fixed; top: 80px; right: 16px; z-index: 99; pointer-events: none; display: flex; justify-content: flex-end;">
-        <div id="action_bar" style="pointer-events: all; margin-right: 16px; background: #e3f2fd; border: 1px solid rgba(0,0,0,0.12); border-radius: 4px; padding: 12px 16px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
+    <div id="action_bar_wrapper" class="page-action-bar">
+        <div id="action_bar" class="page-action-bar-inner action-group action-group-end">
             <div id="discard" style="display: none">
                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="discard_config()" data-i18n="advance.action.discard">放弃</button>
             </div>
@@ -52,17 +58,27 @@
     <p></p>
     <div class="mdui-row">
         <div class="mdui-table-fluid" style="overflow-x: hidden;">
-            <table id="advance_table" class="mdui-table" style="word-break: break-word;">
+            <table id="advance_table" class="mdui-table rwd-table" style="word-break: break-word;">
+                <!-- Column widths for the fixed layout: label | control (2-3) |
+                     help text (4-6); the rule rows reuse the same six slots. -->
+                <colgroup>
+                    <col style="width: 14%">
+                    <col style="width: 12%">
+                    <col style="width: 18%">
+                    <col style="width: 12%">
+                    <col style="width: 22%">
+                    <col style="width: 22%">
+                </colgroup>
                 <tbody>
                 <tr>
                     <td colspan="6">
-                        <div class="mdui-row mdui-typo mdui-valign">
-                            <h5 class="mdui-col-xs-2" data-i18n="advance.autoSwitch.title">自动切换</h5>
-                            <h6 class="mdui-typo-caption-opacity mdui-col-xs-8" data-i18n="advance.autoSwitch.description">按预设的探测地址和间隔时间进行 HTTPS 请求测试，如果连续超时或失败超过指定次数，则随机切换到另一个节点</h6>
+                        <div class="section-head advance-section-head mdui-typo">
+                            <h5 data-i18n="advance.autoSwitch.title">自动切换</h5>
+                            <h6 class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.description">按预设的探测地址和间隔时间进行 HTTPS 请求测试，如果连续超时或失败超过指定次数，则随机切换到另一个节点</h6>
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row">
                     <td data-i18n="advance.common.enabled">启用</td>
                     <td colspan="5">
                         <label class="mdui-switch">
@@ -71,62 +87,57 @@
                         </label>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-help-row">
                     <td data-i18n="advance.autoSwitch.detectUrl">探测地址</td>
                     <td colspan="2">
-                        <input id="detect_url" class="mdui-textfield-input mdui-col-sm-3 mdui-typo-display-1" type="text" onchange="detect_url_change()"/>
+                        <input id="detect_url" class="mdui-textfield-input mdui-typo-display-1" type="text" onchange="detect_url_change()"/>
                     </td>
                     <td colspan="3">
                         <div class="mdui-typo-caption-opacity" data-i18n-html="advance.autoSwitch.detectUrlHelp">必须为 <code>https://</code> 开头的国外地址，错误的地址会导致反复切换，请谨慎填写</div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-help-row">
                     <td data-i18n="advance.autoSwitch.interval">时间间隔</td>
                     <td colspan="2">
-                        <div>
-                            <input id="detect_time_span" class="mdui-textfield-input mdui-col-sm-3 mdui-typo-display-1" type="number" onchange="detect_time_span_change()" style="text-align: center;max-width: 50px"/>
-                        </div>
-
+                        <input id="detect_time_span" class="mdui-textfield-input mdui-typo-display-1 advance-number-input" type="number" onchange="detect_time_span_change()"/>
                     </td>
                     <td colspan="3">
                         <div class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.intervalHelp">单位：秒，整数，范围：10-3600</div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-help-row">
                     <td data-i18n="advance.autoSwitch.timeout">请求超时</td>
                     <td colspan="2">
-                        <input id="detect_timeout" class="mdui-textfield-input mdui-col-sm-3 mdui-typo-display-1" type="number" onchange="detect_timeout_change()" style="text-align: center;max-width: 50px"/>
+                        <input id="detect_timeout" class="mdui-textfield-input mdui-typo-display-1 advance-number-input" type="number" onchange="detect_timeout_change()"/>
                     </td>
                     <td colspan="3">
                         <div class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.timeoutHelp">单位：秒，支持小数，范围：0.5-10</div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-help-row">
                     <td data-i18n="advance.autoSwitch.retries">重试次数</td>
                     <td colspan="2">
-                        <input id="detect_max_retry" class="mdui-textfield-input mdui-col-sm-3 mdui-typo-display-1" type="number" onchange="detect_max_retry_change()" style="text-align: center;max-width: 50px"/>
+                        <input id="detect_max_retry" class="mdui-textfield-input mdui-typo-display-1 advance-number-input" type="number" onchange="detect_max_retry_change()"/>
                     </td>
                     <td colspan="3">
                         <div class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.retriesHelp">达到重试次数后触发切换，范围：1-10</div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row">
                     <td data-i18n="advance.autoSwitch.lastSwitch">最近切换</td>
                     <td colspan="5">
-                        <div class="mdui-row">
-                            <div id="detect_last_switch_time" class="mdui-col mdui-typo-caption-opacity"></div>
-                        </div>
+                        <div id="detect_last_switch_time" class="mdui-typo-caption-opacity"></div>
                     </td>
                 </tr>
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
                 <tr>
                     <td colspan="6">
-                        <div class="mdui-row mdui-typo mdui-valign">
-                            <h5 class="mdui-col-xs-2" data-i18n="advance.localProxy.title">本地代理</h5>
+                        <div class="section-head advance-section-head mdui-typo">
+                            <h5 data-i18n="advance.localProxy.title">本地代理</h5>
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row">
                     <td data-i18n="advance.localProxy.socks5">Socks 5 代理</td>
                     <td colspan="5">
                         <label class="mdui-switch">
@@ -135,15 +146,15 @@
                         </label>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row">
                     <td data-i18n="advance.localProxy.port">端口</td>
                     <td colspan="5">
-                        <div class="mdui-row mdui-valign">
-                            <div id="socks_proxy_port" class="mdui-col-sm-3"></div>
-                            <div id="modify_socks_proxy_port" class="mdui-col-sm-2">
+                        <div class="action-group">
+                            <div id="socks_proxy_port" class="action-group-value"></div>
+                            <div id="modify_socks_proxy_port">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="modify_socks_proxy_port()" data-i18n="advance.action.modify">修改</button>
                             </div>
-                            <div id="clear_socks_proxy_port" class="mdui-col-sm-2" style="display: none">
+                            <div id="clear_socks_proxy_port" style="display: none">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_socks_proxy_port()" data-i18n="advance.action.default">默认</button>
                             </div>
                         </div>
@@ -152,34 +163,34 @@
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
                 <tr>
                     <td colspan="6">
-                        <div class="mdui-row mdui-typo mdui-valign">
-                            <h5 class="mdui-col-xs-2" data-i18n="advance.dns.title">DNS 服务器</h5>
+                        <div class="section-head advance-section-head mdui-typo">
+                            <h5 data-i18n="advance.dns.title">DNS 服务器</h5>
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row advance-dns-row">
                     <td data-i18n="advance.dns.local">国内 DNS</td>
                     <td colspan="5">
-                        <div class="mdui-row mdui-valign">
-                            <div id="local_dns" class="mdui-col-sm-3"></div>
-                            <div id="modify_local_dns" class="mdui-col-sm-2">
+                        <div class="action-group">
+                            <div id="local_dns" class="action-group-value"></div>
+                            <div id="modify_local_dns">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="modify_local_dns()" data-i18n="advance.action.modify">修改</button>
                             </div>
-                            <div id="clear_local_dns" class="mdui-col-sm-2" style="display: none">
+                            <div id="clear_local_dns" style="display: none">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_local_dns()" data-i18n="advance.action.clear">清除</button>
                             </div>
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row advance-dns-row">
                     <td data-i18n="advance.dns.remote">国外 DNS</td>
                     <td colspan="5">
-                        <div class="mdui-row mdui-valign">
-                            <div id="remote_dns" class="mdui-col-sm-3"></div>
-                            <div id="modify_remote_dns" class="mdui-col-sm-2">
+                        <div class="action-group">
+                            <div id="remote_dns" class="action-group-value"></div>
+                            <div id="modify_remote_dns">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="modify_remote_dns()" data-i18n="advance.action.modify">修改</button>
                             </div>
-                            <div id="clear_remote_dns" class="mdui-col-sm-2" style="display: none">
+                            <div id="clear_remote_dns" style="display: none">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_remote_dns()" data-i18n="advance.action.clear">清除</button>
                             </div>
                         </div>
@@ -188,13 +199,13 @@
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
                 <tr>
                     <td colspan="6">
-                        <div class="mdui-row mdui-typo mdui-valign">
-                            <h5 class="mdui-col-xs-2" data-i18n="advance.routing.title">自定义路由规则</h5>
-                            <h6 class="mdui-typo-caption-opacity mdui-col-xs-8" data-i18n="advance.routing.description">仅「智能分流」或「全局代理」模式下生效</h6>
+                        <div class="section-head advance-section-head mdui-typo">
+                            <h5 data-i18n="advance.routing.title">自定义路由规则</h5>
+                            <h6 class="mdui-typo-caption-opacity" data-i18n="advance.routing.description">仅「智能分流」或「全局代理」模式下生效</h6>
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row advance-mobile-stacked-row">
                     <td data-i18n="advance.routing.defaultPolicy">默认策略</td>
                     <td colspan="5">
                         <div class="routing-preference-options">
@@ -216,7 +227,7 @@
                         <div class="mdui-typo-caption-opacity" style="margin-top: 8px" data-i18n="advance.routing.defaultPolicyHelp">仅在「智能分流」模式下生效；自定义规则始终优先于这里选择的默认策略。</div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-help-row">
                     <td data-i18n="advance.routing.blockAds">屏蔽广告</td>
                     <td colspan="2">
                         <label class="mdui-switch">
@@ -230,16 +241,16 @@
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-rule-actions-row">
                     <td data-i18n="advance.routing.rules">规则</td>
-                    <td>
-                        <div id="add_rule" class="mdui-col-sm-3">
-                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="create_rule()" data-i18n="advance.action.add">添加</button>
-                        </div>
-                    </td>
-                    <td>
-                        <div id="clear_rule" class="mdui-col-sm-3">
-                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_rule()" data-i18n="advance.action.clear">清除</button>
+                    <td colspan="2">
+                        <div class="action-group">
+                            <div id="add_rule">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="create_rule()" data-i18n="advance.action.add">添加</button>
+                            </div>
+                            <div id="clear_rule">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_rule()" data-i18n="advance.action.clear">清除</button>
+                            </div>
                         </div>
                     </td>
                     <td colspan="3">
@@ -248,7 +259,7 @@
                         </div>
                     </td>
                 </tr>
-                <tr class="mdui-typo-caption-opacity">
+                <tr class="mdui-typo-caption-opacity rule-header-row">
                     <td data-i18n="advance.table.index">序号</td>
                     <td data-i18n="advance.table.type">类型</td>
                     <td data-i18n="advance.table.matchValue">匹配值</td>
@@ -256,13 +267,13 @@
                     <td data-i18n="advance.table.actions">操作</td>
                     <td data-i18n="advance.common.enabled">启用</td>
                 </tr>
-                <tr id="rule_template" style="display: none">
+                <tr id="rule_template" class="rule-row" style="display: none">
                     <td class="rule_index"></td>
                     <td class="rule_type"></td>
                     <td class="rule_contents"></td>
                     <td class="rule_policy"></td>
                     <td>
-                        <div class="mdui-row-sm5">
+                        <div class="action-group">
                             <div class="mdui-chip edit_rule" title="编辑规则" data-i18n-title="advance.rule.edit">
                                 <span class="mdui-chip-icon mdui-color-blue-500"><i class="mdui-icon material-icons">edit</i></span>
                             </div>
@@ -287,27 +298,27 @@
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
                 <tr>
                     <td colspan="6">
-                        <div class="mdui-row mdui-typo mdui-valign">
-                            <h5 class="mdui-col-xs-2" data-i18n="advance.geo.title">三方 GEO 数据库</h5>
-                            <h6 class="mdui-typo-caption-opacity mdui-col-xs-8" data-i18n-html="advance.geo.description">
+                        <div class="section-head advance-section-head mdui-typo">
+                            <h5 data-i18n="advance.geo.title">三方 GEO 数据库</h5>
+                            <h6 class="mdui-typo-caption-opacity" data-i18n-html="advance.geo.description">
                                 从 <a href="https://github.com/Loyalsoldier/v2ray-rules-dat">Loyalsoldier</a> 更新最新数据库
                             </h6>
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row">
                     <td data-i18n="advance.geo.currentVersion">当前版本</td>
                     <td colspan="5" id="geo_data_current_ver"></td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row">
                     <td data-i18n="advance.geo.latestVersion">最新版本</td>
                     <td colspan="5">
-                        <div class="mdui-row mdui-typo mdui-valign">
-                            <div id="geo_data_new_ver" class="mdui-col-sm-3 mdui-text-color-blue"></div>
-                            <div id="check_geo_data" class="mdui-col-sm-3">
+                        <div class="action-group mdui-typo">
+                            <div id="geo_data_new_ver" class="action-group-value mdui-text-color-blue"></div>
+                            <div id="check_geo_data">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="check_geo_data()" data-i18n="advance.action.check">查询</button>
                             </div>
-                            <div id="update_geo_data" class="mdui-col-sm-3" style="display: none">
+                            <div id="update_geo_data" style="display: none">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="update_geo_data()" data-i18n="advance.action.update">更新</button>
                             </div>
                         </div>
@@ -316,12 +327,12 @@
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
                 <tr>
                     <td colspan="6">
-                        <div class="mdui-row mdui-typo mdui-valign">
-                            <h5 class="mdui-col-xs-2" data-i18n="advance.other.title">其他设置</h5>
+                        <div class="section-head advance-section-head mdui-typo">
+                            <h5 data-i18n="advance.other.title">其他设置</h5>
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-help-row">
                     <td data-i18n="advance.other.mux">Mux 多路复用</td>
                     <td colspan="2">
                         <label class="mdui-switch">
@@ -335,9 +346,9 @@
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="advance-inline-row">
                     <td data-i18n="advance.log.title">日志级别</td>
-                    <td colspan="2">
+                    <td colspan="5">
                         <select id="select_log_level" onchange="change_log_level()">
                             <option value="0">debug</option>
                             <option value="1">info</option>
@@ -345,18 +356,6 @@
                             <option value="3">error</option>
                             <option value="4">none</option>
                         </select>
-                    </td>
-                    <td colspan="4">
-                        <div class="mdui-typo-caption-opacity">
-                            <p data-i18n-html="advance.log.description">日志的级别，默认值为 <code>"warning"</code>。</p>
-                            <ul>
-                                <li data-i18n-html="advance.log.debugHelp"><code>"debug"</code>: 只有开发人员能看懂的信息。同时包含所有 <code>"info"</code> 内容。</li>
-                                <li data-i18n-html="advance.log.infoHelp"><code>"info"</code>: mihomo 在运行时的状态，不影响正常使用。同时包含所有 <code>"warning"</code> 内容。</li>
-                                <li data-i18n-html="advance.log.warningHelp"><code>"warning"</code>: mihomo 遇到了一些问题，通常是外部问题，不影响 mihomo 的正常运行，但有可能影响用户的体验。同时包含所有 <code>"error"</code> 内容。</li>
-                                <li data-i18n-html="advance.log.errorHelp"><code>"error"</code>: mihomo 遇到了无法正常运行的问题，需要立即解决。</li>
-                                <li data-i18n-html="advance.log.noneHelp"><code>"none"</code>: 不记录任何内容。</li>
-                            </ul>
-                        </div>
                     </td>
                 </tr>
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
@@ -373,11 +372,11 @@
     <div class="mdui-dialog-content">
         <div class="mdui-row">
             <div class="mdui-table-fluid">
-                <table class="mdui-table">
+                <table class="mdui-table rule-dialog-table">
                     <thead>
                     </thead>
                     <tbody>
-                    <tr>
+                    <tr class="rule-dialog-header">
                         <td data-i18n="advance.table.type">类型</td>
                         <td data-i18n="advance.rule.matchValueHelp">匹配值（可添加多行，一行一个，不带引号）</td>
                         <td data-i18n="advance.table.policy">策略</td>
@@ -533,12 +532,6 @@
         "advance.other.mux": {zh: "Mux 多路复用", en: "Mux Multiplexing"},
         "advance.other.muxHelp": {zh: "Mux 功能是在一条 TCP 连接上分发多个 TCP 连接的数据。仅对 VMess、VLESS、Trojan、Shadowsocks 这类流式协议生效，Hysteria2、TUIC、AnyTLS、Mieru 会自动忽略该设置。", en: "Mux distributes data from multiple TCP connections over one TCP connection. It only applies to stream-based protocols such as VMess, VLESS, Trojan, and Shadowsocks. Hysteria2, TUIC, AnyTLS, and Mieru ignore this setting automatically."},
         "advance.log.title": {zh: "日志级别", en: "Log Level"},
-        "advance.log.description": {zh: "日志的级别，默认值为 <code>\"warning\"</code>。", en: "Logging level. The default is <code>\"warning\"</code>."},
-        "advance.log.debugHelp": {zh: "<code>\"debug\"</code>：只有开发人员能看懂的信息。同时包含所有 <code>\"info\"</code> 内容。", en: "<code>\"debug\"</code>: Information intended for developers. Also includes all <code>\"info\"</code> messages."},
-        "advance.log.infoHelp": {zh: "<code>\"info\"</code>：mihomo 运行时的状态，不影响正常使用。同时包含所有 <code>\"warning\"</code> 内容。", en: "<code>\"info\"</code>: mihomo runtime status that does not affect normal operation. Also includes all <code>\"warning\"</code> messages."},
-        "advance.log.warningHelp": {zh: "<code>\"warning\"</code>：mihomo 遇到了一些问题，通常是外部问题，不影响正常运行，但可能影响用户体验。同时包含所有 <code>\"error\"</code> 内容。", en: "<code>\"warning\"</code>: Usually external issues that do not prevent mihomo from running but may affect the user experience. Also includes all <code>\"error\"</code> messages."},
-        "advance.log.errorHelp": {zh: "<code>\"error\"</code>：mihomo 遇到了无法正常运行的问题，需要立即解决。", en: "<code>\"error\"</code>: A problem preventing mihomo from operating normally and requiring immediate attention."},
-        "advance.log.noneHelp": {zh: "<code>\"none\"</code>：不记录任何内容。", en: "<code>\"none\"</code>: Do not record anything."},
         "advance.prompt.socksPort": {zh: "请输入 Socks 5 代理端口：", en: "Enter the Socks 5 proxy port:"},
         "advance.prompt.localDns": {zh: "请输入国内 DNS 地址：", en: "Enter the domestic DNS address:"},
         "advance.prompt.remoteDns": {zh: "请输入国外 DNS 地址：", en: "Enter the overseas DNS address:"},
@@ -558,16 +551,7 @@
         "advance.toast.databaseUpdateFailure": {zh: "数据库更新失败", en: "Failed to update database"}
     });
 
-    function update_action_bar_position() {
-        var rect = document.getElementById('advance_page').getBoundingClientRect();
-        var wrapper = document.getElementById('action_bar_wrapper');
-        wrapper.style.left = rect.left + 'px';
-        wrapper.style.width = rect.width + 'px';
-    }
-
     $(document).ready(function () {
-        update_action_bar_position();
-        $(window).on('resize', update_action_bar_position);
         refresh_remote();
 
         $("#advance_table").on("click", ".delete_rule", function() {

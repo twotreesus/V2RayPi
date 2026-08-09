@@ -1,65 +1,4 @@
 <link rel="stylesheet" href="/static/css/Chart.css">
-<style>
-    .node-name {
-        color: inherit;
-    }
-    .node-type-badge {
-        display: inline-block;
-        font-size: 10px;
-        font-weight: 600;
-        line-height: 1;
-        padding: 1px 4px;
-        border-radius: 3px;
-        border: 1px solid;
-        margin-right: 6px;
-        vertical-align: middle;
-    }
-    .node-type-vmess {
-        color: #1976d2;
-        border-color: #1976d2;
-        background-color: rgba(25, 118, 210, 0.08);
-    }
-    .node-type-vless {
-        color: #7b1fa2;
-        border-color: #7b1fa2;
-        background-color: rgba(123, 31, 162, 0.08);
-    }
-    .node-type-anytls {
-        color: #0097a7;
-        border-color: #0097a7;
-        background-color: rgba(0, 151, 167, 0.08);
-    }
-    .node-type-hy2 {
-        color: #2e7d32;
-        border-color: #2e7d32;
-        background-color: rgba(46, 125, 50, 0.08);
-    }
-    .node-type-ss {
-        color: #e91e63;
-        border-color: #e91e63;
-        background-color: rgba(233, 30, 99, 0.08);
-    }
-    .node-type-mieru {
-        color: #ef6c00;
-        border-color: #ef6c00;
-        background-color: rgba(239, 108, 0, 0.08);
-    }
-    .node-type-trojan {
-        color: #c62828;
-        border-color: #c62828;
-        background-color: rgba(198, 40, 40, 0.08);
-    }
-    .node-type-tuic {
-        color: #00695c;
-        border-color: #00695c;
-        background-color: rgba(0, 105, 92, 0.08);
-    }
-    .node-type-other {
-        color: #546e7a;
-        border-color: #546e7a;
-        background-color: rgba(84, 110, 122, 0.08);
-    }
-</style>
 <script>
     I18n.register({
         "status.section.runtime": {zh: "运行状态", en: "Runtime Status"},
@@ -75,9 +14,6 @@
         "status.mode.smart": {zh: "智能分流", en: "Smart Routing"},
         "status.mode.global": {zh: "全局代理", en: "Global Proxy"},
         "status.action.switch": {zh: "切换", en: "Switch"},
-        "status.section.node": {zh: "节点信息", en: "Node Information"},
-        "status.label.name": {zh: "名称", en: "Name"},
-        "status.label.address": {zh: "地址", en: "Address"},
         "status.section.performance": {zh: "性能监控", en: "Performance Monitoring"},
         "status.chart.cpu": {zh: "CPU 占用率", en: "CPU Usage"},
         "status.chart.cpu_value": {zh: "CPU 占用率  {value}%", en: "CPU Usage  {value}%"},
@@ -112,17 +48,17 @@
     <p></p>
     <div class="mdui-row">
         <div class="mdui-table-fluid">
-            <table class="mdui-table">
+            <table class="mdui-table rwd-table">
                 <tbody>
                 <tr>
                     <td colspan="2" class="mdui-typo">
                         <h5 style="margin: 0;" data-i18n="status.section.runtime">运行状态</h5>
                     </td>
                 </tr>
-                <tr>
+                <tr class="status-runtime-row">
                     <td data-i18n="status.label.runtime">运行状态</td>
                     <td>
-                        <div class="mdui-row">
+                        <div class="action-group">
                             <div id="running" class="mdui-chip" style="display: none">
                                 <span class="mdui-chip-icon mdui-color-green"><i class="mdui-icon material-icons">play_arrow</i></span>
                                 <span class="mdui-chip-title" data-i18n="status.state.running">运行中</span>
@@ -134,10 +70,10 @@
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="status-runtime-row">
                     <td data-i18n="status.label.control">运行控制</td>
                     <td>
-                        <div class="mdui-row">
+                        <div class="action-group">
                             <div id="start_service" class="mdui-chip" onclick="start_service()" style="display: none">
                                 <span class="mdui-chip-icon mdui-color-green"><i class="mdui-icon material-icons">play_arrow</i></span>
                                 <span class="mdui-chip-title" data-i18n="status.action.start">启动</span>
@@ -153,11 +89,11 @@
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="status-runtime-row">
                     <td data-i18n="status.label.proxy_mode">代理模式</td>
                     <td>
-                        <div class="mdui-row">
-                            <div class="mdui-col-sm-3">
+                        <div class="action-group">
+                            <div class="action-group-fixed">
                                 <label for="proxy_mode"></label>
                                 <select id="proxy_mode" class="mdui-select">
                                     <option value="0" data-i18n="status.mode.direct">直连</option>
@@ -165,7 +101,7 @@
                                     <option value="2" data-i18n="status.mode.global">全局代理</option>
                                 </select>
                             </div>
-                            <div id="switch_mode" class="mdui-col-sm-3" style="display: none">
+                            <div id="switch_mode" style="display: none">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="status.action.switch" onclick="switch_proxy_mode()">切换</button>
                             </div>
                         </div>
@@ -175,36 +111,22 @@
                 <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
                 <tr>
                     <td colspan="2" class="mdui-typo">
-                        <h5 style="margin: 0;" data-i18n="status.section.node">节点信息</h5>
-                    </td>
-                </tr>
-                <tr>
-                    <td data-i18n="status.label.name">名称</td>
-                    <td id="remark"></td>
-                </tr>
-                <tr>
-                    <td data-i18n="status.label.address">地址</td>
-                    <td id="host"></td>
-                </tr>
-                <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
-                <tr>
-                    <td colspan="2" class="mdui-typo">
                         <h5 style="margin: 0;" data-i18n="status.section.performance">性能监控</h5>
                     </td>
                 </tr>
                 <tr>
                     <td colspan="2" style="max-width: 0; width: 100%;">
-                        <div style="display: flex; gap: 12px; width: 100%; box-sizing: border-box; overflow: hidden; padding-right: 16px;">
-                            <div style="flex: 1; min-width: 0;">
+                        <div class="chart-grid">
+                            <div style="min-width: 0;">
                                 <canvas id="cpu_usage" class="chartjs-render-monitor" height="140"></canvas>
                             </div>
-                            <div style="flex: 1; min-width: 0;">
+                            <div style="min-width: 0;">
                                 <canvas id="memory_usage" class="chartjs-render-monitor" height="140"></canvas>
                             </div>
-                            <div style="flex: 1; min-width: 0;">
+                            <div style="min-width: 0;">
                                 <canvas id="upload_usage" class="chartjs-render-monitor" height="140"></canvas>
                             </div>
-                            <div style="flex: 1; min-width: 0;">
+                            <div style="min-width: 0;">
                                 <canvas id="download_usage" class="chartjs-render-monitor" height="140"></canvas>
                             </div>
                         </div>
@@ -239,18 +161,6 @@
         return Math.round(kb * 1024) + ' B/s';
     }
 
-    function protocol_badge(protocol) {
-        // The protocol comes straight from the Clash `type` field, so any type
-        // mihomo supports can show up here.  Only a few get their own colour;
-        // the rest share a neutral badge instead of an undefined class.
-        protocol = (protocol || "").toLowerCase();
-        var labels = { hysteria2: "hy2", hysteria: "hy1", socks5: "socks", wireguard: "wg" };
-        var styled = ["vmess", "vless", "ss", "anytls", "mieru", "trojan", "tuic", "hy2"];
-        var label = labels[protocol] || protocol || "unknown";
-        var className = styled.indexOf(label) !== -1 ? label : "other";
-        return { label: label, className: className };
-    }
-
     $(document).ready(function () {
         window.g_proxy_mode_select = new mdui.Select("#proxy_mode", { position: "bottom" });
 
@@ -283,10 +193,6 @@
             window.g_proxy_mode_select.handleUpdate();
             $("#mihomo_current_ver").html(data["version"]);
             $("#mihomo_new_ver").html(window.g_new_version);
-            var badge = protocol_badge(data["protocol"]);
-            var typeBadge = '<span class="node-type-badge node-type-' + badge.className + '">' + badge.label + '</span>';
-            $("#remark").html(typeBadge + ' <span class="node-name">' + data["ps"] + '</span>');
-            $("#host").html(data["add"]);
 
 
             cpu_history = [];
