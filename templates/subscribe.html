@@ -93,7 +93,10 @@
                         <div class="subscribe-head subscription-row">
                             <div class="subscribe-head-toggle toggle-row">
                                 <i class="mdui-icon material-icons group-toggle">expand_more</i>
-                                <strong class="mdui-typo subscribe-index" data-i18n="subscribe.address">订阅地址</strong>
+                                <strong class="mdui-typo subscribe-index">
+                                    <i class="mdui-icon material-icons subscribe-index-icon">rss_feed</i>
+                                    <span class="subscribe-index-label" data-i18n="subscribe.address">订阅地址</span>
+                                </strong>
                             </div>
                             <strong class="url subscribe-head-url"></strong>
                             <div class="action-group action-group-end">
@@ -135,7 +138,10 @@
                         <div class="subscribe-head favorite-row">
                             <div class="subscribe-head-toggle toggle-row">
                                 <i class="mdui-icon material-icons group-toggle">expand_more</i>
-                                <strong class="mdui-typo subscribe-index" data-i18n="subscribe.favorites">收藏</strong>
+                                <strong class="mdui-typo subscribe-index">
+                                    <i class="mdui-icon material-icons subscribe-index-icon">star_border</i>
+                                    <span class="subscribe-index-label" data-i18n="subscribe.favorites">收藏</span>
+                                </strong>
                             </div>
                             <div class="action-group action-group-end">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.add_node" onclick="add_manual_node()">添加节点</button>
@@ -235,12 +241,29 @@
         text-align: left;
     }
     .subscribe-index {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         background-color: rgba(0, 0, 0, 0.1);
         padding: 4px 8px;
         border-radius: 4px;
         white-space: nowrap;
         transition: all 0.3s ease;
+    }
+    /* mdui leaves an icon at the inherited font size, which is smaller than the
+       label it sits next to. */
+    .subscribe-index-icon {
+        flex-shrink: 0;
+        font-size: 16px;
+        line-height: 1;
+    }
+    .subscription-row .subscribe-index-icon {
+        color: var(--brand-blue);
+    }
+    /* The badge turns solid orange for the group holding the running node, so the
+       icon goes white with its label instead of clashing with it. */
+    .subscription-row .subscribe-index.running .subscribe-index-icon {
+        color: #fff;
     }
     .subscribe-index.running {
         background-color: #FF9800;
@@ -442,7 +465,7 @@
                 url_row.attr("data-url", url);
                 url_row.attr("data-group", index);
                 url_row.find(".url").html(url);
-                url_row.find(".subscribe-index")
+                url_row.find(".subscribe-index-label")
                     .removeAttr("data-i18n")
                     .html('<span data-i18n="subscribe.group"></span> ' + index);
                 I18n.apply(url_row[0]);
