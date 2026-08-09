@@ -91,7 +91,9 @@ systemctl restart supervisor
 supervisorctl -c /etc/supervisor/supervisord.conf restart v2raypi
 
 # mihomo service.  Logs are appended to a file rather than left in the journal
-# so that the management UI can tail them the same way it always has.
+# so that the management UI can tail them the same way it always has.  The
+# redirection is done by a shell instead of StandardOutput=append:, which needs
+# systemd 240 and is silently ignored on older distributions.
 cat>/etc/systemd/system/mihomo.service<<-EOF
 [Unit]
 Description=mihomo Daemon
@@ -100,13 +102,11 @@ Wants=network.target
 
 [Service]
 Type=simple
-ExecStartPre=/usr/bin/sleep 1s
-ExecStart=/usr/local/bin/mihomo -d /etc/mihomo
+ExecStartPre=/bin/sleep 1s
+ExecStart=/bin/sh -c 'exec /usr/local/bin/mihomo -d /etc/mihomo >>/var/log/mihomo/mihomo.log 2>&1'
 Restart=always
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
-StandardOutput=append:/var/log/mihomo/mihomo.log
-StandardError=append:/var/log/mihomo/mihomo.log
 
 [Install]
 WantedBy=multi-user.target
