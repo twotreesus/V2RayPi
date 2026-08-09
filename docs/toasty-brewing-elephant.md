@@ -45,7 +45,7 @@ mihomo 原生支持 vmess / vless(reality) / ss / trojan / **anytls** / **mieru*
 - 订阅增删改、收藏、协议 URL 分享与导入、二维码、自定义规则、广告拦截、Mux、日志级别与自动切换全部通过。
 - 系统维护、会话、实时日志、mihomo/V2RayPi 更新、配置导入导出、重启与关机全部通过。
 - Linux SBC 的安装保护、TPROXY TCP/UDP、DNS 劫持、routing-mark 防回环、旧链清理、重启恢复、资源占用与彻底卸载全部通过。
-- 当前单元测试为 90 个，全部通过；7 类协议生成配置均通过真实 mihomo v1.19.29 校验。
+- 当前单元测试为 98 个，全部通过；7 类协议生成配置均通过真实 mihomo v1.19.29 校验。
 
 ### 尚未完成的验收
 
@@ -258,6 +258,7 @@ class Node(BaseDataItem):
 - **删除路由**：`/check_singbox_new_ver`、`/update_singbox`、`/check_mieru_new_ver`、`/update_mieru`；`/add_manual_node` 改为 POST 分享 URL
 - `/stream_logs`（`app.py:379-438`）：日志源由 access + error 两个文件合并为 `MihomoDefaultPath.log_file()` 单文件，SSE 事件名 `access` / `xray_error` 合并为单个 `mihomo`
 - 其余路由签名与返回结构**保持不变**（`/get_status`、`/get_performance`、`/subscribe_list`、`/apply_node`、`/get_node_link`、`/switch_proxy_mode`、`/get_advance_config`、`/set_advance_config`、`/make_policy`、geo 相关、系统维护相关、鉴权相关）
+  - 迁移完成后 `/get_performance` 增加了 `history` 字段（后端维护最近 60 秒的 CPU、内存与上下行序列，供状态页图表使用），原有 `cpu` / `memory` / `network` 三个当前值字段不变
 
 **`templates/system.html`**：删除 sing-box 卡片（50-91）与 Mieru 卡片（93-134）；Xray 卡片改为 mihomo，把不一致的 `v2ray_*` 命名一并对齐（`v2ray_current_ver` → `mihomo_current_ver`、`check_v2ray_new_ver()` → `check_mihomo_new_ver()`、`update_v2ray()` → `update_mihomo()`）；页内日志查看器（300-316 附近）两栏合一。
 

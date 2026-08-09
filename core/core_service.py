@@ -5,7 +5,6 @@ Author:     twotrees.us@gmail.com
 Date:       2020年7月30日  31周星期四 10:55
 Desc:
 """
-import psutil
 import time
 import os
 import os.path
@@ -34,6 +33,7 @@ from .node_manager import NodeManager
 from .keys import Keyword as K
 from .mihomo_user_config import MihomoUserConfig
 from .node import Node
+from .performance_history import PerformanceHistory
 from .traffic_monitor import TrafficMonitor
 
 class CoreService:
@@ -42,11 +42,12 @@ class CoreService:
     mihomo:MihomoController = make_controller()
     node_manager:NodeManager = NodeManager()
     traffic_monitor = TrafficMonitor()
+    performance_history = PerformanceHistory()
     scheduler:BackgroundScheduler = BackgroundScheduler(
         {
             'apscheduler.executors.default': {
                 'class': 'apscheduler.executors.pool:ThreadPoolExecutor',
-                # Traffic sampling must keep its 1s cadence even while
+                # Performance sampling must keep its 1s cadence even while
                 # auto-detect is blocked on network probes.
                 'max_workers': '2'
             }
@@ -258,27 +259,14 @@ class CoreService:
 
     @classmethod
     def performance(cls) -> dict:
-        result = {}
-        cpu_usage = psutil.cpu_percent(interval=0.2, percpu=True)
-        result_cpu = {}
-        core = 0
-        for u in cpu_usage:
-            core += 1
-            result_cpu["core {0}".format(core)] = u
-        result['cpu'] = result_cpu
-
-        memory_usage = psutil.virtual_memory()
-        result['memory'] = {
-            "percent" : memory_usage.percent,
-            "total" : int(memory_usage.total / (1024 * 1024)),
-            "used" : int((memory_usage.total - memory_usage.available) / (1024 * 1024))
-        }
+        # Everything here was measured by the sampling job, so that every poller,
+        # whatever its cadence, sees the same numbers over the same interval and
+        # the charts keep their history across page loads.
+        result = cls.performance_history.snapshot()
 
         # On a transparent side-router, system-wide counters mix the LAN
         # client side with the proxy's upstream side.  TrafficMonitor reads
         # counters installed at the client-facing iptables boundaries instead.
-        # Read the scheduled job's latest rate so that every poller, whatever
-        # its cadence, sees the same number over the same interval.
         result['network'] = cls.traffic_monitor.latest()
 
         return result
@@ -570,15 +558,15 @@ class CoreService:
         except Exception:
             return []
 
-    TRAFFIC_SAMPLE_SPAN = 1
+    PERFORMANCE_SAMPLE_SPAN = 1
 
     @classmethod
-    def traffic_sample_start(cls):
+    def performance_sample_start(cls):
         cls.scheduler.add_job(
-            CoreService.traffic_sample_job,
+            CoreService.performance_sample_job,
             trigger='interval',
-            seconds=cls.TRAFFIC_SAMPLE_SPAN,
-            id=K.traffic_sample,
+            seconds=cls.PERFORMANCE_SAMPLE_SPAN,
+            id=K.performance_sample,
             replace_existing=True,
             max_instances=1,
             coalesce=True)
@@ -586,11 +574,14 @@ class CoreService:
             cls.scheduler.start()
 
     @classmethod
-    def traffic_sample_job(cls):
+    def performance_sample_job(cls):
         try:
-            cls.traffic_monitor.poll()
+            # The traffic rate defines the interval this sample covers, so it is
+            # measured first and handed to the window.
+            network = cls.traffic_monitor.poll()
+            cls.performance_history.sample(network)
         except Exception as e:
-            print(f'Traffic sampling failed: {e}')
+            print(f'Performance sampling failed: {e}')
 
     @classmethod
     def auto_detect_start(cls):

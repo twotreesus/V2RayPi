@@ -438,12 +438,11 @@
         $(document.body).addClass('with-status-bar');
     }
 
-    // Must match SMOOTH_LEN in status.html so both views average the same
-    // number of samples and show the same speed.
-    var HS_SMOOTH_LEN = 5;
-    var g_hs_up_samples = [];
-    var g_hs_down_samples = [];
     var g_hs_interval = null;
+
+    function hs_latest_rate(series) {
+        return (series && series.length) ? series[series.length - 1] : 0;
+    }
 
     // The header is always visible, so its poller is not registered with
     // add_interval: it must survive the clear_intervals() on page switches.
@@ -460,16 +459,12 @@
             });
         $.ajax({ url: '/get_performance', dataType: 'json', cache: false })
             .done(function(data) {
-                var net = data['network'];
-                if (!net) return;
-                g_hs_up_samples.push(net['upload']);
-                g_hs_down_samples.push(net['download']);
-                if (g_hs_up_samples.length > HS_SMOOTH_LEN) g_hs_up_samples.shift();
-                if (g_hs_down_samples.length > HS_SMOOTH_LEN) g_hs_down_samples.shift();
-                var up = g_hs_up_samples.reduce(function(a, b) { return a + b; }, 0) / g_hs_up_samples.length;
-                var down = g_hs_down_samples.reduce(function(a, b) { return a + b; }, 0) / g_hs_down_samples.length;
-                $('#hs_upload').text(hs_format_speed(up));
-                $('#hs_download').text(hs_format_speed(down));
+                // The backend already averages the rate over its own window, so the
+                // header and the status charts report the same speed by construction.
+                var history = data['history'];
+                if (!history) return;
+                $('#hs_upload').text(hs_format_speed(hs_latest_rate(history['upload'])));
+                $('#hs_download').text(hs_format_speed(hs_latest_rate(history['download'])));
             });
     }
 </script>

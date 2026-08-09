@@ -146,19 +146,26 @@
     var memory_bar = null;
     var upload_bar = null;
     var download_bar = null;
-    var cpu_history = [];
-    var memory_history = [];
-    var upload_history = [];
-    var download_history = [];
-    var upload_samples = [];
-    var download_samples = [];
-    var HISTORY_LEN = 30;
-    var SMOOTH_LEN = 5;
 
     function format_speed(kb) {
         if (kb >= 1024) return (kb / 1024).toFixed(2) + ' MB/s';
         if (kb >= 1) return kb.toFixed(1) + ' KB/s';
         return Math.round(kb * 1024) + ' B/s';
+    }
+
+    // The backend keeps the window, so a chart only has to plot what it is given,
+    // right aligned in a fixed number of slots until the window has filled up.
+    function plot(chart, series, window_size) {
+        var slots = [];
+        var padding = [];
+        for (var i = 0; i < window_size; i++) slots.push('');
+        for (var j = series.length; j < window_size; j++) padding.push(null);
+        chart.data.labels = slots;
+        chart.data.datasets[0].data = padding.concat(series);
+    }
+
+    function series_last(series) {
+        return series.length ? series[series.length - 1] : 0;
     }
 
     $(document).ready(function () {
@@ -168,7 +175,13 @@
             $("#switch_mode").show();
         })
 
-        refresh()
+        // The charts and their poller belong to the page, not to a refresh: the
+        // window they draw is kept by the backend, so a service action only has
+        // to refresh the state above them.
+        create_charts();
+        update_performance();
+        add_interval(setInterval(update_performance, 1000));
+        refresh();
     });
 
     function refresh() {
@@ -193,180 +206,73 @@
             window.g_proxy_mode_select.handleUpdate();
             $("#mihomo_current_ver").html(data["version"]);
             $("#mihomo_new_ver").html(window.g_new_version);
-
-
-            cpu_history = [];
-            memory_history = [];
-            var cpuLabels = [];
-            var cpuData = [];
-            for (var i = 0; i < HISTORY_LEN; i++) {
-                cpuLabels.push('');
-                cpuData.push(null);
-            }
-            cpu_bar = new Chart($("#cpu_usage"), {
-                type: 'line',
-                data: {
-                    labels: cpuLabels,
-                    datasets: [{
-                        backgroundColor: 'rgba(255, 99, 132, 0.15)',
-                        borderColor: 'rgb(255, 99, 132)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: true,
-                        tension: 0.4,
-                        data: cpuData
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    animation: { duration: 0 },
-                    maintainAspectRatio: false,
-                    tooltips: {enabled: false},
-                    hover: {mode: null},
-                    legend: {display: false},
-                    title: {display: true, text: t("status.chart.cpu")},
-                    scales: {
-                        xAxes: [{display: false}],
-                        yAxes: [{
-                            display: true,
-                            ticks: {beginAtZero: true, max: 100, display: false}
-                        }]
-                    }
-                }
-            });
-
-            var memLabels = [];
-            var memData = [];
-            for (var j = 0; j < HISTORY_LEN; j++) {
-                memLabels.push('');
-                memData.push(null);
-            }
-            memory_bar = new Chart($("#memory_usage"), {
-                type: 'line',
-                data: {
-                    labels: memLabels,
-                    datasets: [{
-                        backgroundColor: 'rgba(153, 102, 255, 0.15)',
-                        borderColor: 'rgb(153, 102, 255)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: true,
-                        tension: 0.4,
-                        data: memData
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    animation: { duration: 0 },
-                    maintainAspectRatio: false,
-                    tooltips: {enabled: false},
-                    hover: {mode: null},
-                    legend: {display: false},
-                    title: {display: true, text: t("status.chart.memory")},
-                    scales: {
-                        xAxes: [{display: false}],
-                        yAxes: [{
-                            display: true,
-                            ticks: {beginAtZero: true, max: 100, display: false}
-                        }]
-                    }
-                }
-            });
-
-            upload_history = [];
-            download_history = [];
-            upload_samples = [];
-            download_samples = [];
-            var netLabels = [];
-            var netUpData = [];
-            var netDownData = [];
-            for (var k = 0; k < HISTORY_LEN; k++) {
-                netLabels.push('');
-                netUpData.push(null);
-                netDownData.push(null);
-            }
-            upload_bar = new Chart($("#upload_usage"), {
-                type: 'line',
-                data: {
-                    labels: netLabels.slice(),
-                    datasets: [{
-                        backgroundColor: 'rgba(255, 152, 0, 0.15)',
-                        borderColor: 'rgb(255, 152, 0)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: true,
-                        tension: 0.4,
-                        data: netUpData.slice()
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    animation: { duration: 0 },
-                    maintainAspectRatio: false,
-                    tooltips: {enabled: false},
-                    hover: {mode: null},
-                    legend: {display: false},
-                    title: {display: true, text: t("status.chart.upload")},
-                    scales: {
-                        xAxes: [{display: false}],
-                        yAxes: [{display: true, ticks: {beginAtZero: true, display: false}}]
-                    }
-                }
-            });
-            download_bar = new Chart($("#download_usage"), {
-                type: 'line',
-                data: {
-                    labels: netLabels.slice(),
-                    datasets: [{
-                        backgroundColor: 'rgba(2, 136, 209, 0.15)',
-                        borderColor: 'rgb(2, 136, 209)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: true,
-                        tension: 0.4,
-                        data: netDownData.slice()
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    animation: { duration: 0 },
-                    maintainAspectRatio: false,
-                    tooltips: {enabled: false},
-                    hover: {mode: null},
-                    legend: {display: false},
-                    title: {display: true, text: t("status.chart.download")},
-                    scales: {
-                        xAxes: [{display: false}],
-                        yAxes: [{display: true, ticks: {beginAtZero: true, display: false}}]
-                    }
-                }
-            });
         });
-
-        add_interval(setInterval(update_performance, 1000));
     }
+
+    // Every chart is the same flat sparkline: no points, no tooltips, no legend,
+    // and no animation because the window is redrawn once a second.
+    function create_chart(canvas, color, title, scale_max) {
+        var ticks = {beginAtZero: true, display: false};
+        if (scale_max !== null) {
+            ticks.max = scale_max;
+        }
+        return new Chart($(canvas), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    backgroundColor: 'rgba(' + color + ', 0.15)',
+                    borderColor: 'rgb(' + color + ')',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: true,
+                    tension: 0.4,
+                    data: []
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: { duration: 0 },
+                maintainAspectRatio: false,
+                tooltips: {enabled: false},
+                hover: {mode: null},
+                legend: {display: false},
+                title: {display: true, text: title},
+                scales: {
+                    xAxes: [{display: false}],
+                    yAxes: [{display: true, ticks: ticks}]
+                }
+            }
+        });
+    }
+
+    function create_charts() {
+        // A percentage tops out at 100, while a transfer rate has no ceiling, so
+        // update_performance() rescales the traffic charts from their own window.
+        cpu_bar = create_chart("#cpu_usage", "255, 99, 132", t("status.chart.cpu"), 100);
+        memory_bar = create_chart("#memory_usage", "153, 102, 255", t("status.chart.memory"), 100);
+        upload_bar = create_chart("#upload_usage", "255, 152, 0", t("status.chart.upload"), null);
+        download_bar = create_chart("#download_usage", "2, 136, 209", t("status.chart.download"), null);
+    }
+
     
     function update_performance() {
         ajax_request({ url: "/get_performance" }).then(function (data) {
-            cpu_status = data["cpu"];
-            var values = Object.keys(cpu_status).map(function(k) { return cpu_status[k]; });
-            var avg = values.reduce(function(a, b) { return a + b; }, 0) / (values.length || 1);
-            cpu_history.push(avg);
-            if (cpu_history.length > HISTORY_LEN) cpu_history.shift();
-            var cpuPadded = [];
-            for (var i = 0; i < HISTORY_LEN - cpu_history.length; i++) cpuPadded.push(null);
-            cpu_bar.data.datasets[0].data = cpuPadded.concat(cpu_history);
+            var history = data["history"] || {};
+            var window_size = history["window"] || 0;
+            var cpu_series = history["cpu"] || [];
+            var memory_series = history["memory"] || [];
+            var upload_series = history["upload"] || [];
+            var download_series = history["download"] || [];
+
+            plot(cpu_bar, cpu_series, window_size);
             cpu_bar.options.title.text = t("status.chart.cpu_value", {
-                value: avg.toFixed(1)
+                value: series_last(cpu_series).toFixed(1)
             });
             cpu_bar.update();
 
-            memory_status = data["memory"];
-            memory_history.push(memory_status["percent"]);
-            if (memory_history.length > HISTORY_LEN) memory_history.shift();
-            var memPadded = [];
-            for (var j = 0; j < HISTORY_LEN - memory_history.length; j++) memPadded.push(null);
-            memory_bar.data.datasets[0].data = memPadded.concat(memory_history);
+            var memory_status = data["memory"];
+            plot(memory_bar, memory_series, window_size);
             memory_bar.data.datasets[0].label = t("status.chart.memory_details", {
                 total: memory_status["total"],
                 used: memory_status["used"]
@@ -378,33 +284,21 @@
             });
             memory_bar.update();
 
-            var net_status = data["network"];
-            upload_samples.push(net_status["upload"]);
-            download_samples.push(net_status["download"]);
-            if (upload_samples.length > SMOOTH_LEN) upload_samples.shift();
-            if (download_samples.length > SMOOTH_LEN) download_samples.shift();
-            var up = upload_samples.reduce(function(a, b) { return a + b; }, 0) / upload_samples.length;
-            var down = download_samples.reduce(function(a, b) { return a + b; }, 0) / download_samples.length;
-            upload_history.push(up);
-            download_history.push(down);
-            if (upload_history.length > HISTORY_LEN) upload_history.shift();
-            if (download_history.length > HISTORY_LEN) download_history.shift();
-            var upPadded = [];
-            for (var n = 0; n < HISTORY_LEN - upload_history.length; n++) upPadded.push(null);
-            var downPadded = [];
-            for (var m = 0; m < HISTORY_LEN - download_history.length; m++) downPadded.push(null);
-            var allNet = upload_history.concat(download_history).filter(function(v) { return v !== null; });
-            var netMax = allNet.length ? Math.max.apply(null, allNet) : 1;
-            var yMax = Math.ceil(netMax * 1.3) || 1;
-            upload_bar.data.datasets[0].data = upPadded.concat(upload_history);
+            // Both traffic charts share one scale so their curves stay comparable.
+            var rates = upload_series.concat(download_series);
+            var peak = rates.length ? Math.max.apply(null, rates) : 1;
+            var yMax = Math.ceil(peak * 1.3) || 1;
+
+            plot(upload_bar, upload_series, window_size);
             upload_bar.options.title.text = t("status.chart.upload_value", {
-                speed: format_speed(up)
+                speed: format_speed(series_last(upload_series))
             });
             upload_bar.options.scales.yAxes[0].ticks.max = yMax;
             upload_bar.update();
-            download_bar.data.datasets[0].data = downPadded.concat(download_history);
+
+            plot(download_bar, download_series, window_size);
             download_bar.options.title.text = t("status.chart.download_value", {
-                speed: format_speed(down)
+                speed: format_speed(series_last(download_series))
             });
             download_bar.options.scales.yAxes[0].ticks.max = yMax;
             download_bar.update();

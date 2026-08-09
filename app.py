@@ -532,7 +532,7 @@ def login_api():
     
     return response
 
-CoreService.traffic_sample_start()
+CoreService.performance_sample_start()
 app.run(
     host='0.0.0.0',
     port=CoreService.app_config.port,
