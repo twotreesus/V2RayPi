@@ -42,10 +42,13 @@ body {
     overflow-x: hidden;
 }
 
-/* The status bar is only shown after login, so the top offset has to follow
-   its visibility instead of being hard coded. */
-body.with-status-bar {
-    --statusbar-height: 40px;
+/* Only the phone layout puts the status bar on a row of its own, so only there
+   does the page below have to be pushed down for it, and only once a session
+   exists to show it. */
+@media (max-width: 599px) {
+    body.with-status-bar {
+        --statusbar-height: 40px;
+    }
 }
 
 body.mdui-appbar-with-toolbar {
@@ -138,17 +141,23 @@ body.mdui-appbar-with-toolbar {
     white-space: nowrap;
 }
 
+/* The capsules ride at the end of the toolbar, right before the language button.
+   They only appear once a session is established. */
 .status-bar {
     display: none;
     align-items: center;
     gap: 8px;
-    height: var(--statusbar-height, 40px);
-    padding: 4px 12px;
+    height: 32px;
     box-sizing: border-box;
-    background: var(--brand-dark);
     font-size: 12px;
     white-space: nowrap;
     overflow: hidden;
+}
+
+/* mdui gives every toolbar child a 16px side margin; here the language button's
+   own margin is all the separation needed. */
+.app-toolbar > .status-bar {
+    margin: 0;
 }
 
 .status-bar.is-visible {
@@ -161,9 +170,8 @@ body.mdui-appbar-with-toolbar {
     gap: 6px;
     flex: 0 1 auto;
     min-width: 0;
-    max-width: calc(100% - 190px);
-    height: 80%;
-    transform: translateY(-3px);
+    max-width: 320px;
+    height: 100%;
     padding: 0 10px;
     border-radius: 999px;
     background: #fff;
@@ -199,8 +207,7 @@ body.mdui-appbar-with-toolbar {
     align-items: center;
     flex-shrink: 0;
     margin-left: auto;
-    height: 80%;
-    transform: translateY(-3px);
+    height: 100%;
     border-radius: 999px;
     overflow: hidden;
 }
@@ -230,10 +237,27 @@ body.mdui-appbar-with-toolbar {
     background: var(--brand-green);
 }
 
+/* There is no room for the capsules next to the title on a phone, so they take a
+   full width row of their own directly under the toolbar. Positioning them keeps
+   the toolbar's own height untouched, and the body padding below already reserves
+   the row through --statusbar-height. */
 @media (max-width: 599px) {
     .status-bar {
+        position: absolute;
+        top: var(--appbar-height);
+        right: 0;
+        left: 0;
+        height: var(--statusbar-height, 40px);
         gap: 6px;
         padding: 4px 8px;
+        background: var(--brand-dark);
+    }
+
+    /* Raised slightly so the row does not look bottom heavy. */
+    .status-bar-info,
+    .status-bar-traffic {
+        height: 80%;
+        transform: translateY(-3px);
     }
 
     .status-bar-info {
@@ -253,6 +277,52 @@ body.mdui-appbar-with-toolbar {
         min-width: 64px;
         padding: 0 6px;
         font-size: 10px;
+    }
+}
+
+/* ----------------------------------------------------------- navigation */
+
+/* On phones the navigation is a menu hanging under its toolbar button instead of
+   a full height drawer, so it no longer covers the page it navigates away from.
+   The list inside keeps the drawer's own styling. */
+@media (max-width: 599px) {
+    /* The button is 36px tall and centred in the toolbar, and mdui gives it a 4px
+       side margin, so this leaves the menu hanging just below its left corner. */
+    #main-drawer.mdui-drawer {
+        top: calc(var(--appbar-height) / 2 + 22px);
+        bottom: auto;
+        left: 4px;
+        width: auto;
+        min-width: 200px;
+        max-width: calc(100% - 16px);
+        max-height: calc(100vh - var(--appbar-height) - 16px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.24);
+        transform-origin: top left;
+        transition: transform 180ms ease-out, opacity 180ms ease-out, visibility 180ms;
+    }
+
+    /* mdui slides the drawer off screen with a translate and forces the open
+       state with !important, so both states are restated as a menu pop. */
+    #main-drawer.mdui-drawer:not(.mdui-drawer-open) {
+        transform: scale(0.9) !important;
+        visibility: hidden;
+        opacity: 0;
+    }
+
+    #main-drawer.mdui-drawer.mdui-drawer-open {
+        transform: scale(1) !important;
+        visibility: visible;
+        opacity: 1;
+    }
+
+    /* mdui pads a list by 8px top and bottom, which reads as a gap above and
+       below the items once the drawer is only as tall as its content. */
+    #main-drawer .mdui-list {
+        padding: 0;
     }
 }
 

@@ -52,10 +52,29 @@
     <!--head bar-->
     <header class="mdui-appbar mdui-appbar-fixed">
         <div class="mdui-toolbar app-toolbar">
-            <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white" mdui-drawer="{target: '#main-drawer', swipe: true}"><i class="mdui-icon material-icons">menu</i></span>
+            <span id="nav_toggle" class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white"><i class="mdui-icon material-icons">menu</i></span>
             <a href="./" class="mdui-typo-headline mdui-hidden-xs app-title">V2RayPi</a>
             <a id="head_title" href="" class="mdui-typo-title app-title"></a>
             <div class="mdui-toolbar-spacer"></div>
+            <!--status bar: sits at the end of the toolbar on wide screens and drops
+                to its own row on phones, where the toolbar has no space left-->
+            <div id="header_status" class="status-bar">
+                <div class="status-bar-info">
+                    <span id="hs_dot" class="status-bar-dot">●</span>
+                    <span id="hs_mode" class="status-bar-mode"></span>
+                    <span class="status-bar-sep">|</span>
+                    <span id="hs_protocol" class="node-type-badge" style="display: none;"></span>
+                    <span id="hs_node" class="status-bar-node"></span>
+                </div>
+                <div class="status-bar-traffic">
+                    <span class="status-bar-speed status-bar-up">
+                        <i class="mdui-icon material-icons">arrow_upward</i><span id="hs_upload">-</span>
+                    </span>
+                    <span class="status-bar-speed status-bar-down">
+                        <i class="mdui-icon material-icons">arrow_downward</i><span id="hs_download">-</span>
+                    </span>
+                </div>
+            </div>
             <button id="language_switch" type="button" class="mdui-btn mdui-btn-dense mdui-ripple mdui-ripple-white" data-i18n-title="common.language" onclick="I18n.toggle()" style="min-width: 42px; color: #fff;">
                 <i class="mdui-icon material-icons" style="font-size: 18px; margin-right: 2px;">translate</i>
                 <span id="language_label">中</span>
@@ -70,24 +89,6 @@
             c0,0.4,0.3,0.9,1.1,0.8c6.5-2.2,11.1-8.3,11.1-15.5C34.3,8.7,27,1.4,18,1.4z"></path>
                         </svg>
             </a>
-        </div>
-        <!--status bar: its own row so the toolbar never has to squeeze on phones-->
-        <div id="header_status" class="status-bar">
-            <div class="status-bar-info">
-                <span id="hs_dot" class="status-bar-dot">●</span>
-                <span id="hs_mode" class="status-bar-mode"></span>
-                <span class="status-bar-sep">|</span>
-                <span id="hs_protocol" class="node-type-badge" style="display: none;"></span>
-                <span id="hs_node" class="status-bar-node"></span>
-            </div>
-            <div class="status-bar-traffic">
-                <span class="status-bar-speed status-bar-up">
-                    <i class="mdui-icon material-icons">arrow_upward</i><span id="hs_upload">-</span>
-                </span>
-                <span class="status-bar-speed status-bar-down">
-                    <i class="mdui-icon material-icons">arrow_downward</i><span id="hs_download">-</span>
-                </span>
-            </div>
         </div>
     </header>
     <!--menu-->
@@ -291,6 +292,11 @@
     }
 
     var g_login_dialog = null;
+    var g_nav_drawer = null;
+
+    // Must match the phone breakpoint in app.css, where the drawer turns into a
+    // floating menu.
+    var NAV_FLOATING_QUERY = "(max-width: 599px)";
 
     // Initialize all event handlers
     function init_events() {
@@ -301,6 +307,11 @@
             "advance" : "advance.html",
             "system" : "system.html"
         }
+
+        g_nav_drawer = new mdui.Drawer("#main-drawer", { swipe: true });
+        $("#nav_toggle").click(function () {
+            g_nav_drawer.toggle();
+        });
 
         $(".mdui-list-item").click(function () {
             clear_intervals();
@@ -322,6 +333,12 @@
                         mdui.mutation();
                     }
                 })
+
+                // The floating navigation has to dismiss itself once a page is
+                // picked; the desktop drawer is permanent and stays put.
+                if (window.matchMedia(NAV_FLOATING_QUERY).matches) {
+                    g_nav_drawer.close();
+                }
             }
         });
     }

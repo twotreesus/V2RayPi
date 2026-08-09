@@ -291,6 +291,16 @@
         flex-shrink: 0;
         margin: 0;
     }
+    /* At full size the four items are wider than a phone screen. Scaling from the
+       right edge keeps the menu anchored to its button while it all fits. */
+    @media (max-width: 599px) {
+        .horizontal-actions-menu {
+            transform: translate(12px, -50%) scale(0.85) scaleX(0.88);
+        }
+        .horizontal-actions-menu.is-open {
+            transform: translate(0, -50%) scale(0.85);
+        }
+    }
 </style>
 
 <script src="/static/js/qrcode.js"></script>
