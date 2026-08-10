@@ -66,6 +66,23 @@ EOF
 fi
 chmod 644 /etc/mihomo/config.yaml
 
+# Download the GEO databases and persist the release version before the web
+# app starts.  CoreService keeps the user config in memory for the life of the
+# process, so writing current_version after supervisor has already loaded an
+# empty config would leave the UI showing "[Built-in version]" until restart.
+if ! (
+    cd "$PROJECT_DIR"
+    "$VENV_DIR/bin/python" - <<'PY'
+from core.core_service import CoreService
+
+CoreService.load()
+CoreService.update_geo_data()
+PY
+); then
+    echo "Failed to install GEO databases" >&2
+    exit 1
+fi
+
 #configure Supervisor
 mkdir /etc/supervisor
 mkdir /etc/supervisor/conf.d
@@ -132,21 +149,6 @@ EOF
 
 systemctl daemon-reload
 systemctl enable mihomo.service
-
-# Download the GEO databases before the first node is applied, and persist the
-# release version so GEO-based routing is enabled from the first configuration.
-if ! (
-    cd "$PROJECT_DIR"
-    "$VENV_DIR/bin/python" - <<'PY'
-from core.core_service import CoreService
-
-CoreService.load()
-CoreService.update_geo_data()
-PY
-); then
-    echo "Failed to install GEO databases" >&2
-    exit 1
-fi
 
 # Keep a fresh installation safe, while preserving an already-enabled
 # service when the installer is run again.

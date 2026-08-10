@@ -53,8 +53,21 @@ esac
 command -v gzip >/dev/null 2>&1 || fail "gzip is required"
 if command -v curl >/dev/null 2>&1; then
     fetch() { curl -fsSL --retry 3 --connect-timeout 10 "$@"; }
+    # Progress goes to stderr so the install log still reads cleanly when the
+    # archive itself is written to a file.  -f still fails on HTTP errors; -s
+    # is intentionally omitted so the meter is visible.
+    download_file() {
+        local url="$1" dest="$2"
+        curl -fL --retry 3 --connect-timeout 10 --progress-bar -o "$dest" "$url"
+    }
 elif command -v wget >/dev/null 2>&1; then
     fetch() { wget -qO- "$1"; }
+    download_file() {
+        local url="$1" dest="$2"
+        # force:noscroll keeps one updating line even when stderr is not a TTY
+        # (for example when the installer is piped through `tee`).
+        wget --progress=bar:force:noscroll -O "$dest" "$url"
+    }
 else
     fail "curl or wget is required"
 fi
@@ -121,7 +134,7 @@ DIGEST="${RELEASE_INFO[3]:-}"
 ARCHIVE_PATH="$TMP_DIR/$ARCHIVE_NAME"
 
 log "downloading $TAG for $ASSET_PLATFORM"
-fetch "$ARCHIVE_URL" > "$ARCHIVE_PATH"
+download_file "$ARCHIVE_URL" "$ARCHIVE_PATH"
 
 sha256_of() {
     if command -v sha256sum >/dev/null 2>&1; then
