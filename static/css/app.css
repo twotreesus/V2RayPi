@@ -190,12 +190,16 @@ body.mdui-appbar-with-toolbar {
     padding: 0 10px;
 }
 
+/* Drawn as a box instead of the ● glyph: Android fonts render that character
+   larger and higher than desktop/iOS, which threw the capsule off. currentColor
+   keeps the existing JS colour updates working. */
 .status-bar-dot {
     flex-shrink: 0;
-    font-size: 22px;
-    line-height: 12px;
-    position: relative;
-    top: -1px;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: currentColor;
 }
 
 .status-bar-mode {
