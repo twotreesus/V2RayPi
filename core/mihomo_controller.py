@@ -174,6 +174,9 @@ class MihomoController:
         return version
 
     def update_geo_data(self, url):
+        # Fresh installs download GEO before the systemd unit exists.  Only
+        # bounce a live core; the next start picks up the new files otherwise.
+        was_running = self.running()
         asset_path = MihomoDefaultPath.asset_path()
         os.makedirs(asset_path, exist_ok=True)
 
@@ -226,7 +229,8 @@ class MihomoController:
                 except OSError:
                     pass
 
-        self.restart()
+        if was_running:
+            self.restart()
 
 
 class MacOSMihomoController(MihomoController):

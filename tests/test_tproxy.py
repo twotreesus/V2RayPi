@@ -245,6 +245,8 @@ class GeoDataUpdateTest(unittest.TestCase):
         ), patch(
             'core.mihomo_controller.requests.get',
             side_effect=[geoip_response, geosite_response],
+        ), patch.object(
+            controller, 'running', return_value=True,
         ), patch.object(controller, 'restart', return_value=True) as restart:
             controller.update_geo_data('https://example.com/releases')
 
@@ -256,6 +258,26 @@ class GeoDataUpdateTest(unittest.TestCase):
         geoip_response.raise_for_status.assert_called_once_with()
         geosite_response.raise_for_status.assert_called_once_with()
         restart.assert_called_once_with()
+
+    def test_skips_restart_when_mihomo_is_not_running(self):
+        controller = MihomoController()
+        geoip_response = Mock(headers={'content-length': '9'})
+        geoip_response.iter_content.return_value = [b'new-geoip']
+        geosite_response = Mock(headers={'content-length': '11'})
+        geosite_response.iter_content.return_value = [b'new-geosite']
+
+        with tempfile.TemporaryDirectory() as asset_path, patch(
+            'core.mihomo_controller.MihomoDefaultPath.asset_path',
+            return_value=asset_path + '/',
+        ), patch(
+            'core.mihomo_controller.requests.get',
+            side_effect=[geoip_response, geosite_response],
+        ), patch.object(
+            controller, 'running', return_value=False,
+        ), patch.object(controller, 'restart') as restart:
+            controller.update_geo_data('https://example.com/releases')
+
+        restart.assert_not_called()
 
     def test_failed_download_keeps_existing_databases_unchanged(self):
         controller = MihomoController()
@@ -278,6 +300,8 @@ class GeoDataUpdateTest(unittest.TestCase):
             ), patch(
                 'core.mihomo_controller.requests.get',
                 side_effect=[geoip_response, geosite_response],
+            ), patch.object(
+                controller, 'running', return_value=False,
             ), patch.object(controller, 'restart') as restart:
                 with self.assertRaisesRegex(RuntimeError, 'download failed'):
                     controller.update_geo_data('https://example.com/releases')
@@ -286,8 +310,7 @@ class GeoDataUpdateTest(unittest.TestCase):
                 self.assertEqual(f.read(), b'old-geoip')
             with open(os.path.join(asset_path, 'geosite.dat'), 'rb') as f:
                 self.assertEqual(f.read(), b'old-geosite')
-
-        restart.assert_not_called()
+            restart.assert_not_called()
 
 
 if __name__ == '__main__':
