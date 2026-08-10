@@ -59,20 +59,22 @@
             <!--status bar: sits at the end of the toolbar on wide screens and drops
                 to its own row on phones, where the toolbar has no space left-->
             <div id="header_status" class="status-bar">
-                <div class="status-bar-info">
-                    <span id="hs_dot" class="status-bar-dot">●</span>
-                    <span id="hs_mode" class="status-bar-mode"></span>
-                    <span class="status-bar-sep">|</span>
-                    <span id="hs_protocol" class="node-type-badge" style="display: none;"></span>
-                    <span id="hs_node" class="status-bar-node"></span>
-                </div>
-                <div class="status-bar-traffic">
-                    <span class="status-bar-speed status-bar-up">
-                        <i class="mdui-icon material-icons">arrow_upward</i><span id="hs_upload">-</span>
-                    </span>
-                    <span class="status-bar-speed status-bar-down">
-                        <i class="mdui-icon material-icons">arrow_downward</i><span id="hs_download">-</span>
-                    </span>
+                <div class="status-bar-capsule">
+                    <div class="status-bar-info">
+                        <span id="hs_dot" class="status-bar-dot">●</span>
+                        <span id="hs_mode" class="status-bar-mode"></span>
+                        <span class="status-bar-sep">|</span>
+                        <span id="hs_protocol" class="node-type-badge" style="display: none;"></span>
+                        <span id="hs_node" class="status-bar-node"></span>
+                    </div>
+                    <div class="status-bar-traffic">
+                        <span class="status-bar-speed status-bar-up">
+                            <i class="mdui-icon material-icons">arrow_upward</i><span id="hs_upload">-</span>
+                        </span>
+                        <span class="status-bar-speed status-bar-down">
+                            <i class="mdui-icon material-icons">arrow_downward</i><span id="hs_download">-</span>
+                        </span>
+                    </div>
                 </div>
             </div>
             <button id="language_switch" type="button" class="mdui-btn mdui-btn-dense mdui-ripple mdui-ripple-white" data-i18n-title="common.language" onclick="I18n.toggle()" style="min-width: 42px; color: #fff;">

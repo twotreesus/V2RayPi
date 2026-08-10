@@ -137,16 +137,19 @@ body.mdui-appbar-with-toolbar {
     align-items: center;
 }
 
+/* Titles hold their width so a long node name is squeezed instead of them. */
 .app-toolbar .app-title {
+    flex-shrink: 0;
     white-space: nowrap;
 }
 
-/* The capsules ride at the end of the toolbar, right before the language button.
-   They only appear once a session is established. */
+/* The capsule rides at the end of the toolbar, right before the language button.
+   It only appears once a session is established. */
 .status-bar {
     display: none;
     align-items: center;
-    gap: 8px;
+    justify-content: flex-end;
+    min-width: 0;
     height: 32px;
     box-sizing: border-box;
     font-size: 12px;
@@ -164,18 +167,27 @@ body.mdui-appbar-with-toolbar {
     display: flex;
 }
 
+/* One rounded shell holds both halves: the white node summary and the coloured
+   speed blocks butting against its right edge. */
+.status-bar-capsule {
+    display: flex;
+    align-items: stretch;
+    flex: 0 1 auto;
+    min-width: 0;
+    height: 100%;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #fff;
+    color: rgba(0, 0, 0, 0.75);
+}
+
 .status-bar-info {
     display: flex;
     align-items: center;
     gap: 6px;
     flex: 0 1 auto;
     min-width: 0;
-    max-width: 320px;
-    height: 100%;
     padding: 0 10px;
-    border-radius: 999px;
-    background: #fff;
-    color: rgba(0, 0, 0, 0.75);
 }
 
 .status-bar-dot {
@@ -196,20 +208,27 @@ body.mdui-appbar-with-toolbar {
     opacity: 0.4;
 }
 
+/* No width cap: the name reads in full while the toolbar has room. Everything
+   else in the capsule keeps its measured width, so the name is the only part
+   that gives way once the toolbar fills up. */
 .status-bar-node {
+    flex: 0 1 auto;
+    min-width: 0;
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
+/* The badge's own trailing margin would double up with the capsule's gap. */
+.status-bar-info .node-type-badge {
+    flex-shrink: 0;
+    margin-right: 0;
+}
+
 .status-bar-traffic {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     flex-shrink: 0;
-    margin-left: auto;
-    height: 100%;
-    border-radius: 999px;
-    overflow: hidden;
 }
 
 .status-bar-speed {
@@ -237,8 +256,8 @@ body.mdui-appbar-with-toolbar {
     background: var(--brand-green);
 }
 
-/* There is no room for the capsules next to the title on a phone, so they take a
-   full width row of their own directly under the toolbar. Positioning them keeps
+/* There is no room for the capsule next to the title on a phone, so it takes a
+   full width row of its own directly under the toolbar. Positioning it keeps
    the toolbar's own height untouched, and the body padding below already reserves
    the row through --statusbar-height. */
 @media (max-width: 599px) {
@@ -248,29 +267,26 @@ body.mdui-appbar-with-toolbar {
         right: 0;
         left: 0;
         height: var(--statusbar-height, 40px);
-        gap: 6px;
         padding: 4px 8px;
         background: var(--brand-dark);
     }
 
-    /* Raised slightly so the row does not look bottom heavy. */
-    .status-bar-info,
-    .status-bar-traffic {
+    /* Spans the row so the speeds stay at its right edge, and is raised slightly
+       so the row does not look bottom heavy. */
+    .status-bar-capsule {
+        flex: 1;
         height: 80%;
         transform: translateY(-3px);
     }
 
+    /* Grows into the spare room so the speeds stay pinned to the right edge. */
     .status-bar-info {
-        max-width: calc(100% - 142px);
+        flex: 1 1 auto;
         padding: 0 8px;
     }
 
     .status-bar-sep {
         display: none;
-    }
-
-    .status-bar-traffic {
-        min-width: 0;
     }
 
     .status-bar-speed {
