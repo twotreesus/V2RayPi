@@ -182,25 +182,34 @@ class RulesTest(unittest.TestCase):
         user_config.advance_config.proxy_preferred = False
         self.assertEqual(generate(user_config)['rules'][-1], 'MATCH,DIRECT')
 
-    def test_gfw_mode_rules_only_appear_when_direct_preferred_and_geo_data_present(self):
+    def test_direct_preferred_proxies_only_the_listed_foreign_sites(self):
         user_config = self._config()
-        gfw_rules = ['GEOSITE,geolocation-!cn,PROXY', 'NOT,((GEOIP,CN)),PROXY']
+        listed_foreign = 'GEOSITE,geolocation-!cn,PROXY'
 
-        rules = generate(user_config)['rules']
-        for rule in gfw_rules:
-            self.assertNotIn(rule, rules)
+        self.assertNotIn(listed_foreign, generate(user_config)['rules'])
 
         user_config.advance_config.proxy_preferred = False
         rules = generate(user_config)['rules']
-        for rule in gfw_rules:
-            self.assertNotIn(rule, rules)
-
-        user_config.advance_config.geo_data.current_version = '202608010000'
-        rules = generate(user_config)['rules']
-        for rule in gfw_rules:
-            self.assertIn(rule, rules)
-        # Without these two, foreign traffic would fall through to MATCH,DIRECT.
+        self.assertIn(listed_foreign, rules)
         self.assertEqual(rules[-1], 'MATCH,DIRECT')
+
+        # A rule judging the destination by its resolved IP would send every
+        # unlisted foreign host through the proxy and leave the fallback
+        # unreachable, which is proxy preferred under another name.
+        self.assertNotIn('NOT,((GEOIP,CN)),PROXY', rules)
+        for rule in rules:
+            if rule.startswith('GEOIP') or rule.startswith('NOT,((GEOIP'):
+                self.assertTrue(rule.endswith('no-resolve'), rule)
+
+    def test_direct_preferred_does_not_wait_for_the_third_party_geo_database(self):
+        user_config = self._config()
+        user_config.advance_config.proxy_preferred = False
+        # mihomo downloads geosite.dat itself when it is missing, so gating the
+        # foreign list on our own bookkeeping would silently turn this mode into
+        # a plain direct connection.
+        self.assertFalse(user_config.advance_config.geo_data.enabled())
+
+        self.assertIn('GEOSITE,geolocation-!cn,PROXY', generate(user_config)['rules'])
 
     def test_user_policies_keep_their_configured_order(self):
         user_config = self._config()
@@ -343,12 +352,20 @@ class IpPatternTest(unittest.TestCase):
 
     def test_geoip_is_upper_cased(self):
         self.assertEqual(MihomoConfig.translate_ip_pattern('geoip:jp'),
-                         ('GEOIP,JP', True))
+                         ('GEOIP,JP', False))
 
     def test_negated_geoip_uses_a_logic_rule(self):
         # mihomo's GEOIP has no negation operator.
         self.assertEqual(MihomoConfig.translate_ip_pattern('geoip:!cn'),
                          ('NOT,((GEOIP,CN))', False))
+
+    def test_both_geoip_forms_answer_for_a_domain(self):
+        # A literal address only ever matches the address, but a geo rule that
+        # skipped resolution would quietly do nothing for domain traffic in its
+        # plain form and match every domain in its negated one.
+        for pattern in ('geoip:cn', 'geoip:!cn'):
+            self.assertFalse(MihomoConfig.translate_ip_pattern(pattern)[1], pattern)
+        self.assertTrue(MihomoConfig.translate_ip_pattern('1.2.3.4')[1])
 
     def test_invalid_address_is_rejected(self):
         with self.assertRaises(ValueError):

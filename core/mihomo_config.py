@@ -260,12 +260,13 @@ class MihomoConfig:
             rules.append('GEOSITE,cn,{0}'.format(DIRECT_TAG))
             rules.append(cls._rule('GEOIP,CN', DIRECT_TAG, no_resolve=True))
 
-            # GFW mode.  Without these two the fallback below sends everything
-            # abroad straight out, which is the opposite of what this mode is
-            # for, so they are the only rules routing foreign traffic here.
-            if not advance.proxy_preferred and advance.geo_data.enabled():
+            # Direct preferred is a list mode: only the recognised foreign sites
+            # are worth the proxy and the DIRECT fallback below keeps everything
+            # else local.  Judging the rest by their resolved IP instead would
+            # send every unlisted foreign host through the proxy as well, which
+            # is what proxy preferred already does.
+            if not advance.proxy_preferred:
                 rules.append('GEOSITE,geolocation-!cn,{0}'.format(PROXY_TAG))
-                rules.append('NOT,((GEOIP,CN)),{0}'.format(PROXY_TAG))
 
         fallback = PROXY_TAG
         if (user_config.proxy_mode == MihomoUserConfig.ProxyMode.ProxyAuto.value
@@ -330,10 +331,15 @@ class MihomoConfig:
         pattern = pattern.strip()
         if pattern.startswith('geoip:'):
             code = pattern[len('geoip:'):]
+            # A geo rule asks where the destination is, which cannot be answered
+            # for a domain without resolving it, so neither form carries
+            # no-resolve.  The negated one has to be a logic rule because mihomo's
+            # GEOIP has no negation operator, and no-resolve cannot be bolted onto
+            # it either way: appended, mihomo reads it as the target proxy, and
+            # inside the inner rule it inverts into matching every domain.
             if code.startswith('!'):
-                # mihomo's GEOIP has no negation operator; its logic rules do.
                 return 'NOT,((GEOIP,{0}))'.format(code[1:].upper()), False
-            return 'GEOIP,{0}'.format(code.upper()), True
+            return 'GEOIP,{0}'.format(code.upper()), False
         if pattern.startswith('ext:'):
             raise ValueError('ext: is not supported by mihomo, use geoip: instead')
         return cls._ip_head(pattern), True

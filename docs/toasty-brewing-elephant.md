@@ -183,7 +183,7 @@ MihomoConfig.gen_config(user_config, all_nodes, subscribe_hosts) -> str
   _gen_dns(user_config, ...)     # 见「DNS 设计」
   _gen_rules(user_config, ...)   # 见「规则映射」
   translate_domain_pattern(s)    # 用户自定义域名规则 → mihomo 规则类型 + payload
-  translate_ip_pattern(s)        # 单 IP / CIDR / geoip → IP-CIDR / GEOIP + no-resolve
+  translate_ip_pattern(s)        # 单 IP / CIDR / geoip → IP-CIDR（带 no-resolve）/ GEOIP
 ```
 
 常量：`PROXY_TAG = 'PROXY'`、`TPROXY_PORT = 12345`（沿用旧端口，见 iptables 小节）、`DNS_PORT = 1053`、`ROUTING_MARK = 255`。geodata 固定 `geodata-mode: true`（复用 V2Ray 格式的 `geoip.dat` / `geosite.dat`，与现有 GEO 更新功能同源）+ `geodata-loader: memconservative`（小内存 SBC）。Mux 开关映射为对当前 proxy dict 注入 `smux: {enabled: bool}`，**仅对 vmess/vless/trojan/ss 这类流式协议注入**（hysteria2/tuic/anytls/mieru 跳过，否则 mihomo 报错）。
@@ -306,7 +306,7 @@ class Node(BaseDataItem):
 | 用户自定义策略 | 见「域名/IP 模式翻译」，顺序与 `policys` 一致 |
 | `_make_ip_cn_rule` + `_make_site_cn_rule` | `GEOSITE,cn,DIRECT` 然后 `GEOIP,CN,DIRECT,no-resolve` |
 | `_make_site_not_cn_rule` | `GEOSITE,geolocation-!cn,PROXY` |
-| `_make_ip_not_cn_rule`（`geoip:!cn`） | `NOT,((GEOIP,CN)),PROXY`（mihomo 的 GEOIP 不支持 `!` 取反） |
+| `_make_ip_not_cn_rule`（`geoip:!cn`） | **不再生成**，见下方「直连优先」说明 |
 | 默认出站顺序 | `MATCH,PROXY`（`proxy_preferred`）或 `MATCH,DIRECT` |
 
 私有地址显式展开，**不用** `GEOIP,private` 或 `GEOIP,LAN`——这条规则关系到 LAN 可达性与 SSH 救援，不应依赖 geo 文件是否就位或分类名是否存在：
@@ -328,12 +328,14 @@ IP-CIDR6,fe80::/10,DIRECT,no-resolve
 三种模式的差异：
 
 - **Direct(0)**：不生成 `proxies`，规则仅 `MATCH,DIRECT`
-- **ProxyAuto(1)**：全部规则，含 `GEOSITE,cn` / `GEOIP,CN`；`geolocation-!cn` 与 `NOT,((GEOIP,CN))` 两条仅在 `not proxy_preferred and geo_data.enabled()` 时追加（与现有 `v2ray_config.py:490-495` 的门控一致）
+- **ProxyAuto(1)**：全部规则，含 `GEOSITE,cn` / `GEOIP,CN`；`GEOSITE,geolocation-!cn,PROXY` 仅在 `not proxy_preferred` 时追加
 - **ProxyGlobal(2)**：跳过上面两组 cn 规则，其余相同
 
 **有意的顺序调整**：Xray 里 `geoip:cn` 排在 `geosite:cn` 之前（`v2ray_config.py:488`）；mihomo 中 GEOIP 规则遇到域名会触发 DNS 解析，因此把 `GEOSITE,cn` 提到 `GEOIP,CN` 之前，避免无谓解析。
 
-**GFW 模式的两条 NOT 规则不能省。** 在 `ProxyAuto + not proxy_preferred` 组合下兜底是 `MATCH,DIRECT`，若省掉 `GEOSITE,geolocation-!cn,PROXY` 与 `NOT,((GEOIP,CN)),PROXY`，非国内流量会落到 `MATCH,DIRECT` 变成全部直连——与今天的行为正好相反。这两条是该模式下唯一把境外流量送进代理的规则，必须保留。
+**「直连优先」是名单模式，不再翻译 `geoip:!cn`。** Xray 版本在 `not proxy_preferred` 下同时下发 `geosite:geolocation-!cn → proxy` 与 `geoip:!cn → proxy`，而路由用的是 `domainStrategy: IPOnDemand`，域名也会被解析后按 IP 匹配。直译成 `NOT,((GEOIP,CN)),PROXY` 后同样如此：名单外的海外域名会在这一条被解析、判定为非中国 IP、然后走代理，`MATCH,DIRECT` 只剩「不在 `geosite:cn` 名单里、却解析到中国 IP」这一种情况可达。两个选项因此几乎没有区别，与界面上「已识别的海外网站走代理，其他网站默认直接连接，更节省代理流量」的描述不符。
+
+现在 `not proxy_preferred` 只追加 `GEOSITE,geolocation-!cn,PROXY`：名单内的海外站点走代理，其余（含裸 IP 的海外目标）落到 `MATCH,DIRECT`。这样内置规则里所有目的地 IP 类规则就都带 `no-resolve` 了（用户自己写的 geo 规则仍按解析后的 IP 匹配，原因见下方翻译表）。门控 `geo_data.enabled()` 一并去掉——它只表示用户是否在界面上更新过第三方 GEO 数据库，而 `geosite.dat` 缺失时 mihomo 会自行下载；保留门控只会让没点过更新的用户在该模式下变成全直连。
 
 **无对应实现：BitTorrent 直连。** mihomo 没有协议嗅探类规则，`protocol: bittorrent → direct` 无法忠实翻译。不做近似（按端口段猜测会误伤正常流量），直接移除并在 README 记录。用户如需 BT 直连，可通过自定义路由规则针对 tracker 域名配置。
 
@@ -360,11 +362,13 @@ IP 类策略：
 | `1.2.3.4` | `IP-CIDR,1.2.3.4/32,no-resolve` |
 | `1.2.3.0/24` | `IP-CIDR,1.2.3.0/24,no-resolve` |
 | IPv6 单地址 / CIDR | `IP-CIDR6,...,no-resolve` |
-| `geoip:cn` | `GEOIP,CN,no-resolve` |
+| `geoip:cn` | `GEOIP,CN` |
 | `geoip:!cn` | `NOT,((GEOIP,CN))` |
 | `ext:...` | **拒绝**并返回明确错误 |
 
-所有目的地 IP 类规则统一带 `no-resolve`，避免对域名触发额外解析。
+字面地址带 `no-resolve`：用户写的是具体地址，要匹配域名他会写域名规则，没必要为此对每条连接触发解析。
+
+**geo 规则两种写法都不带 `no-resolve`。** geo 规则问的是「目的地在哪个国家」，不解析就无法对域名作答：正写法 `geoip:cn` 会对域名静默失效，负写法更糟——`no-resolve` 只能写进子规则 `NOT,((GEOIP,CN,no-resolve))`（追加在末尾会被 mihomo 当成目标出站而报 `proxy [no-resolve] not found`），而域名没有已知 IP 时子规则不匹配、`NOT` 取反后会匹配**所有域名**。因此两种写法统一按解析后的 IP 匹配，与 Xray 时代 `domainStrategy: IPOnDemand` 的行为一致。内置的 `GEOIP,CN,DIRECT,no-resolve` 是另一回事：它前面有 `GEOSITE,cn` 负责域名侧，无需再解析。
 
 **需在真机确认**：`GEOIP` 的国家码大小写。Loyalsoldier 的 `geoip.dat` 分类名是小写（`cn`），而 Clash 系历来期望大写 ISO 码。用 `mihomo -t` 对 `GEOIP,CN` 与 `GEOIP,cn` 各测一次，以及 `NOT,((GEOIP,CN))` 的逗号/括号写法是否被当前版本接受。
 
