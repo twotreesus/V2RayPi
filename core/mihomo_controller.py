@@ -40,9 +40,28 @@ class MihomoController:
         return self.running()
 
     def running(self) -> bool:
-        cmd = """ps -ef | grep "mihomo" | grep -v grep | awk '{print $2}'"""
-        output = subprocess.check_output(cmd, shell=True).decode('utf-8')
-        return output.strip() != ''
+        # Exact process-name match only.  A loose `ps | grep mihomo` false-positives
+        # on installers whose argv still contains `--branch feat/mihomo`.
+        try:
+            result = subprocess.run(
+                ['pgrep', '-x', SERVICE_NAME],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError:
+            return False
+        return result.returncode == 0
+
+    def service_available(self) -> bool:
+        try:
+            result = subprocess.run(
+                ['systemctl', 'cat', '{0}.service'.format(SERVICE_NAME)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError:
+            return False
+        return result.returncode == 0
 
     def version(self) -> str:
         try:
@@ -175,8 +194,8 @@ class MihomoController:
 
     def update_geo_data(self, url):
         # Fresh installs download GEO before the systemd unit exists.  Only
-        # bounce a live core; the next start picks up the new files otherwise.
-        was_running = self.running()
+        # bounce a live, managed core; the next start picks up the new files.
+        should_restart = self.running() and self.service_available()
         asset_path = MihomoDefaultPath.asset_path()
         os.makedirs(asset_path, exist_ok=True)
 
@@ -229,7 +248,7 @@ class MihomoController:
                 except OSError:
                     pass
 
-        if was_running:
+        if should_restart:
             self.restart()
 
 
@@ -248,6 +267,11 @@ class MacOSMihomoController(MihomoController):
         cmd = "brew services restart {0}".format(SERVICE_NAME)
         subprocess.check_output(cmd, shell=True).decode('utf-8')
         return self.running()
+
+    def service_available(self) -> bool:
+        # Homebrew formula install is enough; install_osx starts the service
+        # before the first GEO download.
+        return shutil.which(SERVICE_NAME) is not None or os.path.isfile(self._binary())
 
     def update(self) -> bool:
         was_running = self.running()

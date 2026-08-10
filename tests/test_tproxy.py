@@ -247,6 +247,8 @@ class GeoDataUpdateTest(unittest.TestCase):
             side_effect=[geoip_response, geosite_response],
         ), patch.object(
             controller, 'running', return_value=True,
+        ), patch.object(
+            controller, 'service_available', return_value=True,
         ), patch.object(controller, 'restart', return_value=True) as restart:
             controller.update_geo_data('https://example.com/releases')
 
@@ -274,6 +276,30 @@ class GeoDataUpdateTest(unittest.TestCase):
             side_effect=[geoip_response, geosite_response],
         ), patch.object(
             controller, 'running', return_value=False,
+        ), patch.object(
+            controller, 'service_available', return_value=False,
+        ), patch.object(controller, 'restart') as restart:
+            controller.update_geo_data('https://example.com/releases')
+
+        restart.assert_not_called()
+
+    def test_skips_restart_when_service_unit_is_missing(self):
+        controller = MihomoController()
+        geoip_response = Mock(headers={'content-length': '9'})
+        geoip_response.iter_content.return_value = [b'new-geoip']
+        geosite_response = Mock(headers={'content-length': '11'})
+        geosite_response.iter_content.return_value = [b'new-geosite']
+
+        with tempfile.TemporaryDirectory() as asset_path, patch(
+            'core.mihomo_controller.MihomoDefaultPath.asset_path',
+            return_value=asset_path + '/',
+        ), patch(
+            'core.mihomo_controller.requests.get',
+            side_effect=[geoip_response, geosite_response],
+        ), patch.object(
+            controller, 'running', return_value=True,
+        ), patch.object(
+            controller, 'service_available', return_value=False,
         ), patch.object(controller, 'restart') as restart:
             controller.update_geo_data('https://example.com/releases')
 
