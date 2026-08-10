@@ -509,8 +509,10 @@ ENCODERS = {
     'ss': _encode_ss,
     'trojan': _encode_trojan,
     'hysteria2': _encode_hysteria2,
+    'hy2': _encode_hysteria2,
     'anytls': _encode_anytls,
     'mieru': _encode_mieru,
+    'mierus': _encode_mieru,
 }
 
 

@@ -1,7 +1,7 @@
 import unittest
 
 from core.node import Node
-from core.node_uri import parse_node_uri
+from core.node_uri import encode_node_uri, parse_node_uri
 
 
 PROXIES = [
@@ -131,6 +131,27 @@ class NodeUriTest(unittest.TestCase):
         )
         self.assertEqual(parsed['type'], 'hysteria2')
         self.assertEqual(parsed['name'], 'node')
+
+    def test_type_aliases_can_be_encoded(self):
+        # Clash payloads sometimes keep the short type name; share-link
+        # generation must accept the same aliases the URL parsers do.
+        cases = {
+            'hy2': 'hysteria2://',
+            'mierus': 'mieru://',
+        }
+        for alias, prefix in cases.items():
+            with self.subTest(proxy_type=alias):
+                proxy = {
+                    'type': alias,
+                    'name': 'alias-node',
+                    'server': 'example.com',
+                    'port': 443,
+                    'password': 'secret',
+                    'username': 'user',
+                }
+                uri = encode_node_uri(proxy)
+                self.assertTrue(uri.startswith(prefix))
+                self.assertEqual(parse_node_uri(uri)['name'], 'alias-node')
 
     def test_unsupported_scheme_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'Unsupported'):
