@@ -670,9 +670,13 @@ body.mdui-appbar-with-toolbar {
     padding-left: 8px;
 }
 
+/* The badge column starts where the group label above it starts, which sits past
+   the cell inset (24px), the collapse arrow (24px) and the gap between them
+   (4px). Widening the column carries the node details along to the right.
+   Phones override the padding away and keep their own grid. */
 .node_index {
     padding-right: 8px !important;
-    padding-left: 8px !important;
+    padding-left: 52px !important;
     text-align: center;
 }
 
