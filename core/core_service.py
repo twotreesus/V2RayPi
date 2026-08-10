@@ -293,8 +293,10 @@ class CoreService:
 
     @classmethod
     def delete_node(cls, url, index):
+        # Only the selected node is written into mihomo's proxies list, so
+        # removing an entry from the catalogue does not change the running
+        # config and must not restart the service.
         cls.node_manager.delete_node(url, index)
-        cls.re_apply_node()
 
     @classmethod
     def re_apply_node(cls, restart_auto_detect=True) -> bool:
