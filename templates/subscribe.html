@@ -417,12 +417,19 @@
             var naturalWidth = menu[0].scrollWidth;
             var available = Math.max(0, anchorRect.left - gap - leftInset);
             var scale = naturalWidth > 0 ? Math.min(1, available / naturalWidth) : 1;
+            // Pin --menu-scale while still closed (with transitions off) so the
+            // open animation only slides/squeezes from the right and does not
+            // also shrink from full size on a narrow screen.
             menu.css({
+                transition: "none",
                 top: anchorRect.top + anchorRect.height / 2,
                 right: window.innerWidth - anchorRect.left + gap,
                 left: "auto",
                 "--menu-scale": scale
-            }).addClass("is-open");
+            });
+            menu[0].offsetWidth;
+            menu.css("transition", "");
+            menu.addClass("is-open");
             $("#actions_overlay").addClass("is-open");
         });
 
@@ -462,9 +469,9 @@
     });
 
     function close_horizontal_action_menus() {
-        $(".horizontal-actions-menu.is-open")
-            .removeClass("is-open")
-            .css("--menu-scale", 1);
+        // Leave --menu-scale alone so the close animation stays a right-edge
+        // slide; the next open pins a fresh scale with transitions disabled.
+        $(".horizontal-actions-menu.is-open").removeClass("is-open");
         $("#actions_overlay").removeClass("is-open");
     }
 
