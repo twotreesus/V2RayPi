@@ -111,7 +111,26 @@ TG讨论组：[https://t.me/v2raypi](https://t.me/v2raypi)
 ## 安装指南
 
 ### Linux 安装（支持透明代理）
-支持的发行版：Debian / Armbian / Ubuntu / CentOS
+支持的发行版：Debian / Armbian / Ubuntu（`install.sh` / `install_online.sh` 基于 apt）
+
+**在线一键安装（推荐）**
+
+```bash
+# 直连安装（设备能正常访问 GitHub / apt）
+# 合并进 main 后可将路径中的 feat/mihomo 改为 main，并去掉 --branch
+curl -fsSL https://raw.githubusercontent.com/twotreesus/V2RayPi/feat/mihomo/script/install_online.sh \
+  | sudo bash -s -- --branch feat/mihomo
+
+# 通过外部 SOCKS5 安装：先装 proxychains4，再用代理完成 clone 与 install.sh
+# 若拉取本脚本也需要代理，给 curl 加上 --socks5-hostname
+curl -fsSL --socks5-hostname 127.0.0.1:1080 \
+  https://raw.githubusercontent.com/twotreesus/V2RayPi/feat/mihomo/script/install_online.sh \
+  | sudo bash -s -- --socks5 socks5://127.0.0.1:1080 --branch feat/mihomo
+```
+
+`install_online.sh` 会把仓库克隆到 `/usr/local/V2RayPi` 并调用 `script/install.sh`。`--socks5` 只作用于安装过程（临时 proxychains 配置），不会改写系统全局代理。前提是本机 apt 源在无代理时仍可安装 `proxychains4`。
+
+**手动安装**
 
 ```bash
 # 1. 安装系统
