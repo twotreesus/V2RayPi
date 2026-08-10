@@ -153,7 +153,7 @@
             </table>
 
             <!-- Node list container: each group renders its own independent table -->
-            <div id="node_list_body" style="margin-top: 8px;"></div>
+            <div id="node_list_body"></div>
         </div>
     </div>
     <p></p>
@@ -290,6 +290,7 @@
         opacity: 1;
     }
     .horizontal-actions-menu {
+        --menu-scale: 1;
         display: flex;
         width: auto;
         min-width: 0;
@@ -300,12 +301,14 @@
         align-items: center;
         justify-content: flex-end;
         border-radius: 10px;
-        transform: translate(12px, -50%) scaleX(0.88);
+        /* scaleX(0.88) is only the closed-state squeeze; --menu-scale shrinks the
+           whole menu when the screen cannot hold its natural width. */
+        transform: translate(12px, -50%) scale(var(--menu-scale)) scaleX(0.88);
         transform-origin: right center;
         transition: transform 180ms ease-out, opacity 180ms ease-out, visibility 180ms;
     }
     .horizontal-actions-menu.is-open {
-        transform: translate(0, -50%) scaleX(1);
+        transform: translate(0, -50%) scale(var(--menu-scale));
         visibility: visible;
         opacity: 1;
     }
@@ -333,16 +336,6 @@
     .horizontal-actions-menu .mdui-chip-icon {
         flex-shrink: 0;
         margin: 0;
-    }
-    /* At full size the four items are wider than a phone screen. Scaling from the
-       right edge keeps the menu anchored to its button while it all fits. */
-    @media (max-width: 599px) {
-        .horizontal-actions-menu {
-            transform: translate(12px, -50%) scale(0.85) scaleX(0.88);
-        }
-        .horizontal-actions-menu.is-open {
-            transform: translate(0, -50%) scale(0.85);
-        }
     }
 </style>
 
@@ -416,10 +409,19 @@
             if (!shouldOpen) return;
 
             var anchorRect = this.getBoundingClientRect();
+            // The menu hangs to the left of the button. Measure its unscaled width
+            // (transforms do not affect scrollWidth) and shrink it so the whole
+            // strip fits between the screen's left inset and the button.
+            var gap = 8;
+            var leftInset = 16;
+            var naturalWidth = menu[0].scrollWidth;
+            var available = Math.max(0, anchorRect.left - gap - leftInset);
+            var scale = naturalWidth > 0 ? Math.min(1, available / naturalWidth) : 1;
             menu.css({
                 top: anchorRect.top + anchorRect.height / 2,
-                right: window.innerWidth - anchorRect.left + 8,
-                left: "auto"
+                right: window.innerWidth - anchorRect.left + gap,
+                left: "auto",
+                "--menu-scale": scale
             }).addClass("is-open");
             $("#actions_overlay").addClass("is-open");
         });
@@ -460,7 +462,9 @@
     });
 
     function close_horizontal_action_menus() {
-        $(".horizontal-actions-menu.is-open").removeClass("is-open");
+        $(".horizontal-actions-menu.is-open")
+            .removeClass("is-open")
+            .css("--menu-scale", 1);
         $("#actions_overlay").removeClass("is-open");
     }
 
@@ -493,7 +497,7 @@
                 I18n.apply(url_row[0]);
                 url_row.find(".group-toggle").addClass("expanded");
                 url_row.show();
-                var headerTable = $('<table class="mdui-table node-table" style="margin-top: 4px;"><tbody></tbody></table>');
+                var headerTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
                 headerTable.find("tbody").append(url_row);
                 var nodesTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
                 var nodesDiv = $('<div class="group-' + index + '" style="display:none;"></div>').append(nodesTable);
