@@ -215,6 +215,8 @@
     </div>
 </div>
 
+<div id="actions_overlay" class="actions-overlay"></div>
+
 <style>
     .group-toggle {
         display: inline-block;
@@ -268,6 +270,24 @@
     .subscribe-index.running {
         background-color: #FF9800;
         color: white !important;
+    }
+    /* Swallows the click that dismisses an open menu, so it cannot reach the row
+       underneath and switch a node by accident. Stays below .mdui-menu's 99999. */
+    .actions-overlay {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 99998;
+        background: rgba(0, 0, 0, 0.2);
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 180ms ease-out, visibility 180ms;
+    }
+    .actions-overlay.is-open {
+        visibility: visible;
+        opacity: 1;
     }
     .horizontal-actions-menu {
         display: flex;
@@ -401,6 +421,7 @@
                 right: window.innerWidth - anchorRect.left + 8,
                 left: "auto"
             }).addClass("is-open");
+            $("#actions_overlay").addClass("is-open");
         });
 
         $("#node_list_body").on("click", ".get_node_link", function() {
@@ -440,6 +461,7 @@
 
     function close_horizontal_action_menus() {
         $(".horizontal-actions-menu.is-open").removeClass("is-open");
+        $("#actions_overlay").removeClass("is-open");
     }
 
     function refresh() {
