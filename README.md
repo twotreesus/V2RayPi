@@ -117,18 +117,18 @@ TG讨论组：[https://t.me/v2raypi](https://t.me/v2raypi)
 
 ```bash
 # 直连安装（设备能正常访问 GitHub / apt）
-# 合并进 main 后可将路径中的 feat/mihomo 改为 main，并去掉 --branch
-curl -fsSL https://raw.githubusercontent.com/twotreesus/V2RayPi/feat/mihomo/script/install_online.sh \
-  | sudo bash -s -- --branch feat/mihomo
+# 默认安装 remote HEAD（当前为 master）；需要开发分支时加 --branch dev
+curl -fsSL https://raw.githubusercontent.com/twotreesus/V2RayPi/master/script/install_online.sh \
+  | sudo bash -s --
 
 # 通过外部 SOCKS5 安装：先装 proxychains4，再用代理完成 clone 与 install.sh
 # 若拉取本脚本也需要代理，给 curl 加上 --socks5-hostname
 curl -fsSL --socks5-hostname 127.0.0.1:1080 \
-  https://raw.githubusercontent.com/twotreesus/V2RayPi/feat/mihomo/script/install_online.sh \
-  | sudo bash -s -- --socks5 socks5://127.0.0.1:1080 --branch feat/mihomo
+  https://raw.githubusercontent.com/twotreesus/V2RayPi/master/script/install_online.sh \
+  | sudo bash -s -- --socks5 socks5://127.0.0.1:1080
 ```
 
-`install_online.sh` 会把仓库克隆到 `/usr/local/V2RayPi` 并调用 `script/install.sh`。`--socks5` 只作用于安装过程（临时 proxychains 配置），不会改写系统全局代理。前提是本机 apt 源在无代理时仍可安装 `proxychains4`。
+`install_online.sh` 会把仓库克隆到 `/usr/local/V2RayPi` 并调用 `script/install.sh`。省略 `--branch` 时跟随仓库默认分支；指定 `--branch dev` 可装开发分支。`--socks5` 只作用于安装过程（临时 proxychains 配置），不会改写系统全局代理。前提是本机 apt 源在无代理时仍可安装 `proxychains4`。
 
 **手动安装**
 

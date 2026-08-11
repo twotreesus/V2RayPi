@@ -2,11 +2,11 @@
 # Online one-click installer for V2RayPi on Debian-family side routers.
 #
 # Usage (piped):
-#   curl -fsSL https://raw.githubusercontent.com/twotreesus/V2RayPi/feat/mihomo/script/install_online.sh \
+#   curl -fsSL https://raw.githubusercontent.com/twotreesus/V2RayPi/master/script/install_online.sh \
 #     | sudo bash -s -- [--socks5 URL] [--branch BRANCH] [--dir DIR]
 #
 # Usage (local copy):
-#   sudo bash install_online.sh --socks5 socks5://127.0.0.1:1080 --branch feat/mihomo
+#   sudo bash install_online.sh --socks5 socks5://127.0.0.1:1080
 #
 # When --socks5 is set, proxychains4 is installed first (via apt, without the
 # proxy) and then used to wrap every subsequent network step, including the
@@ -52,12 +52,16 @@ Environment overrides:
   V2RAYPI_REPO_URL V2RAYPI_PROXYCHAINS_CONF
 
 Examples:
-  curl -fsSL ${RAW_BASE}/feat/mihomo/script/install_online.sh \\
-    | sudo bash -s -- --branch feat/mihomo
+  curl -fsSL ${RAW_BASE}/master/script/install_online.sh \\
+    | sudo bash -s --
 
   curl -fsSL --socks5-hostname 127.0.0.1:1080 \\
-    ${RAW_BASE}/feat/mihomo/script/install_online.sh \\
-    | sudo bash -s -- --socks5 socks5://127.0.0.1:1080 --branch feat/mihomo
+    ${RAW_BASE}/master/script/install_online.sh \\
+    | sudo bash -s -- --socks5 socks5://127.0.0.1:1080
+
+  # Install from the development branch instead of remote HEAD
+  curl -fsSL ${RAW_BASE}/dev/script/install_online.sh \\
+    | sudo bash -s -- --branch dev
 USAGE
 }
 
