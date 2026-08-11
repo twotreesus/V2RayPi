@@ -468,11 +468,46 @@ class CoreService:
     def is_valid_branch_name(cls, branch: str) -> bool:
         return bool(re.fullmatch(r'[A-Za-z0-9._/-]+', branch or ''))
 
+    ORIGIN_FETCH_ALL_BRANCHES = '+refs/heads/*:refs/remotes/origin/*'
+
+    @classmethod
+    def ensure_origin_fetches_all_branches(cls, cwd: str) -> None:
+        # One-click install uses `git clone --depth 1`, which implies
+        # single-branch. Widen the fetch refspec so other remote tips
+        # (dev, master, …) become visible to listing and updates.
+        get_cmd = ['git', 'config', '--get-all', 'remote.origin.fetch']
+        get_result = subprocess.run(
+            get_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+        specs = [
+            line.strip() for line in (get_result.stdout or '').splitlines()
+            if line.strip()
+        ]
+        if cls.ORIGIN_FETCH_ALL_BRANCHES in specs:
+            return
+
+        set_cmd = [
+            'git', 'config', 'remote.origin.fetch',
+            cls.ORIGIN_FETCH_ALL_BRANCHES,
+        ]
+        set_result = subprocess.run(
+            set_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+        if set_result.returncode != 0:
+            print(
+                'Failed to widen remote.origin.fetch, git config returned '
+                f'{set_result.returncode}'
+            )
+            print(f'Error output: {set_result.stderr}')
+
     @classmethod
     def get_v2raypi_branches(cls) -> Dict[str, Any]:
         try:
             cwd = os.path.dirname(os.path.dirname(__file__))
 
+            cls.ensure_origin_fetches_all_branches(cwd)
             fetch_cmd = ["git", "fetch", "--prune"]
             fetch_result = subprocess.run(fetch_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
             if fetch_result.returncode != 0:
@@ -512,6 +547,7 @@ class CoreService:
         try:
             cwd = os.path.dirname(os.path.dirname(__file__))
 
+            cls.ensure_origin_fetches_all_branches(cwd)
             # First fetch from remote
             fetch_cmd = ["git", "fetch"]
             fetch_result = subprocess.run(fetch_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)

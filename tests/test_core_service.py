@@ -1,6 +1,6 @@
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, call, patch
 
 from core.core_service import CoreService
 
@@ -16,7 +16,9 @@ class UpdateCheckTest(unittest.TestCase):
             stderr='',
         )
 
-        with patch(
+        with patch.object(
+            CoreService, 'ensure_origin_fetches_all_branches',
+        ), patch(
             'core.core_service.subprocess.run',
             side_effect=[
                 fetch_result,
@@ -31,6 +33,57 @@ class UpdateCheckTest(unittest.TestCase):
             commits,
             ['2026-08-08|fix: preserve a|b syntax'],
         )
+
+
+class OriginFetchRefspecTest(unittest.TestCase):
+    def test_widens_single_branch_fetch_refspec(self):
+        get_result = Mock(
+            returncode=0,
+            stdout='+refs/heads/master:refs/remotes/origin/master\n',
+            stderr='',
+        )
+        set_result = Mock(returncode=0, stdout='', stderr='')
+
+        with patch(
+            'core.core_service.subprocess.run',
+            side_effect=[get_result, set_result],
+        ) as run:
+            CoreService.ensure_origin_fetches_all_branches('/tmp/repo')
+
+        run.assert_has_calls([
+            call(
+                ['git', 'config', '--get-all', 'remote.origin.fetch'],
+                cwd='/tmp/repo',
+                stdout=ANY,
+                stderr=ANY,
+                universal_newlines=True,
+            ),
+            call(
+                [
+                    'git', 'config', 'remote.origin.fetch',
+                    CoreService.ORIGIN_FETCH_ALL_BRANCHES,
+                ],
+                cwd='/tmp/repo',
+                stdout=ANY,
+                stderr=ANY,
+                universal_newlines=True,
+            ),
+        ])
+
+    def test_skips_when_all_branches_refspec_already_present(self):
+        get_result = Mock(
+            returncode=0,
+            stdout=CoreService.ORIGIN_FETCH_ALL_BRANCHES + '\n',
+            stderr='',
+        )
+
+        with patch(
+            'core.core_service.subprocess.run',
+            return_value=get_result,
+        ) as run:
+            CoreService.ensure_origin_fetches_all_branches('/tmp/repo')
+
+        self.assertEqual(run.call_count, 1)
 
 
 class AutoSwitchTest(unittest.TestCase):

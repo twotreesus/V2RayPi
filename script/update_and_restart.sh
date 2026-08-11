@@ -7,6 +7,10 @@ PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 # Change to project directory
 cd "$PROJECT_DIR"
 
+# One-click install uses `git clone --depth 1`, which implies single-branch.
+# Widen the fetch refspec so other remote branches become visible before update.
+git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+
 # Pull latest code, switching branch first when one is requested
 TARGET_BRANCH="$1"
 if [ -n "$TARGET_BRANCH" ]; then
