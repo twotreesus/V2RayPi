@@ -160,6 +160,9 @@
             clearInterval(i);
         });
         g_intervals.length = 0;
+        if (typeof window.close_web_terminal === 'function') {
+            window.close_web_terminal();
+        }
     }
 
     // toast

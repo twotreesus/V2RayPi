@@ -54,6 +54,14 @@
         "system.host.shuttingDown": {zh: "正在关闭主机...", en: "Shutting down host..."},
         "system.host.shutdownSent": {zh: "关机命令已发送，请等待主机完全关闭", en: "Shutdown command sent. Please wait for the host to power off"},
         "system.host.shutdownFailed": {zh: "关机失败", en: "Shutdown failed"},
+        "system.host.terminal": {zh: "网页终端", en: "Web Terminal"},
+        "system.host.terminalOpen": {zh: "打开终端", en: "Open terminal"},
+        "system.host.terminalHint": {zh: "在浏览器中打开主机命令行", en: "Open a host shell in the browser"},
+        "system.host.terminalTitle": {zh: "主机终端", en: "Host terminal"},
+        "system.host.terminalClose": {zh: "关闭", en: "Close"},
+        "system.host.terminalConnecting": {zh: "正在连接终端...", en: "Connecting to terminal..."},
+        "system.host.terminalFailed": {zh: "终端连接失败", en: "Failed to connect to the terminal"},
+        "system.host.terminalClosed": {zh: "终端已断开", en: "Terminal disconnected"},
         "system.logs.title": {zh: "运行日志", en: "Runtime logs"},
         "system.update.checking": {zh: "正在检查更新...", en: "Checking for updates..."},
         "system.update.available": {zh: "发现新的更新", en: "New updates are available"},
@@ -208,6 +216,15 @@
                         <div class="action-group">
                             <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="reboot_host()" data-i18n="system.host.reboot">重启主机</button>
                             <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-red mdui-ripple" onclick="shutdown_host()" data-i18n="system.host.shutdown">关闭主机</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="system-inline-row">
+                    <td data-i18n="system.host.terminal">网页终端</td>
+                    <td>
+                        <div class="action-group system-backup-actions">
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="open_web_terminal()" data-i18n="system.host.terminalOpen">打开终端</button>
+                            <span class="action-group-value system-hint" data-i18n="system.host.terminalHint">在浏览器中打开主机命令行</span>
                         </div>
                     </td>
                 </tr>
@@ -479,6 +496,220 @@
             }, null, confirm_options());
         }, null, confirm_options());
     }
+
+    var g_web_terminal = {
+        loading: null,
+        term: null,
+        fitAddon: null,
+        eventSource: null,
+        sessionId: null,
+        opening: false
+    };
+
+    function load_web_terminal_assets() {
+        if (window.Terminal && window.FitAddon && window.FitAddon.FitAddon) {
+            return Promise.resolve();
+        }
+        if (g_web_terminal.loading) {
+            return g_web_terminal.loading;
+        }
+        g_web_terminal.loading = new Promise(function(resolve, reject) {
+            if (!$('link[data-web-terminal-css]').length) {
+                $('<link rel="stylesheet" href="/static/css/xterm.css" data-web-terminal-css="1">')
+                    .appendTo(document.head);
+            }
+            function loadScript(src) {
+                return new Promise(function(res, rej) {
+                    if ($('script[src="' + src + '"]').length) {
+                        res();
+                        return;
+                    }
+                    var script = document.createElement('script');
+                    script.src = src;
+                    script.onload = function() { res(); };
+                    script.onerror = function() { rej(new Error('failed to load ' + src)); };
+                    document.head.appendChild(script);
+                });
+            }
+            loadScript('/static/js/xterm/xterm.js')
+                .then(function() { return loadScript('/static/js/xterm/addon-fit.js'); })
+                .then(resolve)
+                .catch(reject);
+        });
+        return g_web_terminal.loading;
+    }
+
+    function ensure_web_terminal_overlay() {
+        var overlay = $('#web_terminal_overlay');
+        if (overlay.length) {
+            return overlay;
+        }
+        overlay = $(
+            '<div id="web_terminal_overlay" class="web-terminal-overlay" style="display:none;" aria-hidden="true">' +
+                '<div class="web-terminal-panel">' +
+                    '<div class="web-terminal-header">' +
+                        '<span class="web-terminal-title" data-i18n="system.host.terminalTitle">主机终端</span>' +
+                        '<button type="button" class="mdui-btn mdui-btn-icon mdui-ripple web-terminal-close" onclick="close_web_terminal()" data-i18n-title="system.host.terminalClose" title="关闭">' +
+                            '<i class="mdui-icon material-icons">close</i>' +
+                        '</button>' +
+                    '</div>' +
+                    '<div id="web_terminal_container" class="web-terminal-container"></div>' +
+                '</div>' +
+            '</div>'
+        );
+        $('body').append(overlay);
+        if (window.I18n) {
+            I18n.apply(overlay[0]);
+        }
+        return overlay;
+    }
+
+    function send_web_terminal_input(data) {
+        if (!g_web_terminal.sessionId || !data) {
+            return;
+        }
+        ajax_request({
+            url: '/api/terminal/input',
+            type: 'POST',
+            data: JSON.stringify({ id: g_web_terminal.sessionId, data: data })
+        }).fail(function() {});
+    }
+
+    function resize_web_terminal() {
+        if (!g_web_terminal.term || !g_web_terminal.fitAddon || !g_web_terminal.sessionId) {
+            return;
+        }
+        try {
+            g_web_terminal.fitAddon.fit();
+        } catch (e) {}
+        ajax_request({
+            url: '/api/terminal/resize',
+            type: 'POST',
+            data: JSON.stringify({
+                id: g_web_terminal.sessionId,
+                rows: g_web_terminal.term.rows,
+                cols: g_web_terminal.term.cols
+            })
+        }).fail(function() {});
+    }
+
+    function open_web_terminal() {
+        if (g_web_terminal.opening) {
+            return;
+        }
+        g_web_terminal.opening = true;
+        pop_toast(t('system.host.terminalConnecting'));
+        load_web_terminal_assets()
+            .then(function() {
+                var overlay = ensure_web_terminal_overlay();
+                var container = document.getElementById('web_terminal_container');
+                container.innerHTML = '';
+
+                g_web_terminal.term = new Terminal({
+                    cursorBlink: true,
+                    fontSize: 14,
+                    fontFamily: 'Menlo, Monaco, Consolas, "Courier New", monospace',
+                    theme: {
+                        background: 'rgba(16, 20, 24, 0.92)',
+                        foreground: '#e8eaed',
+                        cursor: '#8ab4f8'
+                    },
+                    allowProposedApi: true
+                });
+                g_web_terminal.fitAddon = new FitAddon.FitAddon();
+                g_web_terminal.term.loadAddon(g_web_terminal.fitAddon);
+                g_web_terminal.term.open(container);
+                g_web_terminal.fitAddon.fit();
+                g_web_terminal.term.onData(send_web_terminal_input);
+
+                overlay.show().attr('aria-hidden', 'false');
+                $(window).on('resize.webTerminal', resize_web_terminal);
+
+                return ajax_request({
+                    url: '/api/terminal/open',
+                    type: 'POST',
+                    data: JSON.stringify({
+                        rows: g_web_terminal.term.rows,
+                        cols: g_web_terminal.term.cols
+                    })
+                });
+            })
+            .then(function(data) {
+                if (!check_result(data) || !data.id) {
+                    throw new Error('open failed');
+                }
+                g_web_terminal.sessionId = data.id;
+                close_toast();
+
+                if (g_web_terminal.eventSource) {
+                    g_web_terminal.eventSource.close();
+                }
+                g_web_terminal.eventSource = new EventSource(
+                    '/api/terminal/stream?id=' + encodeURIComponent(data.id)
+                );
+                g_web_terminal.eventSource.addEventListener('output', function(e) {
+                    try {
+                        var msg = JSON.parse(e.data);
+                        if (g_web_terminal.term && msg.data) {
+                            g_web_terminal.term.write(msg.data);
+                        }
+                    } catch (err) {}
+                });
+                g_web_terminal.eventSource.addEventListener('exit', function() {
+                    if (g_web_terminal.term) {
+                        g_web_terminal.term.writeln('\r\n[' + t('system.host.terminalClosed') + ']');
+                    }
+                });
+                g_web_terminal.eventSource.onerror = function() {
+                    if (g_web_terminal.eventSource) {
+                        g_web_terminal.eventSource.close();
+                        g_web_terminal.eventSource = null;
+                    }
+                };
+                g_web_terminal.term.focus();
+                resize_web_terminal();
+            })
+            .catch(function() {
+                update_toast(t('system.host.terminalFailed'));
+                setTimeout(close_toast, 2000);
+                close_web_terminal();
+            })
+            .then(function() {
+                g_web_terminal.opening = false;
+            });
+    }
+
+    function close_web_terminal() {
+        var sessionId = g_web_terminal.sessionId;
+        g_web_terminal.sessionId = null;
+        $(window).off('resize.webTerminal');
+
+        if (g_web_terminal.eventSource) {
+            g_web_terminal.eventSource.close();
+            g_web_terminal.eventSource = null;
+        }
+        if (g_web_terminal.term) {
+            try {
+                g_web_terminal.term.dispose();
+            } catch (e) {}
+            g_web_terminal.term = null;
+            g_web_terminal.fitAddon = null;
+        }
+        $('#web_terminal_overlay').hide().attr('aria-hidden', 'true');
+        $('#web_terminal_container').empty();
+
+        if (sessionId) {
+            ajax_request({
+                url: '/api/terminal/close',
+                type: 'POST',
+                data: JSON.stringify({ id: sessionId })
+            }).fail(function() {});
+        }
+        g_web_terminal.opening = false;
+    }
+
+    window.open_web_terminal = open_web_terminal;
+    window.close_web_terminal = close_web_terminal;
 
     var logEventSource = null;
 

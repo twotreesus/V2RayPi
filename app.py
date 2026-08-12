@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import json
+import queue
 import threading
 import time
 import functools
@@ -11,6 +12,7 @@ from werkzeug.serving import WSGIRequestHandler
 from core.core_service import CoreService
 from core.keys import Keyword as K
 from core.mihomo_default_path import MihomoDefaultPath
+from core.web_terminal import WebTerminalManager
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(dir_path)
@@ -19,6 +21,8 @@ CoreService.load()
 app = Flask(__name__, static_url_path='/static')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
+
+web_terminal = WebTerminalManager()
 
 
 class V2RayPiRequestHandler(WSGIRequestHandler):
@@ -467,6 +471,88 @@ def shutdown_host_api():
         return jsonify({K.result: K.ok})
     except Exception:
         return jsonify({K.result: K.failed})
+
+@app.route('/api/terminal/open', methods=['POST'])
+@require_auth
+def terminal_open_api():
+    data = request.get_json(silent=True) or {}
+    try:
+        rows = int(data.get('rows') or 24)
+        cols = int(data.get('cols') or 80)
+    except (TypeError, ValueError):
+        rows, cols = 24, 80
+    try:
+        session = web_terminal.create(rows=rows, cols=cols)
+    except OSError as e:
+        print(f'Failed to open web terminal: {e}')
+        return jsonify({K.result: K.failed, 'error': 'terminal_open_failed'})
+    return jsonify({K.result: K.ok, 'id': session.id})
+
+@app.route('/api/terminal/stream')
+@require_auth
+def terminal_stream_api():
+    session_id = request.args.get('id', '')
+    session = web_terminal.get(session_id)
+    if not session:
+        return jsonify({K.result: K.failed, 'error': 'terminal_not_found'}), 404
+
+    def generate():
+        yield 'event: ready\ndata: {}\n\n'
+        while True:
+            try:
+                chunk = session.output.get(timeout=0.8)
+            except queue.Empty:
+                if not session.alive:
+                    break
+                yield ': ping\n\n'
+                continue
+            if chunk is None:
+                break
+            yield 'event: output\ndata: ' + json.dumps({'data': chunk}) + '\n\n'
+            if not session.alive and session.output.empty():
+                break
+        yield 'event: exit\ndata: {}\n\n'
+
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+    )
+
+@app.route('/api/terminal/input', methods=['POST'])
+@require_auth
+def terminal_input_api():
+    data = request.get_json(silent=True) or {}
+    session = web_terminal.get(data.get('id', ''))
+    if not session:
+        return jsonify({K.result: K.failed, 'error': 'terminal_not_found'})
+    text = data.get('data')
+    if not isinstance(text, str):
+        return jsonify({K.result: K.failed, 'error': 'invalid_input'})
+    session.write(text)
+    return jsonify({K.result: K.ok})
+
+@app.route('/api/terminal/resize', methods=['POST'])
+@require_auth
+def terminal_resize_api():
+    data = request.get_json(silent=True) or {}
+    session = web_terminal.get(data.get('id', ''))
+    if not session:
+        return jsonify({K.result: K.failed, 'error': 'terminal_not_found'})
+    try:
+        rows = int(data.get('rows') or 24)
+        cols = int(data.get('cols') or 80)
+    except (TypeError, ValueError):
+        return jsonify({K.result: K.failed, 'error': 'invalid_size'})
+    session.resize(rows, cols)
+    return jsonify({K.result: K.ok})
+
+@app.route('/api/terminal/close', methods=['POST'])
+@require_auth
+def terminal_close_api():
+    data = request.get_json(silent=True) or {}
+    web_terminal.close(data.get('id', ''))
+    return jsonify({K.result: K.ok})
 
 @app.route('/export_config')
 def export_config_api():
