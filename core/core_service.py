@@ -35,6 +35,7 @@ from .mihomo_user_config import MihomoUserConfig
 from .node import Node
 from .performance_history import PerformanceHistory
 from .traffic_monitor import TrafficMonitor
+from .egress_ip import EgressIpResolver
 
 class CoreService:
     app_config : AppConfig = None
@@ -43,6 +44,7 @@ class CoreService:
     node_manager:NodeManager = NodeManager()
     traffic_monitor = TrafficMonitor()
     performance_history = PerformanceHistory()
+    egress_ip_resolver = EgressIpResolver()
     scheduler:BackgroundScheduler = BackgroundScheduler(
         {
             'apscheduler.executors.default': {
@@ -229,6 +231,14 @@ class CoreService:
         return result
 
     @classmethod
+    def get_egress_ip(cls, force: bool = False) -> dict:
+        return cls.egress_ip_resolver.get(force=force)
+
+    @classmethod
+    def invalidate_egress_ip(cls) -> None:
+        cls.egress_ip_resolver.invalidate()
+
+    @classmethod
     def update_and_restart_v2raypi(cls, branch: str = None):
         script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'script', 'update_and_restart.sh')
         if branch and not cls.is_valid_branch_name(branch):
@@ -313,6 +323,9 @@ class CoreService:
             # controller checks the systemd service state, so this is safe to
             # call on every subsequent node application and after reinstall.
             cls.mihomo.enable_iptables()
+            # Node / mode changes can move the egress address; drop the cache
+            # so the next Status lookup does not reuse a stale public IP.
+            cls.invalidate_egress_ip()
         if restart_auto_detect:
             cls.restart_auto_detect()
         return result

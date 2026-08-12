@@ -139,6 +139,15 @@ def get_system_status_api():
     status.update({K.result: K.ok})
     return jsonify(status)
 
+@app.route('/get_egress_ip')
+@require_auth
+def get_egress_ip_api():
+    force = request.args.get('force', '').lower() in ('1', 'true', 'yes')
+    info = CoreService.get_egress_ip(force=force)
+    payload = dict(info)
+    payload[K.result] = K.ok if info.get('ok') else K.failed
+    return jsonify(payload)
+
 @app.route('/get_performance')
 @require_auth
 def get_performance_api():

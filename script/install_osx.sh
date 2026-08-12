@@ -1,7 +1,7 @@
 #!/bin/bash
 
 brew update
-brew install wget curl python3 mihomo
+brew install wget curl python3 mihomo ipinfo-cli
 
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

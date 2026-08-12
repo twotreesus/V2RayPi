@@ -14,7 +14,6 @@
     --page-control-inset: 24px;
     --system-label-column: 112px;
 }
-
 @media (min-width: 600px) {
     :root {
         --appbar-height: 64px;
@@ -526,6 +525,90 @@ body.mdui-appbar-with-toolbar {
 .action-group-value {
     flex-shrink: 1;
     min-width: 100px;
+}
+
+.egress-location-row {
+    gap: 8px;
+}
+
+.egress-flag {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    object-fit: cover;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.egress-refresh-btn {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0;
+    color: #64b5f6;
+    background: transparent;
+    box-shadow: none;
+}
+
+.egress-refresh-btn .mdui-icon {
+    width: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    /* mdui centers icon buttons with translate(-12px,-12px) for 24px icons;
+       keep the same centering when we animate rotate, or the icon drifts. */
+    transform: translate(-10px, -10px);
+}
+
+.egress-refresh-btn:hover,
+.egress-refresh-btn:focus {
+    color: #42a5f5;
+    background: transparent;
+}
+
+.egress-refresh-btn:disabled {
+    color: #90caf9;
+    opacity: 0.7;
+    background: transparent;
+}
+
+.egress-refresh-btn.is-refreshing .mdui-icon {
+    animation: egress-refresh-spin 0.8s linear infinite;
+}
+
+@keyframes egress-refresh-spin {
+    from {
+        transform: translate(-10px, -10px) rotate(0deg);
+    }
+    to {
+        transform: translate(-10px, -10px) rotate(360deg);
+    }
+}
+
+@media (max-width: 599px) {
+    /* Keep the section title and refresh control on one row instead of the
+       stacked label/value treatment used by ordinary status rows. */
+    .rwd-table > tbody > tr.egress-section-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .rwd-table > tbody > tr.egress-section-head > td {
+        width: auto !important;
+    }
+
+    .rwd-table > tbody > tr.egress-section-head > td:first-child {
+        flex: 0 0 auto;
+        color: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        padding-bottom: 10px;
+    }
+
+    .rwd-table > tbody > tr.egress-section-head > td:last-child {
+        flex: 0 0 auto;
+        padding-left: 0;
+    }
 }
 
 /* Groups made of controls only: they hug the right edge on every screen. */

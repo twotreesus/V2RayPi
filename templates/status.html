@@ -14,6 +14,14 @@
         "status.mode.smart": {zh: "智能分流", en: "Smart Routing"},
         "status.mode.global": {zh: "全局代理", en: "Global Proxy"},
         "status.action.switch": {zh: "切换", en: "Switch"},
+        "status.section.egress": {zh: "出口 IP", en: "Public IP"},
+        "status.egress.refresh": {zh: "刷新", en: "Refresh"},
+        "status.egress.refreshing": {zh: "刷新中...", en: "Refreshing..."},
+        "status.egress.ip": {zh: "IP 地址", en: "IP Address"},
+        "status.egress.location": {zh: "地理位置", en: "Location"},
+        "status.egress.org": {zh: "组织", en: "Organization"},
+        "status.egress.unavailable": {zh: "暂时无法获取", en: "Unavailable"},
+        "status.egress.missing": {zh: "未安装 ipinfo", en: "ipinfo is not installed"},
         "status.section.performance": {zh: "性能监控", en: "Performance Monitoring"},
         "status.chart.cpu": {zh: "CPU 占用率", en: "CPU Usage"},
         "status.chart.cpu_value": {zh: "CPU 占用率  {value}%", en: "CPU Usage  {value}%"},
@@ -44,11 +52,28 @@
         "status.toast.switch_failed": {zh: "切换失败", en: "Failed to switch"}
     });
 </script>
+<style>
+    /* Same fixed-column approach as the Advance page: label width stays stable
+       across languages instead of growing with English strings. */
+    #status_table {
+        table-layout: fixed;
+        width: 100%;
+        word-break: break-word;
+    }
+
+    #status_table > tbody > tr > td:first-child:not(:only-child) {
+        white-space: nowrap;
+    }
+</style>
 <div id="status_page" class="mdui-container">
     <p></p>
     <div class="mdui-row">
-        <div class="mdui-table-fluid">
-            <table class="mdui-table rwd-table">
+        <div class="mdui-table-fluid" style="overflow-x: hidden;">
+            <table id="status_table" class="mdui-table rwd-table">
+                <colgroup>
+                    <col style="width: 14%">
+                    <col style="width: 86%">
+                </colgroup>
                 <tbody>
                 <tr>
                     <td colspan="2" class="mdui-typo">
@@ -106,6 +131,40 @@
                             </div>
                         </div>
                     </td>
+                </tr>
+
+                <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
+                <tr class="egress-section-head">
+                    <td class="mdui-typo">
+                        <h5 style="margin: 0;" data-i18n="status.section.egress">出口 IP</h5>
+                    </td>
+                    <td>
+                        <button id="egress_refresh_btn"
+                                type="button"
+                                class="mdui-btn mdui-btn-icon mdui-ripple egress-refresh-btn"
+                                data-i18n-title="status.egress.refresh"
+                                title="刷新"
+                                onclick="refresh_egress_ip(true)">
+                            <i class="mdui-icon material-icons">refresh</i>
+                        </button>
+                    </td>
+                </tr>
+                <tr class="status-runtime-row">
+                    <td data-i18n="status.egress.ip">IP 地址</td>
+                    <td><span id="egress_ip_value" class="action-group-value">-</span></td>
+                </tr>
+                <tr class="status-runtime-row">
+                    <td data-i18n="status.egress.location">地理位置</td>
+                    <td>
+                        <div class="action-group egress-location-row">
+                            <img id="egress_flag" class="egress-flag" alt="" hidden>
+                            <span id="egress_location_value" class="action-group-value">-</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="status-runtime-row">
+                    <td data-i18n="status.egress.org">组织</td>
+                    <td><span id="egress_org_value" class="action-group-value">-</span></td>
                 </tr>
 
                 <tr class="mdui-color-grey-100"><td colspan="2"></td></tr>
@@ -182,6 +241,7 @@
         update_performance();
         add_interval(setInterval(update_performance, 1000));
         refresh();
+        refresh_egress_ip();
     });
 
     function refresh() {
@@ -206,6 +266,94 @@
             window.g_proxy_mode_select.handleUpdate();
             $("#mihomo_current_ver").html(data["version"]);
             $("#mihomo_new_ver").html(window.g_new_version);
+        });
+    }
+
+    function country_flag_url(code) {
+        if (!code || !/^[A-Za-z]{2}$/.test(code)) {
+            return "";
+        }
+        return "https://cdn.jsdelivr.net/gh/HatScripts/circle-flags@2.7.0/flags/"
+            + code.toLowerCase() + ".svg";
+    }
+
+    function format_egress_location(data) {
+        return [data.city, data.region, data.country]
+            .filter(function (part) { return !!part; })
+            .join(", ") || "-";
+    }
+
+    function set_egress_flag(code) {
+        var $flag = $("#egress_flag");
+        var url = country_flag_url(code);
+        if (!url) {
+            $flag.attr({ src: "", hidden: true, alt: "" });
+            return;
+        }
+        $flag
+            .off("error.egressFlag load.egressFlag")
+            .on("error.egressFlag", function () {
+                $(this).attr({ src: "", hidden: true, alt: "" });
+            })
+            .on("load.egressFlag", function () {
+                $(this).prop("hidden", false);
+            })
+            .attr({
+                src: url,
+                alt: String(code || "").toUpperCase(),
+                hidden: true
+            });
+    }
+
+    function set_egress_fields(values) {
+        $("#egress_ip_value").text(values.ip || "-");
+        $("#egress_location_value").text(values.location || "-");
+        $("#egress_org_value").text(values.org || "-");
+        if (Object.prototype.hasOwnProperty.call(values, "country")) {
+            set_egress_flag(values.country);
+        }
+    }
+
+    function refresh_egress_ip(force) {
+        if (!$("#egress_ip_value").length) {
+            return;
+        }
+        var $btn = $("#egress_refresh_btn");
+        if ($btn.prop("disabled")) {
+            return;
+        }
+        $btn.prop("disabled", true).addClass("is-refreshing")
+            .attr("title", t("status.egress.refreshing"));
+        var url = "/get_egress_ip" + (force ? "?force=1" : "");
+        ajax_request({ url: url }).then(function (data) {
+            if (data && data.ok && data.ip) {
+                set_egress_fields({
+                    ip: data.ip,
+                    location: format_egress_location(data),
+                    org: data.org,
+                    country: data.country
+                });
+                return;
+            }
+            var message = (data && data.error === "ipinfo_missing")
+                ? t("status.egress.missing")
+                : t("status.egress.unavailable");
+            set_egress_fields({
+                ip: message,
+                location: "-",
+                org: "-",
+                country: ""
+            });
+        }).fail(function () {
+            set_egress_fields({
+                ip: t("status.egress.unavailable"),
+                location: "-",
+                org: "-",
+                country: ""
+            });
+        }).always(function () {
+            $btn.prop("disabled", false).removeClass("is-refreshing")
+                .attr("title", t("status.egress.refresh"));
         });
     }
 
@@ -319,6 +467,7 @@
         }).always(function () {
             close_toast();
             refresh();
+            refresh_egress_ip(true);
         });
     }
 
@@ -334,6 +483,7 @@
         }).always(function () {
             close_toast();
             refresh();
+            refresh_egress_ip(true);
         });
     }
 
@@ -349,6 +499,7 @@
         }).always(function () {
             close_toast();
             refresh();
+            refresh_egress_ip(true);
         });
     }
 
@@ -367,6 +518,7 @@
             }).always(function () {
                 close_toast();
                 refresh();
+                refresh_egress_ip(true);
             });
     }
 </script>

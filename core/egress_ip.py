@@ -1,0 +1,122 @@
+# encoding: utf-8
+"""Resolve the current egress IP via the ipinfo CLI."""
+import json
+import os
+import shutil
+import subprocess
+import threading
+import time
+from typing import Any, Dict, Optional
+
+
+class EgressIpResolver:
+    TTL_SECONDS = 300
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._cache: Optional[Dict[str, Any]] = None
+        self._fetched_at = 0.0
+
+    def _binary(self) -> str:
+        return os.environ.get('IPINFO_BIN') or shutil.which('ipinfo') or 'ipinfo'
+
+    def get(self, force: bool = False) -> Dict[str, Any]:
+        now = time.time()
+        with self._lock:
+            if (
+                not force
+                and self._cache is not None
+                and now - self._fetched_at < self.TTL_SECONDS
+            ):
+                return dict(self._cache)
+
+        info = self._query()
+        with self._lock:
+            self._cache = info
+            self._fetched_at = time.time()
+            return dict(info)
+
+    def invalidate(self) -> None:
+        with self._lock:
+            self._cache = None
+            self._fetched_at = 0.0
+
+    def _query(self) -> Dict[str, Any]:
+        binary = self._binary()
+        try:
+            result = subprocess.run(
+                [binary, 'myip', '--json', '--nocache', '--nocolor'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=20,
+                env=self._subprocess_env(),
+            )
+        except FileNotFoundError:
+            print('ipinfo binary not found; egress IP lookup skipped')
+            return self._failure('ipinfo_missing')
+        except subprocess.TimeoutExpired:
+            print('ipinfo myip timed out')
+            return self._failure('ipinfo_timeout')
+        except OSError as e:
+            print(f'ipinfo myip failed to start: {e}')
+            return self._failure('ipinfo_failed')
+
+        if result.returncode != 0:
+            err = (result.stderr or result.stdout or '').strip()
+            print(f'ipinfo myip returned {result.returncode}: {err}')
+            return self._failure('ipinfo_failed')
+
+        try:
+            payload = json.loads(result.stdout or '{}')
+        except json.JSONDecodeError:
+            print('ipinfo myip returned non-JSON output')
+            return self._failure('ipinfo_invalid')
+
+        if not isinstance(payload, dict):
+            return self._failure('ipinfo_invalid')
+
+        ip = str(payload.get('ip') or '').strip()
+        if not ip:
+            return self._failure('ipinfo_empty')
+
+        city = str(payload.get('city') or '').strip()
+        region = str(payload.get('region') or '').strip()
+        country = str(payload.get('country') or '').strip()
+        org = str(payload.get('org') or '').strip()
+        location = ', '.join([part for part in (city, region, country) if part])
+        summary_parts = [ip]
+        if location:
+            summary_parts.append(location)
+        if org:
+            summary_parts.append(org)
+
+        return {
+            'ok': True,
+            'ip': ip,
+            'city': city,
+            'region': region,
+            'country': country,
+            'org': org,
+            'summary': ' · '.join(summary_parts),
+            'error': '',
+        }
+
+    def _subprocess_env(self) -> Dict[str, str]:
+        # Avoid noisy config-file warnings when the service home is not writable.
+        env = os.environ.copy()
+        env.setdefault('XDG_CONFIG_HOME', '/tmp')
+        env.setdefault('HOME', env.get('HOME') or '/tmp')
+        return env
+
+    def _failure(self, error: str) -> Dict[str, Any]:
+        return {
+            'ok': False,
+            'ip': '',
+            'city': '',
+            'region': '',
+            'country': '',
+            'org': '',
+            'summary': '',
+            'error': error,
+        }

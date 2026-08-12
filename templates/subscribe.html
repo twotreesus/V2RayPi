@@ -220,10 +220,27 @@
 <style>
     .group-toggle {
         display: inline-block;
-        transition: transform 0.25s ease;
+        transition: transform 280ms ease-out;
     }
     .group-toggle.expanded {
         transform: rotate(180deg);
+    }
+    /* Animate group body via grid rows instead of jQuery slide*: JS height
+       tweening on large node tables feels stepped; grid interpolates smoothly. */
+    .group-nodes {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 280ms ease-out;
+    }
+    .group-nodes.is-expanded {
+        grid-template-rows: 1fr;
+    }
+    .group-nodes.group-nodes--prep {
+        transition: none;
+    }
+    .group-nodes-inner {
+        overflow: hidden;
+        min-height: 0;
     }
     .node_running {
         position: relative;
@@ -348,16 +365,15 @@
 
         // All dynamic rows (subscribe heads, manual head, node rows) live in #node_list_body
         $("#node_list_body").on("click", ".toggle-row", function() {
-            var groupIndex = $(this).closest("tr").data("group");
+            var $head = $(this).closest("tr");
+            var groupIndex = $head.data("group");
+            var groupKey = $head.attr("data-group-key");
             var $nodesBody = $(".group-" + groupIndex);
             var $icon = $(this).find(".group-toggle");
-            if ($nodesBody.is(":visible")) {
-                $nodesBody.slideUp(200);
-                $icon.removeClass("expanded");
-            } else {
-                $nodesBody.slideDown(200);
-                $icon.addClass("expanded");
-            }
+            var expanding = !$nodesBody.hasClass("is-expanded");
+            $nodesBody.toggleClass("is-expanded", expanding);
+            $icon.toggleClass("expanded", expanding);
+            save_group_expand_state(groupKey, expanding);
             return false;
         });
 
@@ -468,6 +484,43 @@
         refresh();
     });
 
+    var GROUP_EXPAND_STORAGE_KEY = "v2raypi.subscribe.groupExpanded";
+
+    function load_group_expand_state() {
+        try {
+            var raw = localStorage.getItem(GROUP_EXPAND_STORAGE_KEY);
+            var parsed = raw ? JSON.parse(raw) : {};
+            return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function save_group_expand_state(groupKey, expanded) {
+        if (!groupKey) {
+            return;
+        }
+        var state = load_group_expand_state();
+        state[groupKey] = !!expanded;
+        try {
+            localStorage.setItem(GROUP_EXPAND_STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+            // Quota / private mode: keep the session usable without persistence.
+        }
+    }
+
+    function is_group_expanded(groupKey, hasNodes) {
+        if (!hasNodes) {
+            return false;
+        }
+        var state = load_group_expand_state();
+        if (Object.prototype.hasOwnProperty.call(state, groupKey)) {
+            return !!state[groupKey];
+        }
+        // First visit: keep groups open, matching the previous default.
+        return true;
+    }
+
     function close_horizontal_action_menus() {
         // Leave --menu-scale alone so the close animation stays a right-edge
         // slide; the next open pins a fresh scale with transitions disabled.
@@ -491,25 +544,43 @@
             nodeListBody.empty();
             var currentNodesDiv = null;
             var currentNodesTbody = null;
+            var currentHeadRow = null;
+            var currentGroupKey = null;
+            var currentHasNodes = false;
+
+            function finalize_current_group() {
+                if (!currentNodesDiv || !currentHeadRow) {
+                    return;
+                }
+                var expanded = is_group_expanded(currentGroupKey, currentHasNodes);
+                currentNodesDiv.toggleClass("is-expanded", expanded);
+                currentHeadRow.find(".group-toggle").toggleClass("expanded", expanded);
+            }
 
             function make_group_head(url, index) {
                 var url_row = $("#subscribe_template").clone();
                 url_row.attr("id", "real_subscribe_" + index);
                 url_row.attr("data-url", url);
                 url_row.attr("data-group", index);
+                url_row.attr("data-group-key", url);
                 url_row.find(".url").html(url);
                 url_row.find(".subscribe-index-label")
                     .removeAttr("data-i18n")
                     .html('<span data-i18n="subscribe.group"></span> ' + index);
                 I18n.apply(url_row[0]);
-                url_row.find(".group-toggle").addClass("expanded");
                 url_row.show();
                 var headerTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
                 headerTable.find("tbody").append(url_row);
                 var nodesTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
-                var nodesDiv = $('<div class="group-' + index + '" style="display:none;"></div>').append(nodesTable);
+                var nodesInner = $('<div class="group-nodes-inner"></div>').append(nodesTable);
+                var nodesDiv = $('<div class="group-' + index + ' group-nodes group-nodes--prep"></div>')
+                    .attr("data-group-key", url)
+                    .append(nodesInner);
                 nodeListBody.append($('<div></div>').append(headerTable).append(nodesDiv));
                 currentNodesDiv = nodesDiv;
+                currentHeadRow = url_row;
+                currentGroupKey = url;
+                currentHasNodes = false;
                 currentNodesTbody = nodesTable.find("tbody");
             }
 
@@ -517,14 +588,20 @@
                 var manual_head = $("#manual_template").clone();
                 manual_head.attr("id", "real_manual");
                 manual_head.attr("data-group", groupIndex);
-                manual_head.find(".group-toggle").addClass("expanded");
+                manual_head.attr("data-group-key", "manual");
                 manual_head.show();
                 var headerTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
                 headerTable.find("tbody").append(manual_head);
                 var nodesTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
-                var nodesDiv = $('<div class="group-' + groupIndex + '" style="display:none;"></div>').append(nodesTable);
+                var nodesInner = $('<div class="group-nodes-inner"></div>').append(nodesTable);
+                var nodesDiv = $('<div class="group-' + groupIndex + ' group-nodes group-nodes--prep"></div>')
+                    .attr("data-group-key", "manual")
+                    .append(nodesInner);
                 nodeListBody.append($('<div></div>').append(headerTable).append(nodesDiv));
                 currentNodesDiv = nodesDiv;
+                currentHeadRow = manual_head;
+                currentGroupKey = "manual";
+                currentHasNodes = false;
                 currentNodesTbody = nodesTable.find("tbody");
             }
 
@@ -574,7 +651,7 @@
                     node_row.addClass("node_running");
                 }
                 currentNodesTbody.append(node_row);
-                currentNodesDiv.show();
+                currentHasNodes = true;
             }
 
             // Render favorites first
@@ -586,6 +663,7 @@
                     make_node_row('manual', node_data, manualGroup, j, true);
                 });
             }
+            finalize_current_group();
 
             groups.forEach(function(group, i) {
                 var url = group["subscribe"];
@@ -594,6 +672,13 @@
                 group["nodes"].forEach(function(node_data, j) {
                     make_node_row(url, node_data, index, j, false);
                 });
+                finalize_current_group();
+            });
+
+            // Enable expand/collapse transitions only after the initial layout is
+            // painted, so rebuilding the list does not animate every group open.
+            requestAnimationFrame(function () {
+                nodeListBody.find(".group-nodes--prep").removeClass("group-nodes--prep");
             });
 
             if (node_running) {
@@ -649,6 +734,9 @@
                         return $(this).data("url") === url;
                     }).find(".subscribe-index").addClass("running");
                 }
+                // Warm the egress-IP cache after the node change; Status will
+                // pick up the fresh result without waiting on the TTL.
+                ajax_request({ url: "/get_egress_ip?force=1" });
             } else {
                 update_toast(t("subscribe.apply.failed"));
             }

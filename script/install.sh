@@ -53,6 +53,13 @@ mkdir -p /etc/mihomo/
 mkdir -p /var/log/mihomo/
 bash "$SCRIPT_DIR/update_mihomo.sh" install
 
+# ipinfo CLI is used by the status page to show the current egress IP.
+# Prefer the official apt repository so the package stays updatable.
+echo "deb [trusted=yes] https://ppa.ipinfo.net/ /" \
+    > /etc/apt/sources.list.d/ipinfo.ppa.list
+apt-get update -y
+apt-get install -y ipinfo
+
 # mihomo refuses to start without a config file.  Seed a direct-mode
 # placeholder so the service is startable before the first node is applied;
 # V2RayPi overwrites it on every node application.
