@@ -4,7 +4,12 @@ import threading
 import unittest
 from unittest.mock import Mock, patch
 
-from core.web_terminal import WebTerminalManager, WebTerminalSession
+from core.web_terminal import (
+    WebTerminalManager,
+    WebTerminalSession,
+    _shell_command,
+    _shell_env,
+)
 
 
 class WebTerminalManagerTest(unittest.TestCase):
@@ -27,6 +32,26 @@ class WebTerminalManagerTest(unittest.TestCase):
         first.close.assert_called_once_with()
         self.assertIs(manager.get('second'), second)
         self.assertIsNone(manager.get('first'))
+
+
+class WebTerminalShellCommandTest(unittest.TestCase):
+    def test_zsh_uses_zdotdir_rc(self):
+        env = _shell_env()
+        command = _shell_command('/bin/zsh', env)
+        self.assertEqual(command, ['/bin/zsh', '-i'])
+        self.assertTrue(env['ZDOTDIR'].endswith('script/web_terminal'))
+        self.assertTrue(
+            os.path.isfile(os.path.join(env['ZDOTDIR'], '.zshrc')),
+        )
+
+    def test_bash_uses_rcfile(self):
+        env = _shell_env()
+        command = _shell_command('/bin/bash', env)
+        self.assertEqual(command[0], '/bin/bash')
+        self.assertEqual(command[1], '--rcfile')
+        self.assertTrue(command[2].endswith('script/web_terminal/bashrc'))
+        self.assertEqual(command[3], '-i')
+        self.assertTrue(os.path.isfile(command[2]))
 
 
 class WebTerminalSessionIoTest(unittest.TestCase):

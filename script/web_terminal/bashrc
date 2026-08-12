@@ -1,0 +1,22 @@
+# Used as `bash --rcfile` for the browser terminal.
+# Keep the user's PATH/aliases, but force a glyph-free prompt so Powerline /
+# Nerd Font separators do not render as hollow tofu boxes in xterm.js.
+
+[[ -r /etc/profile ]] && . /etc/profile
+if [[ -r "${HOME}/.bash_profile" ]]; then
+  . "${HOME}/.bash_profile"
+elif [[ -r "${HOME}/.profile" ]]; then
+  . "${HOME}/.profile"
+fi
+[[ -r "${HOME}/.bashrc" ]] && . "${HOME}/.bashrc"
+
+_v2raypi_web_terminal_prompt() {
+  PS1='\[\e[38;5;75m\]\W\[\e[0m\] \$ '
+}
+
+_v2raypi_web_terminal_prompt
+if [[ -n "${PROMPT_COMMAND:-}" ]]; then
+  PROMPT_COMMAND="_v2raypi_web_terminal_prompt; ${PROMPT_COMMAND}"
+else
+  PROMPT_COMMAND="_v2raypi_web_terminal_prompt"
+fi

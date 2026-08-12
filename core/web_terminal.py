@@ -29,6 +29,26 @@ def _shell_env():
     return env
 
 
+def _web_terminal_rc_dir() -> str:
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'script', 'web_terminal',
+    )
+
+
+def _shell_command(shell: str, env: dict):
+    # Interactive (not login) + dedicated rc files: keep user PATH/aliases, but
+    # replace Powerline/Nerd Font prompts that xterm cannot render.
+    name = os.path.basename(shell)
+    rc_dir = _web_terminal_rc_dir()
+    if name == 'zsh':
+        env['ZDOTDIR'] = rc_dir
+        return [shell, '-i']
+    if name == 'bash':
+        return [shell, '--rcfile', os.path.join(rc_dir, 'bashrc'), '-i']
+    return [shell, '-i']
+
+
 def _detach_debugger_before_shell():
     try:
         sys.settrace(None)
@@ -68,13 +88,14 @@ class WebTerminalSession:
         if not os.path.isdir(cwd):
             cwd = '/'
 
+        command = _shell_command(shell, env)
         master_fd, slave_fd = pty.openpty()
         _set_winsize(slave_fd, rows, cols)
         try:
             # openpty + Popen avoids pty.fork()'s "replace the traced Python
             # process" path that pydevd blocks on for several seconds.
             self.proc = subprocess.Popen(
-                [shell, '-l'],
+                command,
                 stdin=slave_fd,
                 stdout=slave_fd,
                 stderr=slave_fd,

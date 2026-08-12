@@ -606,13 +606,16 @@
                 container.innerHTML = '';
 
                 g_web_terminal.term = new Terminal({
-                    cursorBlink: true,
+                    cursorBlink: false,
+                    cursorStyle: 'block',
+                    cursorInactiveStyle: 'block',
                     fontSize: 14,
                     fontFamily: 'Menlo, Monaco, Consolas, "Courier New", monospace',
                     theme: {
                         background: 'rgba(16, 20, 24, 0.92)',
                         foreground: '#e8eaed',
-                        cursor: '#8ab4f8'
+                        cursor: '#8ab4f8',
+                        cursorAccent: '#101418'
                     },
                     allowProposedApi: true
                 });
