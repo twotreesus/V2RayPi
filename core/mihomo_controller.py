@@ -135,38 +135,39 @@ class MihomoController:
 
     def apply_config(self, config: str, api_secret: str = '') -> bool:
         started = time.monotonic()
-        if not self.test_config(config):
-            print('mihomo config apply aborted after validation ({0:.0f}ms)'.format(
-                (time.monotonic() - started) * 1000,
-            ))
+        # mihomo -t reloads geo data in a second process (~9s on a small SBC).
+        # A live core can reject a bad payload itself, so skip the test when
+        # the control API is going to load the file.  Restart still validates.
+        use_api = bool(api_secret) and self.running()
+        validate_ms = 0.0
+        if not use_api and not self._validate_config(config, started):
             return False
-        validate_ms = (time.monotonic() - started) * 1000
+        if not use_api:
+            validate_ms = (time.monotonic() - started) * 1000
 
-        write_started = time.monotonic()
-        config_file = MihomoDefaultPath.config_file()
-        os.makedirs(os.path.dirname(config_file), exist_ok=True)
-        with open(config_file, 'w+') as f:
-            f.write(config)
-        write_ms = (time.monotonic() - write_started) * 1000
+        previous = self._read_config_file() if use_api else ''
+        write_ms = self._write_config_file(config)
 
-        # Loading the new config into the running core skips the systemd stop /
-        # start and the process bootstrap.  A core that predates the control API,
-        # or one that is not running, still needs the restart.
-        if api_secret:
+        if use_api:
             reload_started = time.monotonic()
             if self.reload_config(api_secret):
-                reload_ms = (time.monotonic() - reload_started) * 1000
                 print(
                     'Applied mihomo config via API: '
-                    'validate={0:.0f}ms write={1:.0f}ms reload={2:.0f}ms total={3:.0f}ms'.format(
-                        validate_ms, write_ms, reload_ms,
+                    'validate=skipped write={0:.0f}ms reload={1:.0f}ms total={2:.0f}ms'.format(
+                        write_ms, (time.monotonic() - reload_started) * 1000,
                         (time.monotonic() - started) * 1000,
                     )
                 )
                 return True
-            print('mihomo control API reload failed after {0:.0f}ms, restarting'.format(
+            print('mihomo control API reload failed after {0:.0f}ms, restoring previous config'.format(
                 (time.monotonic() - reload_started) * 1000,
             ))
+            if previous:
+                self._write_config_file(previous)
+            if not self._validate_config(config, started):
+                return False
+            validate_ms = (time.monotonic() - started) * 1000
+            write_ms += self._write_config_file(config)
 
         restart_started = time.monotonic()
         ok = self.restart()
@@ -180,6 +181,29 @@ class MihomoController:
             )
         )
         return ok
+
+    def _validate_config(self, config: str, started: float) -> bool:
+        if self.test_config(config):
+            return True
+        print('mihomo config apply aborted after validation ({0:.0f}ms)'.format(
+            (time.monotonic() - started) * 1000,
+        ))
+        return False
+
+    def _read_config_file(self) -> str:
+        try:
+            with open(MihomoDefaultPath.config_file(), 'r') as f:
+                return f.read()
+        except OSError:
+            return ''
+
+    def _write_config_file(self, config: str) -> float:
+        started = time.monotonic()
+        config_file = MihomoDefaultPath.config_file()
+        os.makedirs(os.path.dirname(config_file), exist_ok=True)
+        with open(config_file, 'w+') as f:
+            f.write(config)
+        return (time.monotonic() - started) * 1000
 
     def api_secret(self) -> str:
         """Control API secret of the currently running core."""

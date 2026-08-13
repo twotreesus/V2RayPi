@@ -232,28 +232,62 @@ class ApplyConfigTest(unittest.TestCase):
 
         restart.assert_called_once_with()
 
-    def test_reloading_through_the_api_replaces_the_restart(self):
+    def test_reloading_through_the_api_skips_mihomo_test(self):
         controller = MihomoController()
-        with patch.object(controller, 'test_config', return_value=True), patch(
-            'core.mihomo_controller.os.makedirs',
-        ), patch('builtins.open'), patch.object(
-            controller, 'reload_config', return_value=True,
-        ) as reload_config, patch.object(controller, 'restart') as restart:
-            self.assertTrue(controller.apply_config('mode: rule', 'deadbeef'))
+        with tempfile.TemporaryDirectory() as config_dir:
+            config_file = os.path.join(config_dir, 'config.yaml')
+            with open(config_file, 'w') as f:
+                f.write('mode: rule\n')
+            with patch.object(controller, 'running', return_value=True), patch(
+                'core.mihomo_controller.MihomoDefaultPath.config_file',
+                return_value=config_file,
+            ), patch.object(controller, 'test_config') as test_config, patch.object(
+                controller, 'reload_config', return_value=True,
+            ) as reload_config, patch.object(controller, 'restart') as restart:
+                self.assertTrue(controller.apply_config('mode: global', 'deadbeef'))
 
-        reload_config.assert_called_once_with('deadbeef')
-        restart.assert_not_called()
+            test_config.assert_not_called()
+            reload_config.assert_called_once_with('deadbeef')
+            restart.assert_not_called()
+            with open(config_file) as f:
+                self.assertEqual(f.read(), 'mode: global')
 
     def test_a_core_without_a_reachable_api_falls_back_to_a_restart(self):
         controller = MihomoController()
-        with patch.object(controller, 'test_config', return_value=True), patch(
-            'core.mihomo_controller.os.makedirs',
-        ), patch('builtins.open'), patch.object(
-            controller, 'reload_config', return_value=False,
-        ), patch.object(controller, 'restart', return_value=True) as restart:
-            self.assertTrue(controller.apply_config('mode: rule', 'deadbeef'))
+        with tempfile.TemporaryDirectory() as config_dir:
+            config_file = os.path.join(config_dir, 'config.yaml')
+            with open(config_file, 'w') as f:
+                f.write('mode: rule\n')
+            with patch.object(controller, 'running', return_value=True), patch(
+                'core.mihomo_controller.MihomoDefaultPath.config_file',
+                return_value=config_file,
+            ), patch.object(controller, 'test_config', return_value=True) as test_config, patch.object(
+                controller, 'reload_config', return_value=False,
+            ), patch.object(controller, 'restart', return_value=True) as restart:
+                self.assertTrue(controller.apply_config('mode: global', 'deadbeef'))
 
-        restart.assert_called_once_with()
+            test_config.assert_called_once_with('mode: global')
+            restart.assert_called_once_with()
+            with open(config_file) as f:
+                self.assertEqual(f.read(), 'mode: global')
+
+    def test_rejected_api_reload_restores_the_previous_config(self):
+        controller = MihomoController()
+        with tempfile.TemporaryDirectory() as config_dir:
+            config_file = os.path.join(config_dir, 'config.yaml')
+            with open(config_file, 'w') as f:
+                f.write('mode: rule\n')
+            with patch.object(controller, 'running', return_value=True), patch(
+                'core.mihomo_controller.MihomoDefaultPath.config_file',
+                return_value=config_file,
+            ), patch.object(controller, 'test_config', return_value=False), patch.object(
+                controller, 'reload_config', return_value=False,
+            ), patch.object(controller, 'restart') as restart:
+                self.assertFalse(controller.apply_config('mode: nonsense', 'deadbeef'))
+
+            restart.assert_not_called()
+            with open(config_file) as f:
+                self.assertEqual(f.read(), 'mode: rule\n')
 
 
 class ControlApiTest(unittest.TestCase):
