@@ -7,7 +7,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 
 from typing import List
 
@@ -122,73 +121,34 @@ class MihomoController:
         # The running core still authenticates with the secret from the config it
         # was started with, so the current one has to be carried over instead of
         # minted again on every node application.
-        started = time.monotonic()
         api_secret = self.api_secret() or secrets.token_hex(API_SECRET_BYTES)
         config = MihomoConfig.gen_config(
             user_config, all_nodes, subscribe_hosts,
             controller_secret=api_secret,
         )
-        print('Generated mihomo config in {0:.0f}ms'.format(
-            (time.monotonic() - started) * 1000,
-        ))
         return self.apply_config(config, api_secret)
 
     def apply_config(self, config: str, api_secret: str = '') -> bool:
-        started = time.monotonic()
         # mihomo -t reloads geo data in a second process (~9s on a small SBC).
         # A live core can reject a bad payload itself, so skip the test when
         # the control API is going to load the file.  Restart still validates.
         use_api = bool(api_secret) and self.running()
-        validate_ms = 0.0
-        if not use_api and not self._validate_config(config, started):
+        if not use_api and not self.test_config(config):
             return False
-        if not use_api:
-            validate_ms = (time.monotonic() - started) * 1000
 
         previous = self._read_config_file() if use_api else ''
-        write_ms = self._write_config_file(config)
+        self._write_config_file(config)
 
         if use_api:
-            reload_started = time.monotonic()
             if self.reload_config(api_secret):
-                print(
-                    'Applied mihomo config via API: '
-                    'validate=skipped write={0:.0f}ms reload={1:.0f}ms total={2:.0f}ms'.format(
-                        write_ms, (time.monotonic() - reload_started) * 1000,
-                        (time.monotonic() - started) * 1000,
-                    )
-                )
                 return True
-            print('mihomo control API reload failed after {0:.0f}ms, restoring previous config'.format(
-                (time.monotonic() - reload_started) * 1000,
-            ))
             if previous:
                 self._write_config_file(previous)
-            if not self._validate_config(config, started):
+            if not self.test_config(config):
                 return False
-            validate_ms = (time.monotonic() - started) * 1000
-            write_ms += self._write_config_file(config)
+            self._write_config_file(config)
 
-        restart_started = time.monotonic()
-        ok = self.restart()
-        print(
-            'Applied mihomo config via restart: '
-            'validate={0:.0f}ms write={1:.0f}ms restart={2:.0f}ms total={3:.0f}ms ok={4}'.format(
-                validate_ms, write_ms,
-                (time.monotonic() - restart_started) * 1000,
-                (time.monotonic() - started) * 1000,
-                ok,
-            )
-        )
-        return ok
-
-    def _validate_config(self, config: str, started: float) -> bool:
-        if self.test_config(config):
-            return True
-        print('mihomo config apply aborted after validation ({0:.0f}ms)'.format(
-            (time.monotonic() - started) * 1000,
-        ))
-        return False
+        return self.restart()
 
     def _read_config_file(self) -> str:
         try:
@@ -197,13 +157,11 @@ class MihomoController:
         except OSError:
             return ''
 
-    def _write_config_file(self, config: str) -> float:
-        started = time.monotonic()
+    def _write_config_file(self, config: str) -> None:
         config_file = MihomoDefaultPath.config_file()
         os.makedirs(os.path.dirname(config_file), exist_ok=True)
         with open(config_file, 'w+') as f:
             f.write(config)
-        return (time.monotonic() - started) * 1000
 
     def api_secret(self) -> str:
         """Control API secret of the currently running core."""
