@@ -103,6 +103,8 @@ cat>/etc/supervisor/conf.d/v2raypi.ini<<-EOF
 [program:v2raypi]
 command=/usr/local/V2RayPi/script/start.sh run
 stdout_logfile=/var/log/v2raypi
+redirect_stderr=true
+environment=PYTHONUNBUFFERED=1
 autostart=true
 autorestart=true
 startsecs=5

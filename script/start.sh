@@ -6,4 +6,7 @@ export PATH
 [ $(id -u) != "0" ] && { echo "${CFAILURE}Error: You must be root to run this script${CEND}"; exit 1; }
 
 cd /usr/local/V2RayPi
-/usr/local/V2RayPi/venv/bin/python /usr/local/V2RayPi/app.py
+# Supervisor redirects stdout to a file, which makes Python fully buffer
+# print(); -u keeps apply-node / reload messages visible in /var/log/v2raypi.
+export PYTHONUNBUFFERED=1
+exec /usr/local/V2RayPi/venv/bin/python -u /usr/local/V2RayPi/app.py
