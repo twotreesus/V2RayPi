@@ -3,6 +3,8 @@ import tempfile
 import unittest
 from unittest.mock import Mock, call, patch
 
+import requests
+
 from core.mihomo_controller import MihomoController
 from core.mihomo_default_path import MihomoDefaultPath
 
@@ -229,6 +231,108 @@ class ApplyConfigTest(unittest.TestCase):
             self.assertTrue(controller.apply_config('mode: rule'))
 
         restart.assert_called_once_with()
+
+    def test_reloading_through_the_api_replaces_the_restart(self):
+        controller = MihomoController()
+        with patch.object(controller, 'test_config', return_value=True), patch(
+            'core.mihomo_controller.os.makedirs',
+        ), patch('builtins.open'), patch.object(
+            controller, 'reload_config', return_value=True,
+        ) as reload_config, patch.object(controller, 'restart') as restart:
+            self.assertTrue(controller.apply_config('mode: rule', 'deadbeef'))
+
+        reload_config.assert_called_once_with('deadbeef')
+        restart.assert_not_called()
+
+    def test_a_core_without_a_reachable_api_falls_back_to_a_restart(self):
+        controller = MihomoController()
+        with patch.object(controller, 'test_config', return_value=True), patch(
+            'core.mihomo_controller.os.makedirs',
+        ), patch('builtins.open'), patch.object(
+            controller, 'reload_config', return_value=False,
+        ), patch.object(controller, 'restart', return_value=True) as restart:
+            self.assertTrue(controller.apply_config('mode: rule', 'deadbeef'))
+
+        restart.assert_called_once_with()
+
+
+class ControlApiTest(unittest.TestCase):
+    def test_the_running_secret_is_carried_over_into_the_new_config(self):
+        # A freshly minted secret would not match the one the running core
+        # authenticates with, costing a restart on every node application.
+        controller = MihomoController()
+        with patch.object(controller, 'api_secret', return_value='live-secret'), patch(
+            'core.mihomo_controller.MihomoConfig.gen_config', return_value='mode: rule',
+        ) as gen_config, patch.object(
+            controller, 'apply_config', return_value=True,
+        ) as apply_config:
+            self.assertTrue(controller.apply_node(Mock(), []))
+
+        self.assertEqual(gen_config.call_args.kwargs['controller_secret'], 'live-secret')
+        apply_config.assert_called_once_with('mode: rule', 'live-secret')
+
+    def test_secret_is_read_from_the_live_config(self):
+        controller = MihomoController()
+        with tempfile.TemporaryDirectory() as config_dir:
+            config_file = os.path.join(config_dir, 'config.yaml')
+            with open(config_file, 'w') as f:
+                f.write('mode: rule\nsecret: live-secret\n')
+            with patch(
+                'core.mihomo_controller.MihomoDefaultPath.config_file',
+                return_value=config_file,
+            ):
+                self.assertEqual(controller.api_secret(), 'live-secret')
+
+    def test_a_config_without_a_secret_yields_an_empty_one(self):
+        controller = MihomoController()
+        with tempfile.TemporaryDirectory() as config_dir:
+            config_file = os.path.join(config_dir, 'config.yaml')
+            with open(config_file, 'w') as f:
+                f.write('mode: direct\n')
+            with patch(
+                'core.mihomo_controller.MihomoDefaultPath.config_file',
+                return_value=config_file,
+            ):
+                self.assertEqual(controller.api_secret(), '')
+
+    def test_reload_is_authenticated_and_forced(self):
+        controller = MihomoController()
+        with patch.object(controller, 'running', return_value=True), patch(
+            'core.mihomo_controller.requests.put',
+            return_value=Mock(status_code=204, text=''),
+        ) as put, patch(
+            'core.mihomo_controller.MihomoDefaultPath.config_file',
+            return_value='/etc/mihomo/config.yaml',
+        ):
+            self.assertTrue(controller.reload_config('live-secret'))
+
+        url = put.call_args[0][0]
+        self.assertIn('force=true', url)
+        self.assertEqual(
+            put.call_args.kwargs['headers']['Authorization'],
+            'Bearer live-secret',
+        )
+        self.assertEqual(
+            put.call_args.kwargs['json'],
+            {'path': '/etc/mihomo/config.yaml'},
+        )
+
+    def test_reload_of_a_stopped_core_does_not_reach_the_api(self):
+        controller = MihomoController()
+        with patch.object(controller, 'running', return_value=False), patch(
+            'core.mihomo_controller.requests.put',
+        ) as put:
+            self.assertFalse(controller.reload_config('live-secret'))
+
+        put.assert_not_called()
+
+    def test_an_unreachable_api_is_reported_as_a_failed_reload(self):
+        controller = MihomoController()
+        with patch.object(controller, 'running', return_value=True), patch(
+            'core.mihomo_controller.requests.put',
+            side_effect=requests.ConnectionError('connection refused'),
+        ):
+            self.assertFalse(controller.reload_config('live-secret'))
 
 
 class GeoDataUpdateTest(unittest.TestCase):

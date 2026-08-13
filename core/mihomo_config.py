@@ -25,6 +25,11 @@ TPROXY_PORT = 12345
 DNS_PORT = 1053
 ROUTING_MARK = 255
 
+# RESTful control API.  Loopback only: anything reachable on the LAN could
+# repoint the proxy of every client behind this router.
+CONTROLLER_LISTEN = '127.0.0.1'
+CONTROLLER_PORT = 9090
+
 # Proxy types mihomo can serve as an outbound.  Subscriptions are filtered
 # against this list before a node is stored, because a single unsupported
 # entry would otherwise be able to make the whole generated config invalid.
@@ -71,11 +76,12 @@ PRIVATE_NETWORKS_V6 = (
 class MihomoConfig:
     @classmethod
     def gen_config(cls, user_config: MihomoUserConfig, all_nodes: List[Node],
-                   subscribe_hosts: Optional[List[str]] = None) -> str:
+                   subscribe_hosts: Optional[List[str]] = None,
+                   controller_secret: str = '') -> str:
         domains, ips = cls._split_addrs(all_nodes, subscribe_hosts)
         direct_domains = cls._direct_policy_domains(user_config)
 
-        config = cls._gen_general(user_config)
+        config = cls._gen_general(user_config, controller_secret)
         config['sniffer'] = cls._gen_sniffer()
         config['dns'] = cls._gen_dns(user_config, domains, direct_domains)
 
@@ -113,12 +119,16 @@ class MihomoConfig:
         return domains
 
     @classmethod
-    def _gen_general(cls, user_config: MihomoUserConfig) -> Dict:
+    def _gen_general(cls, user_config: MihomoUserConfig,
+                     controller_secret: str = '') -> Dict:
         config = {
             'mode': 'rule',
             'log-level': LOG_LEVELS.get(user_config.advance_config.log.level, 'warning'),
             'allow-lan': True,
             'bind-address': '*',
+            # Lets a new config be loaded into the running core instead of
+            # restarting the process, which takes seconds on a small SBC.
+            'external-controller': '{0}:{1}'.format(CONTROLLER_LISTEN, CONTROLLER_PORT),
             # 255 == 0xff, matching the `-m mark --mark 0xff -j RETURN` rules in
             # script/config_iptable.sh that keep mihomo's own upstream
             # connections from looping back into TPROXY.
@@ -138,6 +148,8 @@ class MihomoConfig:
                 }
             ],
         }
+        if controller_secret:
+            config['secret'] = controller_secret
         if user_config.advance_config.inbound.enable_socks_proxy:
             config['mixed-port'] = user_config.advance_config.inbound.socks_port()
         return config

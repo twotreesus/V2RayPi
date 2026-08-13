@@ -2,6 +2,7 @@
 """Process and configuration control for the mihomo core."""
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -10,14 +11,22 @@ import tempfile
 from typing import List
 
 import requests
+import yaml
 
 from .mihomo_user_config import MihomoUserConfig
-from .mihomo_config import MihomoConfig
+from .mihomo_config import CONTROLLER_LISTEN, CONTROLLER_PORT, MihomoConfig
 from .mihomo_default_path import MihomoDefaultPath
 from .node import Node
 
 SERVICE_NAME = 'mihomo'
 IPTABLE_SERVICE_NAME = 'mihomo_iptable.service'
+
+API_BASE_URL = 'http://{0}:{1}'.format(CONTROLLER_LISTEN, CONTROLLER_PORT)
+API_CONNECT_TIMEOUT = 3
+# Reloading re-reads the geo databases, which is slow on a small SBC but still
+# an order of magnitude cheaper than a full process restart.
+API_RELOAD_TIMEOUT = 60
+API_SECRET_BYTES = 16
 
 
 class MihomoController:
@@ -109,10 +118,17 @@ class MihomoController:
 
     def apply_node(self, user_config: MihomoUserConfig, all_nodes: List[Node],
                    subscribe_hosts: List[str] = None) -> bool:
-        config = MihomoConfig.gen_config(user_config, all_nodes, subscribe_hosts)
-        return self.apply_config(config)
+        # The running core still authenticates with the secret from the config it
+        # was started with, so the current one has to be carried over instead of
+        # minted again on every node application.
+        api_secret = self.api_secret() or secrets.token_hex(API_SECRET_BYTES)
+        config = MihomoConfig.gen_config(
+            user_config, all_nodes, subscribe_hosts,
+            controller_secret=api_secret,
+        )
+        return self.apply_config(config, api_secret)
 
-    def apply_config(self, config: str) -> bool:
+    def apply_config(self, config: str, api_secret: str = '') -> bool:
         if not self.test_config(config):
             return False
 
@@ -121,7 +137,51 @@ class MihomoController:
         with open(config_file, 'w+') as f:
             f.write(config)
 
+        # Loading the new config into the running core skips the systemd stop /
+        # start and the process bootstrap.  A core that predates the control API,
+        # or one that is not running, still needs the restart.
+        if api_secret and self.reload_config(api_secret):
+            return True
         return self.restart()
+
+    def api_secret(self) -> str:
+        """Control API secret of the currently running core."""
+        try:
+            with open(MihomoDefaultPath.config_file(), 'r') as f:
+                config = yaml.safe_load(f)
+        except (OSError, yaml.YAMLError) as error:
+            print('Could not read the mihomo config for its API secret: {0}'.format(error))
+            return ''
+        if not isinstance(config, dict):
+            return ''
+        secret = config.get('secret')
+        return secret if isinstance(secret, str) else ''
+
+    def reload_config(self, api_secret: str) -> bool:
+        if not self.running():
+            return False
+
+        # force=true keeps the reload equivalent to the restart it replaces:
+        # listeners are rebuilt, so an inbound port change also takes effect.
+        url = '{0}/configs?force=true'.format(API_BASE_URL)
+        try:
+            response = requests.put(
+                url,
+                json={'path': MihomoDefaultPath.config_file()},
+                headers={'Authorization': 'Bearer {0}'.format(api_secret)},
+                timeout=(API_CONNECT_TIMEOUT, API_RELOAD_TIMEOUT),
+            )
+        except requests.RequestException as error:
+            print('mihomo config reload over the control API failed: {0}'.format(error))
+            return False
+
+        if response.status_code // 100 == 2:
+            print('Reloaded the mihomo config through the control API')
+            return True
+        print('mihomo refused the config reload: HTTP {0} {1}'.format(
+            response.status_code, response.text.strip(),
+        ))
+        return False
 
     def test_config(self, config: str) -> bool:
         """Validate a config before it replaces the running one.
