@@ -527,6 +527,29 @@ body.mdui-appbar-with-toolbar {
     min-width: 100px;
 }
 
+.egress-ip-row {
+    align-items: baseline;
+    gap: 8px;
+}
+
+.egress-latency {
+    flex: 0 0 auto;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.egress-latency.is-fast {
+    color: #2e7d32;
+}
+
+.egress-latency.is-fair {
+    color: #f9a825;
+}
+
+.egress-latency.is-slow {
+    color: #e53935;
+}
+
 .egress-location-row {
     gap: 8px;
 }

@@ -232,7 +232,25 @@ class CoreService:
 
     @classmethod
     def get_egress_ip(cls, force: bool = False) -> dict:
-        return cls.egress_ip_resolver.get(force=force)
+        info = dict(cls.egress_ip_resolver.get(force=force))
+        info['latency_ms'] = cls._probe_auto_detect_latency() if info.get('ok') else None
+        return info
+
+    @classmethod
+    def _probe_auto_detect_latency(cls) -> Optional[int]:
+        detect = cls.user_config.advance_config.auto_detect
+        url = (detect.detect_url or '').strip()
+        if not url.startswith('https://'):
+            return None
+        started = time.monotonic()
+        try:
+            requests.head(url, timeout=detect.timeout)
+        except Exception as e:
+            print('egress latency probe failed, detail:\n{0}'.format(e))
+            return None
+        latency_ms = max(0, int(round((time.monotonic() - started) * 1000)))
+        print('egress latency probe delay={0}ms'.format(latency_ms))
+        return latency_ms
 
     @classmethod
     def invalidate_egress_ip(cls) -> None:

@@ -18,6 +18,7 @@
         "status.egress.refresh": {zh: "刷新", en: "Refresh"},
         "status.egress.refreshing": {zh: "刷新中...", en: "Refreshing..."},
         "status.egress.ip": {zh: "IP 地址", en: "IP Address"},
+        "status.egress.latency": {zh: "响应 {ms} ms", en: "Response {ms} ms"},
         "status.egress.location": {zh: "地理位置", en: "Location"},
         "status.egress.org": {zh: "组织", en: "Organization"},
         "status.egress.unavailable": {zh: "暂时无法获取", en: "Unavailable"},
@@ -151,7 +152,12 @@
                 </tr>
                 <tr class="status-runtime-row">
                     <td data-i18n="status.egress.ip">IP 地址</td>
-                    <td><span id="egress_ip_value" class="action-group-value">-</span></td>
+                    <td>
+                        <div class="action-group egress-ip-row">
+                            <span id="egress_ip_value" class="action-group-value">-</span>
+                            <span id="egress_latency_value" class="egress-latency" hidden></span>
+                        </div>
+                    </td>
                 </tr>
                 <tr class="status-runtime-row">
                     <td data-i18n="status.egress.location">地理位置</td>
@@ -305,10 +311,36 @@
             });
     }
 
+    function egress_latency_class(ms) {
+        if (ms <= 500) {
+            return "is-fast";
+        }
+        if (ms < 1000) {
+            return "is-fair";
+        }
+        return "is-slow";
+    }
+
+    function set_egress_latency(ms) {
+        var $latency = $("#egress_latency_value");
+        if (typeof ms !== "number" || !isFinite(ms) || ms < 0) {
+            $latency.attr({ hidden: true, title: "" }).text("").removeClass("is-fast is-fair is-slow");
+            return;
+        }
+        var rounded = Math.round(ms);
+        $latency
+            .text(rounded + " ms")
+            .attr("title", t("status.egress.latency").replace("{ms}", String(rounded)))
+            .removeClass("is-fast is-fair is-slow")
+            .addClass(egress_latency_class(rounded))
+            .prop("hidden", false);
+    }
+
     function set_egress_fields(values) {
         $("#egress_ip_value").text(values.ip || "-");
         $("#egress_location_value").text(values.location || "-");
         $("#egress_org_value").text(values.org || "-");
+        set_egress_latency(values.latency_ms);
         if (Object.prototype.hasOwnProperty.call(values, "country")) {
             set_egress_flag(values.country);
         }
@@ -331,7 +363,8 @@
                     ip: data.ip,
                     location: format_egress_location(data),
                     org: data.org,
-                    country: data.country
+                    country: data.country,
+                    latency_ms: data.latency_ms
                 });
                 return;
             }

@@ -223,6 +223,90 @@ class AutoSwitchTest(unittest.TestCase):
         user_config.save.assert_not_called()
 
 
+class EgressLatencyProbeTest(unittest.TestCase):
+    def test_uses_auto_switch_url_head_for_latency(self):
+        detect = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
+        detect.detect_url = 'https://www.gstatic.com/generate_204'
+        detect.timeout = 0.8
+        user_config = SimpleNamespace(
+            advance_config=SimpleNamespace(auto_detect=detect),
+        )
+        resolver = Mock()
+        resolver.get.return_value = {
+            'ok': True,
+            'ip': '203.0.113.10',
+        }
+        times = iter([1.0, 1.128])
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            egress_ip_resolver=resolver,
+        ), patch(
+            'core.core_service.requests.head',
+        ) as head, patch(
+            'core.core_service.time.monotonic',
+            side_effect=lambda: next(times),
+        ):
+            info = CoreService.get_egress_ip()
+
+        head.assert_called_once_with(
+            'https://www.gstatic.com/generate_204',
+            timeout=0.8,
+        )
+        self.assertEqual(info['ip'], '203.0.113.10')
+        self.assertEqual(info['latency_ms'], 128)
+
+    def test_skips_probe_when_ip_lookup_fails(self):
+        detect = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
+        user_config = SimpleNamespace(
+            advance_config=SimpleNamespace(auto_detect=detect),
+        )
+        resolver = Mock()
+        resolver.get.return_value = {
+            'ok': False,
+            'ip': '',
+            'error': 'ipinfo_missing',
+        }
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            egress_ip_resolver=resolver,
+        ), patch(
+            'core.core_service.requests.head',
+        ) as head:
+            info = CoreService.get_egress_ip()
+
+        head.assert_not_called()
+        self.assertIsNone(info['latency_ms'])
+
+    def test_hides_latency_when_head_fails(self):
+        detect = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
+        detect.detect_url = 'https://example.com/'
+        detect.timeout = 0.5
+        user_config = SimpleNamespace(
+            advance_config=SimpleNamespace(auto_detect=detect),
+        )
+        resolver = Mock()
+        resolver.get.return_value = {
+            'ok': True,
+            'ip': '203.0.113.10',
+        }
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            egress_ip_resolver=resolver,
+        ), patch(
+            'core.core_service.requests.head',
+            side_effect=RuntimeError('probe failed'),
+        ):
+            info = CoreService.get_egress_ip()
+
+        self.assertEqual(info['ip'], '203.0.113.10')
+        self.assertIsNone(info['latency_ms'])
+
 
 if __name__ == '__main__':
     unittest.main()
