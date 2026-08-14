@@ -78,6 +78,26 @@ class EgressIpResolverTest(unittest.TestCase):
         self.assertFalse(info['ok'])
         self.assertEqual(info['error'], 'ipinfo_missing')
 
+    def test_update_cache_keeps_ttl_and_extra_fields(self):
+        resolver = EgressIpResolver()
+        completed = Mock(
+            returncode=0,
+            stdout=json.dumps({'ip': '198.51.100.1', 'country': 'US'}),
+            stderr='',
+        )
+
+        with patch(
+            'core.egress_ip.subprocess.run',
+            return_value=completed,
+        ) as run:
+            first = resolver.get(force=True)
+            first['latency_ms'] = 128
+            resolver.update_cache(first)
+            second = resolver.get()
+
+        self.assertEqual(run.call_count, 1)
+        self.assertEqual(second['latency_ms'], 128)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -233,7 +233,12 @@ class CoreService:
     @classmethod
     def get_egress_ip(cls, force: bool = False) -> dict:
         info = dict(cls.egress_ip_resolver.get(force=force))
-        info['latency_ms'] = cls._probe_auto_detect_latency() if info.get('ok') else None
+        if not info.get('ok'):
+            info['latency_ms'] = None
+            return info
+        if 'latency_ms' not in info:
+            info['latency_ms'] = cls._probe_auto_detect_latency()
+            cls.egress_ip_resolver.update_cache(info)
         return info
 
     @classmethod

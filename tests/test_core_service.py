@@ -307,6 +307,60 @@ class EgressLatencyProbeTest(unittest.TestCase):
         self.assertEqual(info['ip'], '203.0.113.10')
         self.assertIsNone(info['latency_ms'])
 
+    def test_reuses_cached_latency_without_probing_again(self):
+        detect = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
+        detect.detect_url = 'https://www.gstatic.com/generate_204'
+        user_config = SimpleNamespace(
+            advance_config=SimpleNamespace(auto_detect=detect),
+        )
+        resolver = Mock()
+        resolver.get.return_value = {
+            'ok': True,
+            'ip': '203.0.113.10',
+            'latency_ms': 128,
+        }
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            egress_ip_resolver=resolver,
+        ), patch(
+            'core.core_service.requests.head',
+        ) as head:
+            info = CoreService.get_egress_ip()
+
+        head.assert_not_called()
+        resolver.update_cache.assert_not_called()
+        self.assertEqual(info['latency_ms'], 128)
+
+    def test_force_refresh_probes_again(self):
+        detect = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
+        detect.detect_url = 'https://www.gstatic.com/generate_204'
+        detect.timeout = 0.8
+        user_config = SimpleNamespace(
+            advance_config=SimpleNamespace(auto_detect=detect),
+        )
+        resolver = Mock()
+        resolver.get.return_value = {
+            'ok': True,
+            'ip': '203.0.113.10',
+        }
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            egress_ip_resolver=resolver,
+        ), patch(
+            'core.core_service.requests.head',
+        ) as head:
+            CoreService.get_egress_ip(force=True)
+
+        head.assert_called_once_with(
+            'https://www.gstatic.com/generate_204',
+            timeout=0.8,
+        )
+        resolver.update_cache.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -36,6 +36,12 @@ class EgressIpResolver:
             self._fetched_at = time.time()
             return dict(info)
 
+    def update_cache(self, info: Dict[str, Any]) -> None:
+        with self._lock:
+            if self._cache is None:
+                return
+            self._cache = dict(info)
+
     def invalidate(self) -> None:
         with self._lock:
             self._cache = None
