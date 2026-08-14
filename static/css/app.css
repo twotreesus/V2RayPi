@@ -656,6 +656,14 @@ body.mdui-appbar-with-toolbar {
         min-width: 0;
     }
 
+    .egress-ip-row {
+        justify-content: flex-start;
+    }
+
+    .egress-ip-row > .action-group-value {
+        flex: 0 1 auto;
+    }
+
     /* Stays on the left of its line and pushes the rest of the group right. */
     .action-group-fixed {
         margin-right: auto;
@@ -710,6 +718,10 @@ body.mdui-appbar-with-toolbar {
     .rwd-table > tbody > tr.status-runtime-row > td:first-child {
         padding-bottom: 10px;
         white-space: nowrap !important;
+    }
+
+    .status-runtime-row .action-group {
+        justify-content: flex-start;
     }
 
     .chart-grid {
