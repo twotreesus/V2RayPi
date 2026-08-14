@@ -665,41 +665,31 @@ class CoreService:
                     kwargs["timeout"] = self.timeout
                 return super().send(request, **kwargs)
 
-        # begin detect
         retries = Retry(total=detect.failed_count, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
         http = requests.Session()
         http.mount("https://", TimeoutHTTPAdapter(max_retries=retries, timeout=detect.timeout))
 
+        started = time.monotonic()
         try:
-            http.get(detect.detect_url)
-            print('detected connetion success, nothing to do, just return')
-            return
+            http.head(detect.detect_url)
         except Exception as e:
-            print('detected connetion failed, detail:\n{0}'.format(e))
+            print('detected connection failed, detail:\n{0}'.format(e))
+        else:
+            print('detected connection success, delay={0:.0f}ms'.format(
+                (time.monotonic() - started) * 1000,
+            ))
+            return
 
-        candidates = []
-        seen = set()
-        for group_key, group in cls.node_manager.subscribes.items():
-            for node_index, node in enumerate(group.nodes):
-                identity = (node.protocol, node.add, node.port, node.ps)
-                if identity not in seen:
-                    seen.add(identity)
-                    candidates.append((group_key, node_index, node))
-        for node_index, node in enumerate(cls.node_manager.manual_nodes):
-            identity = (node.protocol, node.add, node.port, node.ps)
-            if identity not in seen:
-                seen.add(identity)
-                candidates.append((K.manual, node_index, node))
-
+        alternatives = []
         current = cls.user_config.node
         current_identity = (current.protocol, current.add, current.port, current.ps)
-        alternatives = [
-            candidate for candidate in candidates
-            if (candidate[2].protocol, candidate[2].add,
-                candidate[2].port, candidate[2].ps) != current_identity
-        ]
+        for node_index, node in enumerate(cls.node_manager.manual_nodes):
+            identity = (node.protocol, node.add, node.port, node.ps)
+            if identity == current_identity:
+                continue
+            alternatives.append((K.manual, node_index, node))
         if not alternatives:
-            print('Auto switch skipped: no alternative node is available')
+            print('Auto switch skipped: no alternative favorite node is available')
             return
 
         group_key, node_index, node = random.choice(alternatives)

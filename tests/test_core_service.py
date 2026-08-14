@@ -3,6 +3,8 @@ from types import SimpleNamespace
 from unittest.mock import ANY, Mock, call, patch
 
 from core.core_service import CoreService
+from core.mihomo_user_config import MihomoUserConfig
+from core.keys import Keyword as K
 
 
 class UpdateCheckTest(unittest.TestCase):
@@ -87,19 +89,71 @@ class OriginFetchRefspecTest(unittest.TestCase):
 
 
 class AutoSwitchTest(unittest.TestCase):
-    def test_failed_probe_switches_to_another_node_without_latency_test(self):
+    def _detect(self, url):
+        detect = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
+        detect.failed_count = 1
+        detect.timeout = 0.5
+        detect.detect_url = url
+        detect.last_switch_time = ''
+        return detect
+
+    def test_failed_custom_url_head_fails_over_among_favorites(self):
         current = SimpleNamespace(
             protocol='vmess', add='current.example.com', port=443, ps='current',
         )
         alternative = SimpleNamespace(
             protocol='vless', add='next.example.com', port=8443, ps='next',
         )
-        detect = SimpleNamespace(
-            failed_count=1,
-            timeout=0.5,
-            detect_url='https://example.com/',
-            last_switch_time='',
+        detect = self._detect('https://example.com/')
+        user_config = SimpleNamespace(
+            node=current,
+            advance_config=SimpleNamespace(auto_detect=detect),
+            save=Mock(),
         )
+        node_manager = SimpleNamespace(
+            subscribes={
+                'subscription': SimpleNamespace(nodes=[current, alternative]),
+            },
+            manual_nodes=[current, alternative],
+        )
+        session = Mock()
+        session.head.side_effect = RuntimeError('probe failed')
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            node_manager=node_manager,
+        ), patch(
+            'core.core_service.requests.Session',
+            return_value=session,
+        ), patch(
+            'core.core_service.random.choice',
+            return_value=(K.manual, 1, alternative),
+        ), patch.object(
+            CoreService,
+            'apply_node',
+            return_value=True,
+        ) as apply_node:
+            CoreService.auto_detect_job()
+
+        session.head.assert_called_once_with('https://example.com/')
+        session.get.assert_not_called()
+        apply_node.assert_called_once_with(
+            K.manual,
+            1,
+            restart_auto_detect=False,
+        )
+        self.assertIn('next', detect.last_switch_time)
+        user_config.save.assert_called_once_with()
+
+    def test_failed_probe_does_not_switch_to_subscription_nodes(self):
+        current = SimpleNamespace(
+            protocol='vmess', add='current.example.com', port=443, ps='current',
+        )
+        alternative = SimpleNamespace(
+            protocol='vless', add='next.example.com', port=8443, ps='next',
+        )
+        detect = self._detect('https://example.com/')
         user_config = SimpleNamespace(
             node=current,
             advance_config=SimpleNamespace(auto_detect=detect),
@@ -112,7 +166,7 @@ class AutoSwitchTest(unittest.TestCase):
             manual_nodes=[],
         )
         session = Mock()
-        session.get.side_effect = RuntimeError('probe failed')
+        session.head.side_effect = RuntimeError('probe failed')
 
         with patch.multiple(
             CoreService,
@@ -121,9 +175,6 @@ class AutoSwitchTest(unittest.TestCase):
         ), patch(
             'core.core_service.requests.Session',
             return_value=session,
-        ), patch(
-            'core.core_service.random.choice',
-            return_value=('subscription', 1, alternative),
         ), patch.object(
             CoreService,
             'apply_node',
@@ -131,13 +182,46 @@ class AutoSwitchTest(unittest.TestCase):
         ) as apply_node:
             CoreService.auto_detect_job()
 
-        apply_node.assert_called_once_with(
-            'subscription',
-            1,
-            restart_auto_detect=False,
+        apply_node.assert_not_called()
+        user_config.save.assert_not_called()
+
+    def test_default_url_uses_head_and_does_not_switch_on_success(self):
+        current = SimpleNamespace(
+            protocol='vmess', add='current.example.com', port=443, ps='current',
         )
-        self.assertIn('next', detect.last_switch_time)
-        user_config.save.assert_called_once_with()
+        detect = self._detect(
+            MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch.LATENCY_PROBE_URL,
+        )
+        user_config = SimpleNamespace(
+            node=current,
+            advance_config=SimpleNamespace(auto_detect=detect),
+            save=Mock(),
+        )
+        node_manager = SimpleNamespace(manual_nodes=[current])
+        session = Mock()
+        session.head.return_value = Mock(status_code=204)
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            node_manager=node_manager,
+        ), patch(
+            'core.core_service.requests.Session',
+            return_value=session,
+        ), patch.object(
+            CoreService,
+            'apply_node',
+            return_value=True,
+        ) as apply_node:
+            CoreService.auto_detect_job()
+
+        session.head.assert_called_once_with(
+            MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch.LATENCY_PROBE_URL,
+        )
+        session.get.assert_not_called()
+        apply_node.assert_not_called()
+        user_config.save.assert_not_called()
+
 
 
 if __name__ == '__main__':

@@ -10,6 +10,7 @@
         "subscribe.update": {zh: "更新", en: "Update"},
         "subscribe.delete": {zh: "删除", en: "Delete"},
         "subscribe.favorites": {zh: "收藏", en: "Favorites"},
+        "subscribe.favorites.hint": {zh: "自动切换仅在这些节点之间故障转移", en: "Automatic switching fails over among these nodes only"},
         "subscribe.action.favorite": {zh: "收藏", en: "Favorite"},
         "subscribe.action.copy": {zh: "复制", en: "Copy"},
         "subscribe.action.qr": {zh: "二维码", en: "QR"},
@@ -19,7 +20,7 @@
         "subscribe.tooltip.subscription_actions": {zh: "选择订阅操作", en: "Choose subscription action"},
         "subscribe.tooltip.copy_url": {zh: "复制订阅地址", en: "Copy subscription URL"},
         "subscribe.tooltip.show_subscription_qr": {zh: "显示订阅地址二维码", en: "Show subscription URL QR code"},
-        "subscribe.tooltip.favorite": {zh: "添加到收藏", en: "Add to favorites"},
+        "subscribe.tooltip.favorite": {zh: "添加到收藏，供自动切换故障转移", en: "Add to favorites for automatic failover"},
         "subscribe.tooltip.copy_link": {zh: "复制分享链接", en: "Copy share link"},
         "subscribe.tooltip.show_node_qr": {zh: "显示节点二维码", en: "Show node QR code"},
         "subscribe.tooltip.delete_node": {zh: "删除节点", en: "Delete node"},
@@ -143,6 +144,7 @@
                                     <span class="subscribe-index-label" data-i18n="subscribe.favorites">收藏</span>
                                 </strong>
                             </div>
+                            <span class="mdui-typo-caption-opacity subscribe-favorites-hint" data-i18n="subscribe.favorites.hint">自动切换仅在这些节点之间故障转移</span>
                             <div class="action-group action-group-end">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" data-i18n="subscribe.add_node" onclick="add_manual_node()">添加节点</button>
                             </div>
@@ -178,7 +180,7 @@
                     <span class="mdui-chip-icon mdui-color-grey-500"><i class="mdui-icon material-icons">more_horiz</i></span>
                 </div>
                 <ul class="mdui-menu horizontal-actions-menu node-actions-menu">
-                    <li class="mdui-menu-item favorite_node" data-i18n-title="subscribe.tooltip.favorite" title="添加到收藏">
+                    <li class="mdui-menu-item favorite_node" data-i18n-title="subscribe.tooltip.favorite" title="添加到收藏，供自动切换故障转移">
                         <a href="javascript:;" class="mdui-ripple">
                             <span class="mdui-chip-icon mdui-color-grey-400"><i class="mdui-icon material-icons">star_border</i></span>
                             <span data-i18n="subscribe.action.favorite">收藏</span>
@@ -589,6 +591,7 @@
                 manual_head.attr("id", "real_manual");
                 manual_head.attr("data-group", groupIndex);
                 manual_head.attr("data-group-key", "manual");
+                I18n.apply(manual_head[0]);
                 manual_head.show();
                 var headerTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
                 headerTable.find("tbody").append(manual_head);

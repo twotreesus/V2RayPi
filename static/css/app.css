@@ -752,6 +752,11 @@ body.mdui-appbar-with-toolbar {
     text-overflow: ellipsis;
 }
 
+.subscribe-favorites-hint {
+    flex: 1;
+    min-width: 0;
+}
+
 .node-row > td.node_name {
     min-width: 0;
     padding-left: 8px;

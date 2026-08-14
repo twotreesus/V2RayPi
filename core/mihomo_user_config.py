@@ -59,10 +59,12 @@ class MihomoUserConfig(BaseDataItem):
                 else:
                     return self.default_remote
         class AutoDetectAndSwitch:
+            LATENCY_PROBE_URL = 'https://www.gstatic.com/generate_204'
+
             def __init__(self):
                 self.enabled = False
                 self.detect_span = 60
-                self.detect_url = 'https://github.com/'
+                self.detect_url = self.LATENCY_PROBE_URL
                 self.failed_count = 3
                 self.timeout = 1.0
                 self.last_switch_time = ''

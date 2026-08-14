@@ -74,7 +74,7 @@
                     <td colspan="6">
                         <div class="section-head advance-section-head mdui-typo">
                             <h5 data-i18n="advance.autoSwitch.title">自动切换</h5>
-                            <h6 class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.description">按预设的探测地址和间隔时间进行 HTTPS 请求测试，如果连续超时或失败超过指定次数，则随机切换到另一个节点</h6>
+                            <h6 class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.description">按间隔对探测地址发送 HEAD。默认地址适合测连通性和延迟。连续失败后在收藏节点之间随机故障转移</h6>
                         </div>
                     </td>
                 </tr>
@@ -93,7 +93,7 @@
                         <input id="detect_url" class="mdui-textfield-input mdui-typo-display-1" type="text" onchange="detect_url_change()"/>
                     </td>
                     <td colspan="3">
-                        <div class="mdui-typo-caption-opacity" data-i18n-html="advance.autoSwitch.detectUrlHelp">必须为 <code>https://</code> 开头的国外地址，错误的地址会导致反复切换，请谨慎填写</div>
+                        <div class="mdui-typo-caption-opacity" data-i18n-html="advance.autoSwitch.detectUrlHelp">一律发送 HEAD。默认 <code>https://www.gstatic.com/generate_204</code>。请使用国外可达的 <code>https://</code> 地址，错误地址会导致反复切换</div>
                     </td>
                 </tr>
                 <tr class="advance-help-row">
@@ -120,7 +120,7 @@
                         <input id="detect_max_retry" class="mdui-textfield-input mdui-typo-display-1 advance-number-input" type="number" onchange="detect_max_retry_change()"/>
                     </td>
                     <td colspan="3">
-                        <div class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.retriesHelp">达到重试次数后触发切换，范围：1-10</div>
+                        <div class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.retriesHelp">达到重试次数后，在收藏节点之间故障转移，范围：1-10</div>
                     </td>
                 </tr>
                 <tr class="advance-inline-row">
@@ -465,15 +465,15 @@
         "advance.confirm.title": {zh: "重置确认", en: "Confirm reset"},
         "advance.common.enabled": {zh: "启用", en: "Enabled"},
         "advance.autoSwitch.title": {zh: "自动切换", en: "Automatic Switching"},
-        "advance.autoSwitch.description": {zh: "按预设的探测地址和间隔时间进行 HTTPS 请求测试，如果连续超时或失败超过指定次数，则随机切换到另一个节点", en: "Test the configured URL with HTTPS requests at the specified interval. If consecutive timeouts or failures exceed the limit, switch to another node at random."},
+        "advance.autoSwitch.description": {zh: "按间隔对探测地址发送 HEAD。默认地址适合测连通性和延迟。连续失败后在收藏节点之间随机故障转移", en: "Send a HEAD request to the probe URL on an interval. The default URL is suitable for reachability and latency. After consecutive failures, fail over at random among favorite nodes."},
         "advance.autoSwitch.detectUrl": {zh: "探测地址", en: "Test URL"},
-        "advance.autoSwitch.detectUrlHelp": {zh: "必须为以 <code>https://</code> 开头的国外地址，错误的地址会导致反复切换，请谨慎填写", en: "Must be an overseas URL beginning with <code>https://</code>. An invalid URL may cause repeated switching, so configure it carefully."},
+        "advance.autoSwitch.detectUrlHelp": {zh: "一律发送 HEAD。默认 <code>https://www.gstatic.com/generate_204</code>。请使用国外可达的 <code>https://</code> 地址，错误地址会导致反复切换", en: "Always sends HEAD. Default: <code>https://www.gstatic.com/generate_204</code>. Use a reachable overseas URL beginning with <code>https://</code>; an invalid URL may cause repeated switching."},
         "advance.autoSwitch.interval": {zh: "时间间隔", en: "Interval"},
         "advance.autoSwitch.intervalHelp": {zh: "单位：秒，整数，范围：10-3600", en: "Unit: seconds; integer; range: 10–3600"},
         "advance.autoSwitch.timeout": {zh: "请求超时", en: "Request Timeout"},
         "advance.autoSwitch.timeoutHelp": {zh: "单位：秒，支持小数，范围：0.5-10", en: "Unit: seconds; decimals supported; range: 0.5–10"},
         "advance.autoSwitch.retries": {zh: "重试次数", en: "Retry Limit"},
-        "advance.autoSwitch.retriesHelp": {zh: "达到重试次数后触发切换，范围：1-10", en: "Switch after reaching this retry limit; range: 1–10"},
+        "advance.autoSwitch.retriesHelp": {zh: "达到重试次数后，在收藏节点之间故障转移，范围：1-10", en: "After reaching this retry limit, fail over among favorite nodes; range: 1–10"},
         "advance.autoSwitch.lastSwitch": {zh: "最近切换", en: "Last Switch"},
         "advance.localProxy.title": {zh: "本地代理", en: "Local Proxy"},
         "advance.localProxy.socks5": {zh: "Socks 5 代理", en: "Socks 5 Proxy"},
@@ -865,7 +865,7 @@
         var input = $("#detect_url");
         var url = input.val().trim();
         if (!url.startsWith('https://'))
-            url = 'https://github.com/';
+            url = 'https://www.gstatic.com/generate_204';
         input.val(url);
 
         g_config_local['auto_detect']['detect_url'] = url;
