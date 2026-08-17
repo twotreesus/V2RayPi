@@ -267,7 +267,14 @@ class AutoSwitchTest(unittest.TestCase):
 
 
 class EgressLatencyProbeTest(unittest.TestCase):
-    def test_uses_auto_switch_url_head_for_latency(self):
+    def _https_connection(self, connect=None, request=None):
+        conn = Mock()
+        conn.connect.side_effect = connect
+        conn.request.side_effect = request
+        conn.getresponse.return_value.read.return_value = b''
+        return conn
+
+    def test_times_head_after_the_tls_handshake(self):
         detect = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
         detect.detect_url = 'https://www.gstatic.com/generate_204'
         detect.timeout = 0.8
@@ -279,24 +286,38 @@ class EgressLatencyProbeTest(unittest.TestCase):
             'ok': True,
             'ip': '203.0.113.10',
         }
+        order = []
         times = iter([1.0, 1.128])
+        conn = self._https_connection(
+            connect=lambda: order.append('connect'),
+            request=lambda method, path: order.append((method, path)),
+        )
+
+        def monotonic():
+            order.append('monotonic')
+            return next(times)
 
         with patch.multiple(
             CoreService,
             user_config=user_config,
             egress_ip_resolver=resolver,
         ), patch(
-            'core.core_service.requests.head',
-        ) as head, patch(
+            'core.core_service.HTTPSConnection',
+            return_value=conn,
+        ) as connection, patch(
             'core.core_service.time.monotonic',
-            side_effect=lambda: next(times),
+            side_effect=monotonic,
         ):
             info = CoreService.get_egress_ip()
 
-        head.assert_called_once_with(
-            'https://www.gstatic.com/generate_204',
-            timeout=0.8,
-        )
+        connection.assert_called_once_with('www.gstatic.com', 443, timeout=0.8)
+        self.assertEqual(order, [
+            'connect',
+            'monotonic',
+            ('HEAD', '/generate_204'),
+            'monotonic',
+        ])
+        conn.close.assert_called_once_with()
         self.assertEqual(info['ip'], '203.0.113.10')
         self.assertEqual(info['latency_ms'], 128)
 
@@ -317,11 +338,39 @@ class EgressLatencyProbeTest(unittest.TestCase):
             user_config=user_config,
             egress_ip_resolver=resolver,
         ), patch(
-            'core.core_service.requests.head',
-        ) as head:
+            'core.core_service.HTTPSConnection',
+        ) as connection:
             info = CoreService.get_egress_ip()
 
-        head.assert_not_called()
+        connection.assert_not_called()
+        self.assertIsNone(info['latency_ms'])
+
+    def test_hides_latency_when_handshake_fails(self):
+        detect = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
+        detect.detect_url = 'https://example.com/'
+        detect.timeout = 0.5
+        user_config = SimpleNamespace(
+            advance_config=SimpleNamespace(auto_detect=detect),
+        )
+        resolver = Mock()
+        resolver.get.return_value = {
+            'ok': True,
+            'ip': '203.0.113.10',
+        }
+        conn = self._https_connection(connect=RuntimeError('handshake failed'))
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            egress_ip_resolver=resolver,
+        ), patch(
+            'core.core_service.HTTPSConnection',
+            return_value=conn,
+        ):
+            info = CoreService.get_egress_ip()
+
+        conn.request.assert_not_called()
+        self.assertEqual(info['ip'], '203.0.113.10')
         self.assertIsNone(info['latency_ms'])
 
     def test_hides_latency_when_head_fails(self):
@@ -336,17 +385,19 @@ class EgressLatencyProbeTest(unittest.TestCase):
             'ok': True,
             'ip': '203.0.113.10',
         }
+        conn = self._https_connection(request=RuntimeError('probe failed'))
 
         with patch.multiple(
             CoreService,
             user_config=user_config,
             egress_ip_resolver=resolver,
         ), patch(
-            'core.core_service.requests.head',
-            side_effect=RuntimeError('probe failed'),
+            'core.core_service.HTTPSConnection',
+            return_value=conn,
         ):
             info = CoreService.get_egress_ip()
 
+        conn.connect.assert_called_once_with()
         self.assertEqual(info['ip'], '203.0.113.10')
         self.assertIsNone(info['latency_ms'])
 
@@ -368,11 +419,11 @@ class EgressLatencyProbeTest(unittest.TestCase):
             user_config=user_config,
             egress_ip_resolver=resolver,
         ), patch(
-            'core.core_service.requests.head',
-        ) as head:
+            'core.core_service.HTTPSConnection',
+        ) as connection:
             info = CoreService.get_egress_ip()
 
-        head.assert_not_called()
+        connection.assert_not_called()
         resolver.update_cache.assert_not_called()
         self.assertEqual(info['latency_ms'], 128)
 
@@ -388,20 +439,21 @@ class EgressLatencyProbeTest(unittest.TestCase):
             'ok': True,
             'ip': '203.0.113.10',
         }
+        conn = self._https_connection()
 
         with patch.multiple(
             CoreService,
             user_config=user_config,
             egress_ip_resolver=resolver,
         ), patch(
-            'core.core_service.requests.head',
-        ) as head:
+            'core.core_service.HTTPSConnection',
+            return_value=conn,
+        ) as connection:
             CoreService.get_egress_ip(force=True)
 
-        head.assert_called_once_with(
-            'https://www.gstatic.com/generate_204',
-            timeout=0.8,
-        )
+        connection.assert_called_once_with('www.gstatic.com', 443, timeout=0.8)
+        conn.connect.assert_called_once_with()
+        conn.request.assert_called_once_with('HEAD', '/generate_204')
         resolver.update_cache.assert_called_once()
 
 

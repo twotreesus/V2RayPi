@@ -11,6 +11,8 @@ import os.path
 import platform
 import re
 import subprocess
+from http.client import HTTPSConnection
+from urllib.parse import urlparse
 from .package import jsonpickle
 from typing import List, Dict, Any, Optional
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -246,15 +248,28 @@ class CoreService:
     def _probe_auto_detect_latency(cls) -> Optional[int]:
         detect = cls.user_config.advance_config.auto_detect
         url = (detect.detect_url or '').strip()
-        if not url.startswith('https://'):
+        parsed = urlparse(url)
+        if parsed.scheme != 'https' or not parsed.hostname:
             return None
-        started = time.monotonic()
+        path = parsed.path or '/'
+        if parsed.query:
+            path = '{0}?{1}'.format(path, parsed.query)
+        conn = HTTPSConnection(
+            parsed.hostname,
+            parsed.port or 443,
+            timeout=detect.timeout,
+        )
         try:
-            requests.head(url, timeout=detect.timeout)
+            conn.connect()
+            started = time.monotonic()
+            conn.request('HEAD', path)
+            conn.getresponse().read()
+            latency_ms = max(0, int(round((time.monotonic() - started) * 1000)))
         except Exception as e:
             print('egress latency probe failed, detail:\n{0}'.format(e))
             return None
-        latency_ms = max(0, int(round((time.monotonic() - started) * 1000)))
+        finally:
+            conn.close()
         print('egress latency probe delay={0}ms'.format(latency_ms))
         return latency_ms
 
