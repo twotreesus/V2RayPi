@@ -591,6 +591,27 @@
         });
     }
 
+    function render_last_switch(text) {
+        var $el = $("#detect_last_switch_time").empty();
+        text = String(text || "");
+        if (!text) {
+            return;
+        }
+        var parts = text.split(" ---- ");
+        if (parts.length >= 3) {
+            $el.append(document.createTextNode(parts[0] + " ---- "));
+            $el.append(
+                $('<span class="node-airport is-visible">').append(
+                    $('<i class="mdui-icon material-icons">').text("rss_feed"),
+                    $('<span class="node-airport-label">').text(parts[1])
+                )
+            );
+            $el.append(document.createTextNode(" " + parts.slice(2).join(" ---- ")));
+            return;
+        }
+        $el.text(text);
+    }
+
     function refresh_local() {
         var change =  JSON.stringify(g_config_remote) !== JSON.stringify(g_config_local)
         if (change) {
@@ -615,7 +636,7 @@
         }
 
         var detect_last_switch = g_config_local['auto_detect']['last_switch_time'];
-        $("#detect_last_switch_time").html(detect_last_switch);
+        render_last_switch(detect_last_switch);
 
         // log
         var log_index = g_log_levels.indexOf(g_config_local['log']['level']);

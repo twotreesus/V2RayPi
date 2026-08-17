@@ -103,6 +103,7 @@ class AutoSwitchTest(unittest.TestCase):
         )
         alternative = SimpleNamespace(
             protocol='vless', add='next.example.com', port=8443, ps='next',
+            airport='Nexitally',
         )
         detect = self._detect('https://example.com/')
         user_config = SimpleNamespace(
@@ -143,6 +144,7 @@ class AutoSwitchTest(unittest.TestCase):
             1,
             restart_auto_detect=False,
         )
+        self.assertIn('Nexitally', detect.last_switch_time)
         self.assertIn('next', detect.last_switch_time)
         user_config.save.assert_called_once_with()
 

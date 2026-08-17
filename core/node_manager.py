@@ -194,6 +194,15 @@ class NodeManager(BaseDataItem):
             return urlparse(url).hostname or ''
         return (group.name or '').strip() or (urlparse(url).hostname or '')
 
+    def airport_name_for_node(self, node) -> str:
+        airport = (getattr(node, 'airport', None) or '').strip()
+        if airport:
+            return airport
+        url = getattr(node, 'subscribe', None) or ''
+        if not url:
+            return ''
+        return self._airport_name(url)
+
     def favorite_node(self, url: str, index: int) -> bool:
         node = self.find_node(url, index)
         if any(n.ps == node.ps for n in self.manual_nodes):

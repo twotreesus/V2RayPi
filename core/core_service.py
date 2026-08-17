@@ -726,8 +726,20 @@ class CoreService:
             print('Auto switch failed while applying node: {0}'.format(node.ps))
             return
 
-        detect.last_switch_time = '{0} ---- {1}'.format(datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), node.ps)
+        detect.last_switch_time = cls._format_last_switch(node)
         cls.user_config.save()
+
+    @classmethod
+    def _format_last_switch(cls, node) -> str:
+        stamp = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        airport = (getattr(node, 'airport', None) or '').strip()
+        if not airport:
+            resolver = getattr(cls.node_manager, 'airport_name_for_node', None)
+            if callable(resolver):
+                airport = (resolver(node) or '').strip()
+        if airport:
+            return '{0} ---- {1} ---- {2}'.format(stamp, airport, node.ps)
+        return '{0} ---- {1}'.format(stamp, node.ps)
 
     @classmethod
     def export_config(cls) -> str:
