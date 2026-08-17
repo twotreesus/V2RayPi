@@ -121,7 +121,7 @@ def stop_service_api():
 @require_auth
 def restart_service_api():
     result = K.failed
-    if CoreService.re_apply_node():
+    if CoreService.restart_mihomo():
         result = K.ok
     return jsonify({K.result: result})
 

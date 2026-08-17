@@ -225,6 +225,7 @@ class CoreService:
 
         result = {
             K.running: running,
+            K.started_at: cls.mihomo.started_at() if running else None,
             K.version: version,
             K.proxy_mode: cls.user_config.proxy_mode,
         }
@@ -384,6 +385,14 @@ class CoreService:
         result = cls.mihomo.stop()
         cls.auto_detect_cancel()
 
+        return result
+
+    @classmethod
+    def restart_mihomo(cls) -> bool:
+        result = cls.mihomo.restart()
+        if result:
+            cls.invalidate_egress_ip()
+            cls.restart_auto_detect()
         return result
 
     @classmethod

@@ -5,6 +5,11 @@
         "status.label.runtime": {zh: "运行状态", en: "Status"},
         "status.state.running": {zh: "运行中", en: "Running"},
         "status.state.stopped": {zh: "已停止", en: "Stopped"},
+        "status.label.uptime": {zh: "运行时长", en: "Uptime"},
+        "status.uptime.days": {zh: "{n} 天", en: "{n}d"},
+        "status.uptime.hours": {zh: "{n} 小时", en: "{n}h"},
+        "status.uptime.minutes": {zh: "{n} 分钟", en: "{n}m"},
+        "status.uptime.seconds": {zh: "{n} 秒", en: "{n}s"},
         "status.label.control": {zh: "运行控制", en: "Service Control"},
         "status.action.start": {zh: "启动", en: "Start"},
         "status.action.stop": {zh: "停止", en: "Stop"},
@@ -85,15 +90,19 @@
                     <td data-i18n="status.label.runtime">运行状态</td>
                     <td>
                         <div class="action-group">
-                            <div id="running" class="mdui-chip" style="display: none">
-                                <span class="mdui-chip-icon mdui-color-green"><i class="mdui-icon material-icons">play_arrow</i></span>
-                                <span class="mdui-chip-title" data-i18n="status.state.running">运行中</span>
+                            <div id="running" class="runtime-state runtime-state-running" hidden>
+                                <span data-i18n="status.state.running">运行中</span>
                             </div>
-                            <div id="stoped" class="mdui-chip" style="display: none">
-                                <span class="mdui-chip-icon mdui-color-red"><i class="mdui-icon material-icons">stop</i></span>
-                                <span class="mdui-chip-title" data-i18n="status.state.stopped">已停止</span>
+                            <div id="stoped" class="runtime-state runtime-state-stopped" hidden>
+                                <span data-i18n="status.state.stopped">已停止</span>
                             </div>
                         </div>
+                    </td>
+                </tr>
+                <tr class="status-runtime-row">
+                    <td data-i18n="status.label.uptime">运行时长</td>
+                    <td>
+                        <span id="mihomo_uptime_value" class="action-group-value">-</span>
                     </td>
                 </tr>
                 <tr class="status-runtime-row">
@@ -211,6 +220,7 @@
     var memory_bar = null;
     var upload_bar = null;
     var download_bar = null;
+    var g_mihomo_started_at = null;
 
     function format_speed(kb) {
         if (kb >= 1024) return (kb / 1024).toFixed(2) + ' MB/s';
@@ -250,22 +260,59 @@
         refresh_egress_ip();
     });
 
+    function format_uptime(seconds) {
+        seconds = Math.max(0, Math.floor(seconds));
+        var days = Math.floor(seconds / 86400);
+        var hours = Math.floor((seconds % 86400) / 3600);
+        var minutes = Math.floor((seconds % 3600) / 60);
+        var secs = seconds % 60;
+        var parts = [];
+        if (days) {
+            parts.push(t("status.uptime.days", { n: days }));
+        }
+        if (hours) {
+            parts.push(t("status.uptime.hours", { n: hours }));
+        }
+        if (minutes) {
+            parts.push(t("status.uptime.minutes", { n: minutes }));
+        }
+        if (!parts.length || (!days && !hours)) {
+            parts.push(t("status.uptime.seconds", { n: secs }));
+        }
+        return parts.join(" ");
+    }
+
+    function render_uptime() {
+        var $el = $("#mihomo_uptime_value");
+        if (!$el.length) {
+            return;
+        }
+        if (typeof g_mihomo_started_at !== "number" || !isFinite(g_mihomo_started_at)) {
+            $el.text("-");
+            return;
+        }
+        $el.text(format_uptime((Date.now() / 1000) - g_mihomo_started_at));
+    }
+
     function refresh() {
         ajax_request({ url: "/get_status" }).then(function (data) {
             if (data["running"]) {
-                $("#running").show();
-                $("#stoped").hide();
+                $("#running").prop("hidden", false);
+                $("#stoped").prop("hidden", true);
                 $("#start_service").hide();
                 $("#stop_services").show();
                 $("#restart_service").show();
+                g_mihomo_started_at = data["started_at"];
             }
             else {
-                $("#running").hide();
-                $("#stoped").show();
+                $("#running").prop("hidden", true);
+                $("#stoped").prop("hidden", false);
                 $("#start_service").show();
                 $("#stop_services").hide();
                 $("#restart_service").hide();
+                g_mihomo_started_at = null;
             }
+            render_uptime();
 
             mode = data["proxy_mode"];
             $("#proxy_mode").val(String(mode));
@@ -438,6 +485,7 @@
 
     
     function update_performance() {
+        render_uptime();
         ajax_request({ url: "/get_performance" }).then(function (data) {
             var history = data["history"] || {};
             var window_size = history["window"] || 0;

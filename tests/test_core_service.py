@@ -457,5 +457,43 @@ class EgressLatencyProbeTest(unittest.TestCase):
         resolver.update_cache.assert_called_once()
 
 
+class RestartMihomoTest(unittest.TestCase):
+    def test_recycles_the_process_without_reapplying_the_node(self):
+        mihomo = Mock()
+        mihomo.restart.return_value = True
+
+        with patch.multiple(
+            CoreService,
+            mihomo=mihomo,
+        ), patch.object(
+            CoreService, 'invalidate_egress_ip',
+        ) as invalidate, patch.object(
+            CoreService, 'restart_auto_detect',
+        ) as restart_detect:
+            self.assertTrue(CoreService.restart_mihomo())
+
+        mihomo.restart.assert_called_once_with()
+        mihomo.apply_node.assert_not_called()
+        invalidate.assert_called_once_with()
+        restart_detect.assert_called_once_with()
+
+    def test_failed_restart_leaves_caches_and_probes_alone(self):
+        mihomo = Mock()
+        mihomo.restart.return_value = False
+
+        with patch.multiple(
+            CoreService,
+            mihomo=mihomo,
+        ), patch.object(
+            CoreService, 'invalidate_egress_ip',
+        ) as invalidate, patch.object(
+            CoreService, 'restart_auto_detect',
+        ) as restart_detect:
+            self.assertFalse(CoreService.restart_mihomo())
+
+        invalidate.assert_not_called()
+        restart_detect.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()

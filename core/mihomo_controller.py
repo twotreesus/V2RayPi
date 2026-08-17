@@ -8,8 +8,9 @@ import subprocess
 import sys
 import tempfile
 
-from typing import List
+from typing import List, Optional
 
+import psutil
 import requests
 import yaml
 
@@ -60,6 +61,28 @@ class MihomoController:
         except OSError:
             return False
         return result.returncode == 0
+
+    def started_at(self) -> Optional[float]:
+        try:
+            result = subprocess.run(
+                ['pgrep', '-x', SERVICE_NAME],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+        except OSError:
+            return None
+        if result.returncode != 0:
+            return None
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                return float(psutil.Process(int(line)).create_time())
+            except (ValueError, psutil.Error):
+                continue
+        return None
 
     def service_available(self) -> bool:
         try:

@@ -7,6 +7,7 @@
     --appbar-height: 56px;
     --statusbar-height: 0px;
     --brand-green: #07c160;
+    --brand-red: #F44336;
     --brand-blue: #0288d1;
     --brand-dark: #263238;
     --brand-orange: #ff9800;
@@ -525,6 +526,36 @@ body.mdui-appbar-with-toolbar {
 .action-group-value {
     flex-shrink: 1;
     min-width: 100px;
+}
+
+#mihomo_uptime_value {
+    font-variant-numeric: tabular-nums;
+}
+
+.runtime-state {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1;
+    color: #fff;
+    user-select: none;
+}
+
+.runtime-state[hidden] {
+    display: none !important;
+}
+
+.runtime-state-running {
+    background-color: var(--brand-green);
+}
+
+.runtime-state-stopped {
+    background-color: var(--brand-red);
 }
 
 .egress-ip-row {

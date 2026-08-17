@@ -53,6 +53,30 @@ class MihomoVersionTest(unittest.TestCase):
             self.assertEqual(MihomoController().version(), 'v1.19.29')
 
 
+class MihomoStartedAtTest(unittest.TestCase):
+    def test_returns_create_time_of_the_mihomo_process(self):
+        completed = Mock(returncode=0, stdout='1234\n')
+        proc = Mock()
+        proc.create_time.return_value = 1700000000.5
+        with patch(
+            'core.mihomo_controller.subprocess.run',
+            return_value=completed,
+        ), patch(
+            'core.mihomo_controller.psutil.Process',
+            return_value=proc,
+        ) as process:
+            self.assertEqual(MihomoController().started_at(), 1700000000.5)
+        process.assert_called_once_with(1234)
+
+    def test_returns_none_when_mihomo_is_not_running(self):
+        completed = Mock(returncode=1, stdout='')
+        with patch(
+            'core.mihomo_controller.subprocess.run',
+            return_value=completed,
+        ):
+            self.assertIsNone(MihomoController().started_at())
+
+
 class TproxyServiceTest(unittest.TestCase):
     def test_first_successful_node_application_configures_and_enables_service(self):
         controller = MihomoController()
