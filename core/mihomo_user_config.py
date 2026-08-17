@@ -60,7 +60,7 @@ class MihomoUserConfig(BaseDataItem):
                     return self.default_remote
         class AutoDetectAndSwitch:
             LATENCY_PROBE_URL = 'https://www.gstatic.com/generate_204'
-            DETECT_SPAN = 60
+            DETECT_SPAN = 600
             FAILED_COUNT = 3
             TIMEOUT = 2.0
 
