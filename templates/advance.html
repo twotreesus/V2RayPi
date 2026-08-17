@@ -87,12 +87,17 @@
                         </label>
                     </td>
                 </tr>
-                <tr class="advance-help-row">
+                <tr class="advance-help-row advance-detect-url-row">
                     <td data-i18n="advance.autoSwitch.detectUrl">探测地址</td>
-                    <td colspan="2">
-                        <input id="detect_url" class="mdui-textfield-input mdui-typo-display-1" type="text" onchange="detect_url_change()"/>
-                    </td>
                     <td colspan="3">
+                        <div class="action-group">
+                            <input id="detect_url" class="mdui-textfield-input mdui-typo-display-1 action-group-value" type="text" onchange="detect_url_change()"/>
+                            <div id="clear_detect_url" style="display: none">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_detect_url()" data-i18n="advance.action.clear">清除</button>
+                            </div>
+                        </div>
+                    </td>
+                    <td colspan="2">
                         <div class="mdui-typo-caption-opacity" data-i18n-html="advance.autoSwitch.detectUrlHelp">一律发送 HEAD。默认 <code>https://www.gstatic.com/generate_204</code>。请使用国外可达的 <code>https://</code> 地址，错误地址会导致反复切换</div>
                     </td>
                 </tr>
@@ -634,6 +639,12 @@
         $("#enable_auto_switch").prop('checked', g_config_local['auto_detect']['enabled']);
         var detect_url = g_config_local['auto_detect']['detect_url'];
         $("#detect_url").val(detect_url);
+        if (detect_url !== DEFAULT_DETECT_URL) {
+            $("#clear_detect_url").show();
+        }
+        else {
+            $("#clear_detect_url").hide();
+        }
 
         var detect_time_span = g_config_local['auto_detect']['detect_span'];
         $("#detect_time_span").val(detect_time_span);
@@ -861,14 +872,21 @@
         refresh_local();
     }
 
+    var DEFAULT_DETECT_URL = 'https://www.gstatic.com/generate_204';
+
     function detect_url_change() {
         var input = $("#detect_url");
         var url = input.val().trim();
         if (!url.startsWith('https://'))
-            url = 'https://www.gstatic.com/generate_204';
+            url = DEFAULT_DETECT_URL;
         input.val(url);
 
         g_config_local['auto_detect']['detect_url'] = url;
+        refresh_local();
+    }
+
+    function clear_detect_url() {
+        g_config_local['auto_detect']['detect_url'] = DEFAULT_DETECT_URL;
         refresh_local();
     }
 
