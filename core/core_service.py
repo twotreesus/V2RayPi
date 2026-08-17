@@ -377,6 +377,8 @@ class CoreService:
         node = cls.node_manager.find_node(url, index)
         cls.user_config.node = node
         if cls.re_apply_node(restart_auto_detect):
+            if restart_auto_detect:
+                cls.user_config.advance_config.auto_detect.last_switch_time = ''
             cls.user_config.save()
             result = True
         return result

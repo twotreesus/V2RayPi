@@ -148,6 +148,47 @@ class AutoSwitchTest(unittest.TestCase):
         self.assertIn('next', detect.last_switch_time)
         user_config.save.assert_called_once_with()
 
+    def test_manual_apply_clears_the_last_switch_record(self):
+        detect = self._detect('https://example.com/')
+        detect.last_switch_time = '2026-08-17 16:00:00 ---- Nexitally ---- next'
+        node = SimpleNamespace(ps='chosen')
+        user_config = SimpleNamespace(
+            node=None,
+            advance_config=SimpleNamespace(auto_detect=detect),
+            save=Mock(),
+        )
+        node_manager = SimpleNamespace(find_node=Mock(return_value=node))
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            node_manager=node_manager,
+        ), patch.object(CoreService, 're_apply_node', return_value=True):
+            self.assertTrue(CoreService.apply_node('manual', 0))
+
+        self.assertEqual(detect.last_switch_time, '')
+        user_config.save.assert_called_once_with()
+
+    def test_auto_apply_does_not_clear_the_last_switch_record(self):
+        detect = self._detect('https://example.com/')
+        detect.last_switch_time = 'stale'
+        node = SimpleNamespace(ps='chosen')
+        user_config = SimpleNamespace(
+            node=None,
+            advance_config=SimpleNamespace(auto_detect=detect),
+            save=Mock(),
+        )
+        node_manager = SimpleNamespace(find_node=Mock(return_value=node))
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            node_manager=node_manager,
+        ), patch.object(CoreService, 're_apply_node', return_value=True):
+            self.assertTrue(CoreService.apply_node('manual', 0, restart_auto_detect=False))
+
+        self.assertEqual(detect.last_switch_time, 'stale')
+
     def test_failed_probe_does_not_switch_to_subscription_nodes(self):
         current = SimpleNamespace(
             protocol='vmess', add='current.example.com', port=443, ps='current',
