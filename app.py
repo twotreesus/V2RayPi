@@ -189,12 +189,27 @@ def add_subscribe_api():
     result = K.failed
     try:
         url = request.args.get(K.subscribe)
-        CoreService.add_subscribe(url)
+        name = request.args.get(K.name) or ''
+        CoreService.add_subscribe(url, name)
         result = K.ok
     except:
         pass
 
     return jsonify({K.result : result})
+
+@app.route('/rename_subscribe')
+@require_auth
+def rename_subscribe_api():
+    result = K.failed
+    try:
+        url = request.args.get(K.subscribe)
+        name = request.args.get(K.name) or ''
+        CoreService.rename_subscribe(url, name)
+        result = K.ok
+    except:
+        pass
+
+    return jsonify({K.result: result})
 
 @app.route('/favorite_node')
 @require_auth

@@ -13,6 +13,7 @@ class Keyword:
     running = 'running'
     version = 'version'
     subscribe = 'subscribe'
+    name = 'name'
     last_subscribe = 'last_subscribe'
     subscribe_user_agent = 'clash-verge/v2.5.2'
     proxy_mode = 'proxy_mode'

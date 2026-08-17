@@ -1,7 +1,9 @@
+import base64
 import unittest
 from unittest.mock import Mock, patch
 
 import yaml
+from requests.structures import CaseInsensitiveDict
 
 from core.node import Node
 from core.node_manager import NodeGroup, NodeManager
@@ -50,8 +52,8 @@ def group(url='https://example.com/sub'):
     return node_group
 
 
-def response(text):
-    return Mock(text=text)
+def response(text, headers=None):
+    return Mock(text=text, headers=CaseInsensitiveDict(headers or {}))
 
 
 class ClashSubscriptionTest(unittest.TestCase):
@@ -135,6 +137,144 @@ class NonClashSubscriptionTest(unittest.TestCase):
         self.assertEqual(node_group.nodes, [])
 
 
+class SubscribeNameTest(unittest.TestCase):
+    def test_profile_title_header_is_saved(self):
+        node_group = group()
+        with patch(
+            'core.node_manager.requests.get',
+            return_value=response(
+                CLASH_SUBSCRIPTION,
+                {'profile-title': 'Nexitally'},
+            ),
+        ):
+            NodeManager().update_group(node_group, fill_name=True)
+
+        self.assertEqual(node_group.name, 'Nexitally')
+
+    def test_base64_profile_title_is_decoded(self):
+        node_group = group()
+        title = base64.b64encode('机场名称'.encode('utf-8')).decode('ascii')
+        with patch(
+            'core.node_manager.requests.get',
+            return_value=response(
+                CLASH_SUBSCRIPTION,
+                {'profile-title': 'base64:' + title},
+            ),
+        ):
+            NodeManager().update_group(node_group, fill_name=True)
+
+        self.assertEqual(node_group.name, '机场名称')
+
+    def test_content_disposition_filename_is_used(self):
+        node_group = group()
+        with patch(
+            'core.node_manager.requests.get',
+            return_value=response(
+                CLASH_SUBSCRIPTION,
+                {'content-disposition': 'attachment; filename="Wings.yaml"'},
+            ),
+        ):
+            NodeManager().update_group(node_group, fill_name=True)
+
+        self.assertEqual(node_group.name, 'Wings')
+
+    def test_hostname_is_used_when_headers_are_missing(self):
+        node_group = group('https://sub.airport.example/link/abc')
+        with patch(
+            'core.node_manager.requests.get',
+            return_value=response(CLASH_SUBSCRIPTION),
+        ):
+            NodeManager().update_group(node_group, fill_name=True)
+
+        self.assertEqual(node_group.name, 'sub.airport.example')
+
+    def test_failed_update_keeps_the_existing_name(self):
+        node_group = group()
+        node_group.name = 'KeepMe'
+        with patch(
+            'core.node_manager.requests.get',
+            return_value=response(BASE64_SUBSCRIPTION),
+        ):
+            NodeManager().update_group(node_group)
+
+        self.assertEqual(node_group.name, 'KeepMe')
+
+    def test_existing_name_is_kept_on_successful_update(self):
+        node_group = group()
+        node_group.name = 'Custom Airport'
+        with patch(
+            'core.node_manager.requests.get',
+            return_value=response(
+                CLASH_SUBSCRIPTION,
+                {'profile-title': 'Nexitally'},
+            ),
+        ):
+            NodeManager().update_group(node_group)
+
+        self.assertEqual(node_group.name, 'Custom Airport')
+
+    def test_update_does_not_fill_an_empty_name(self):
+        node_group = group()
+        with patch(
+            'core.node_manager.requests.get',
+            return_value=response(
+                CLASH_SUBSCRIPTION,
+                {'profile-title': 'Nexitally'},
+            ),
+        ):
+            NodeManager().update_group(node_group)
+
+        self.assertEqual(node_group.name, '')
+
+    def test_add_subscribe_uses_the_provided_name(self):
+        manager = NodeManager()
+        with patch(
+            'core.node_manager.requests.get',
+            return_value=response(
+                CLASH_SUBSCRIPTION,
+                {'profile-title': 'Nexitally'},
+            ),
+        ), patch.object(manager, 'save'):
+            manager.add_subscribe('https://example.com/sub', 'My Airport')
+
+        self.assertEqual(manager.subscribes['https://example.com/sub'].name, 'My Airport')
+
+    def test_rename_subscribe_updates_the_name(self):
+        manager = NodeManager()
+        node_group = group()
+        node_group.name = 'Old'
+        manager.subscribes[node_group.subscribe] = node_group
+        with patch.object(manager, 'save'):
+            manager.rename_subscribe(node_group.subscribe, '  New Name  ')
+
+        self.assertEqual(node_group.name, 'New Name')
+
+    def test_rename_subscribe_rejects_empty_name(self):
+        manager = NodeManager()
+        node_group = group()
+        node_group.name = 'Keep'
+        manager.subscribes[node_group.subscribe] = node_group
+        with patch.object(manager, 'save') as save:
+            with self.assertRaises(ValueError):
+                manager.rename_subscribe(node_group.subscribe, '   ')
+
+        self.assertEqual(node_group.name, 'Keep')
+        save.assert_not_called()
+
+    def test_add_subscribe_extracts_name_when_omitted(self):
+        manager = NodeManager()
+        with patch(
+            'core.node_manager.requests.get',
+            return_value=response(
+                CLASH_SUBSCRIPTION,
+                {'profile-title': 'Nexitally'},
+            ),
+        ), patch.object(manager, 'save'):
+            manager.add_subscribe('https://example.com/sub')
+
+        self.assertEqual(manager.subscribes['https://example.com/sub'].name, 'Nexitally')
+
+
 class LegacyNodeTest(unittest.TestCase):
     """Nodes stored before the move to mihomo carry no Clash payload."""
 
@@ -180,6 +320,16 @@ class FavoriteTest(unittest.TestCase):
         # A copy, so editing the subscription later cannot reach the favorite.
         self.assertIsNot(manager.manual_nodes[0].clash,
                          manager.subscribes[url].nodes[0].clash)
+        self.assertEqual(manager.manual_nodes[0].subscribe, url)
+        self.assertEqual(manager.manual_nodes[0].airport, 'example.com')
+
+    def test_favorite_uses_the_airport_name(self):
+        manager, url = self._manager()
+        manager.subscribes[url].name = 'Nexitally'
+        with patch.object(manager, 'save'):
+            self.assertTrue(manager.favorite_node(url, 0))
+
+        self.assertEqual(manager.manual_nodes[0].airport, 'Nexitally')
 
     def test_favoriting_the_same_name_twice_is_refused(self):
         manager, url = self._manager()
@@ -199,6 +349,7 @@ class FavoriteTest(unittest.TestCase):
         self.assertEqual(len(manager.manual_nodes), 1)
         self.assertEqual(manager.manual_nodes[0].clash['type'], 'anytls')
         self.assertEqual(manager.manual_nodes[0].clash['sni'], 'cdn.example.com')
+        self.assertEqual(manager.manual_nodes[0].airport, '')
         save.assert_called_once_with()
 
 

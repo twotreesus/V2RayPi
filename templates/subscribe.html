@@ -18,6 +18,7 @@
         "subscribe.action.unfavorite": {zh: "取消收藏", en: "Unfavorite"},
         "subscribe.tooltip.node_actions": {zh: "选择节点操作", en: "Choose node action"},
         "subscribe.tooltip.subscription_actions": {zh: "选择订阅操作", en: "Choose subscription action"},
+        "subscribe.tooltip.rename": {zh: "重命名", en: "Rename"},
         "subscribe.tooltip.copy_url": {zh: "复制订阅地址", en: "Copy subscription URL"},
         "subscribe.tooltip.show_subscription_qr": {zh: "显示订阅地址二维码", en: "Show subscription URL QR code"},
         "subscribe.tooltip.favorite": {zh: "添加到收藏，供自动切换故障转移", en: "Add to favorites for automatic failover"},
@@ -48,11 +49,16 @@
         "subscribe.update.in_progress": {zh: "正在更新订阅节点...", en: "Updating subscription nodes..."},
         "subscribe.update.success": {zh: "更新成功", en: "Update successful"},
         "subscribe.update.failed": {zh: "更新失败", en: "Update failed"},
-        "subscribe.prompt.url": {zh: "请输入订阅地址：<br><small style='color:#888'>仅支持 Clash YAML 格式订阅</small>", en: "Enter the subscription URL:<br><small style='color:#888'>Only Clash YAML subscriptions are supported</small>"},
+        "subscribe.prompt.urlHelp": {zh: "仅支持 Clash YAML 格式订阅", en: "Only Clash YAML subscriptions are supported"},
+        "subscribe.prompt.name": {zh: "名称（选填）", en: "Name (optional)"},
         "subscribe.prompt.add_title": {zh: "新增订阅", en: "Add subscription"},
         "subscribe.add.in_progress": {zh: "正在订阅新的节点列表...", en: "Subscribing to the new node list..."},
         "subscribe.add.success": {zh: "订阅成功", en: "Subscription added"},
         "subscribe.add.failed": {zh: "订阅失败", en: "Failed to add subscription"},
+        "subscribe.prompt.rename": {zh: "请输入机场名称：", en: "Enter the subscription name:"},
+        "subscribe.prompt.rename_title": {zh: "重命名", en: "Rename"},
+        "subscribe.rename.success": {zh: "已重命名", en: "Renamed"},
+        "subscribe.rename.failed": {zh: "重命名失败", en: "Failed to rename"},
         "subscribe.prompt.node_link": {zh: "请输入节点分享链接：<br><small style='color:#888'>支持 VMess、VLESS、SS、Trojan、Hysteria2、AnyTLS 和 Mieru</small>", en: "Enter the node share link:<br><small style='color:#888'>Supports VMess, VLESS, SS, Trojan, Hysteria2, AnyTLS, and Mieru</small>"},
         "subscribe.prompt.add_node_title": {zh: "添加节点", en: "Add node"},
         "subscribe.node.added": {zh: "节点已添加到收藏", en: "Node added to favorites"},
@@ -96,7 +102,8 @@
                                 <i class="mdui-icon material-icons group-toggle">expand_more</i>
                                 <strong class="mdui-typo subscribe-index">
                                     <i class="mdui-icon material-icons subscribe-index-icon">rss_feed</i>
-                                    <span class="subscribe-index-label" data-i18n="subscribe.address">订阅地址</span>
+                                    <span class="subscribe-index-label"></span>
+                                    <i class="mdui-icon material-icons rename_subscribe" data-i18n-title="subscribe.tooltip.rename" title="重命名">edit</i>
                                 </strong>
                             </div>
                             <strong class="url subscribe-head-url"></strong>
@@ -140,8 +147,11 @@
                             <div class="subscribe-head-toggle toggle-row">
                                 <i class="mdui-icon material-icons group-toggle">expand_more</i>
                                 <strong class="mdui-typo subscribe-index">
-                                    <i class="mdui-icon material-icons subscribe-index-icon">star_border</i>
+                                    <svg class="subscribe-index-icon subscribe-star-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                        <path fill="currentColor" d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08l4.15-2.5z"/>
+                                    </svg>
                                     <span class="subscribe-index-label" data-i18n="subscribe.favorites">收藏</span>
+                                    <i class="subscribe-index-edit-slot" aria-hidden="true"></i>
                                 </strong>
                             </div>
                             <span class="mdui-typo-caption-opacity subscribe-favorites-hint" data-i18n="subscribe.favorites.hint">自动切换仅在这些节点之间故障转移</span>
@@ -170,7 +180,13 @@
         </td>
         <td class="node_name">
             <div class="node-details">
-                <div class="node-name-text"></div>
+                <div class="node-name-text">
+                    <span class="node-airport">
+                        <i class="mdui-icon material-icons">rss_feed</i>
+                        <span class="node-airport-label"></span>
+                    </span>
+                    <span class="node-name-label"></span>
+                </div>
                 <div class="node_addr"></div>
             </div>
         </td>
@@ -214,6 +230,25 @@
 <div id="qr_toast" class="mdui-dialog">
     <div class="mdui-dialog-content">
         <div id="qr_code" style="width: fit-content"></div>
+    </div>
+</div>
+
+<div id="add_subscribe_dialog" class="mdui-dialog">
+    <div class="mdui-dialog-title" data-i18n="subscribe.prompt.add_title">新增订阅</div>
+    <div class="mdui-dialog-content">
+        <div class="mdui-textfield">
+            <label class="mdui-textfield-label" data-i18n="subscribe.prompt.name">名称（选填）</label>
+            <input id="add_subscribe_name" class="mdui-textfield-input" type="text" />
+        </div>
+        <div class="mdui-textfield">
+            <label class="mdui-textfield-label" data-i18n="subscribe.address">订阅地址</label>
+            <input id="add_subscribe_url" class="mdui-textfield-input" type="text" />
+            <div class="mdui-textfield-helper" data-i18n="subscribe.prompt.urlHelp">仅支持 Clash YAML 格式订阅</div>
+        </div>
+    </div>
+    <div class="mdui-dialog-actions">
+        <button class="mdui-btn mdui-ripple" mdui-dialog-close data-i18n="subscribe.cancel">取消</button>
+        <button class="mdui-btn mdui-ripple" onclick="confirm_add_subscribe()" data-i18n="subscribe.confirm">确认</button>
     </div>
 </div>
 
@@ -271,6 +306,18 @@
         white-space: nowrap;
         transition: all 0.3s ease;
     }
+    .subscription-row .subscribe-index,
+    .favorite-row .subscribe-index {
+        min-width: 0;
+        box-sizing: border-box;
+        color: #fff;
+    }
+    .subscription-row .subscribe-index {
+        background-color: #455a64;
+    }
+    .favorite-row .subscribe-index {
+        background: linear-gradient(135deg, #ba49c6, #e8a2e4);
+    }
     /* mdui leaves an icon at the inherited font size, which is smaller than the
        label it sits next to. */
     .subscribe-index-icon {
@@ -278,16 +325,19 @@
         font-size: 16px;
         line-height: 1;
     }
-    .subscription-row .subscribe-index-icon {
-        color: var(--brand-blue);
+    .subscribe-star-icon {
+        width: 16px;
+        height: 16px;
+        display: block;
     }
-    /* The badge turns solid orange for the group holding the running node, so the
-       icon goes white with its label instead of clashing with it. */
-    .subscription-row .subscribe-index.running .subscribe-index-icon {
+    .subscription-row .subscribe-index-icon,
+    .favorite-row .subscribe-index-icon {
         color: #fff;
     }
-    .subscribe-index.running {
-        background-color: #FF9800;
+    .subscribe-index.running,
+    .subscription-row .subscribe-index.running,
+    .favorite-row .subscribe-index.running {
+        background: #FF9800;
         color: white !important;
     }
     /* Swallows the click that dismisses an open menu, so it cannot reach the row
@@ -366,7 +416,10 @@
         mdui.mutation();
 
         // All dynamic rows (subscribe heads, manual head, node rows) live in #node_list_body
-        $("#node_list_body").on("click", ".toggle-row", function() {
+        $("#node_list_body").on("click", ".toggle-row", function(e) {
+            if ($(e.target).closest(".rename_subscribe").length) {
+                return;
+            }
             var $head = $(this).closest("tr");
             var groupIndex = $head.data("group");
             var groupKey = $head.attr("data-group-key");
@@ -376,6 +429,13 @@
             $nodesBody.toggleClass("is-expanded", expanding);
             $icon.toggleClass("expanded", expanding);
             save_group_expand_state(groupKey, expanding);
+            return false;
+        });
+
+        $("#node_list_body").on("click", ".rename_subscribe", function(e) {
+            e.stopPropagation();
+            var row = $(this).closest("tr");
+            rename_subscribe(row.data("url"), row.find(".subscribe-index-label").text());
             return false;
         });
 
@@ -410,7 +470,7 @@
             var row = $(this);
             var url = row.data("url");
             var index = row.data("index");
-            var nodeName = row.find(".node-name-text").text();
+            var nodeName = row.find(".node-name-label").text() || row.find(".node_name").data("ps");
             mdui.confirm(t("subscribe.switch.prompt", {name: nodeName}), t("subscribe.switch.title"), function() {
                 apply_node(url, index);
             }, function() {}, {
@@ -559,16 +619,49 @@
                 currentHeadRow.find(".group-toggle").toggleClass("expanded", expanded);
             }
 
-            function make_group_head(url, index) {
+            function subscribe_display_name(group) {
+                var name = group && group.name ? String(group.name).trim() : "";
+                if (name) {
+                    return name;
+                }
+                var url = (group && group.subscribe) || "";
+                try {
+                    return new URL(url).hostname || url;
+                } catch (e) {
+                    return url;
+                }
+            }
+
+            var airportByUrl = {};
+            var airportByPs = {};
+            groups.forEach(function(group) {
+                var airport = subscribe_display_name(group);
+                if (group.subscribe) {
+                    airportByUrl[group.subscribe] = airport;
+                }
+                (group.nodes || []).forEach(function(node) {
+                    if (node.ps) {
+                        airportByPs[node.ps] = airport;
+                    }
+                });
+            });
+
+            function favorite_airport_name(node_data) {
+                return (node_data.subscribe && airportByUrl[node_data.subscribe])
+                    || (node_data.airport || "").trim()
+                    || airportByPs[node_data.ps]
+                    || "";
+            }
+
+            function make_group_head(group, index) {
+                var url = group.subscribe;
                 var url_row = $("#subscribe_template").clone();
                 url_row.attr("id", "real_subscribe_" + index);
                 url_row.attr("data-url", url);
                 url_row.attr("data-group", index);
                 url_row.attr("data-group-key", url);
-                url_row.find(".url").html(url);
-                url_row.find(".subscribe-index-label")
-                    .removeAttr("data-i18n")
-                    .html('<span data-i18n="subscribe.group"></span> ' + index);
+                url_row.find(".subscribe-index-label").text(subscribe_display_name(group));
+                url_row.find(".url").text(url);
                 I18n.apply(url_row[0]);
                 url_row.show();
                 var headerTable = $('<table class="mdui-table node-table"><tbody></tbody></table>');
@@ -648,7 +741,18 @@
                 var typeBadge = '<span class="node-type-badge node-type-' + badge.className + '">' + badge.label + '</span>';
                 node_row.find(".node-protocol").html(typeBadge);
                 node_row.find(".node_name").attr("data-ps", node_data["ps"]);
-                node_row.find(".node-name-text").text(node_data["ps"]);
+                node_row.find(".node-name-label").text(node_data["ps"]);
+                if (isFavorite) {
+                    var airport = favorite_airport_name(node_data);
+                    if (airport) {
+                        node_row.find(".node-airport-label").text(airport);
+                        node_row.find(".node-airport").addClass("is-visible");
+                    } else {
+                        node_row.find(".node-airport").remove();
+                    }
+                } else {
+                    node_row.find(".node-airport").remove();
+                }
                 node_row.find(".node_addr").html(node_data["add"]);
                 if (node_data["ps"] === node_running) {
                     node_row.addClass("node_running");
@@ -671,7 +775,7 @@
             groups.forEach(function(group, i) {
                 var url = group["subscribe"];
                 var index = i + 1;
-                make_group_head(url, index);
+                make_group_head(group, index);
                 group["nodes"].forEach(function(node_data, j) {
                     make_node_row(url, node_data, index, j, false);
                 });
@@ -683,6 +787,24 @@
             requestAnimationFrame(function () {
                 nodeListBody.find(".group-nodes--prep").removeClass("group-nodes--prep");
             });
+
+            function unify_badge_widths(selector) {
+                var badges = nodeListBody.find(selector);
+                badges.css("width", "");
+                if (badges.length < 2) {
+                    return;
+                }
+                var max = 0;
+                badges.each(function() {
+                    max = Math.max(max, this.getBoundingClientRect().width);
+                });
+                badges.css("width", Math.ceil(max) + "px");
+            }
+
+            function unify_subscribe_name_widths() {
+                unify_badge_widths(".subscription-row .subscribe-index, .favorite-row .subscribe-index");
+                unify_badge_widths(".node-airport.is-visible");
+            }
 
             if (node_running) {
                 var runningRow = $(".node_running");
@@ -703,6 +825,8 @@
                     }
                 }
             }
+
+            unify_subscribe_name_widths();
         });
     }
 
@@ -813,6 +937,27 @@
         });
     }
 
+    function rename_subscribe(url, currentName) {
+        mdui.prompt(t("subscribe.prompt.rename"), t("subscribe.prompt.rename_title"), function (name) {
+            name = (name || "").trim();
+            if (!name.length) {
+                return;
+            }
+            ajax_request({ url: "/rename_subscribe", data: {subscribe: url, name: name} }).then(function (data) {
+                if (check_result(data)) {
+                    message(t("subscribe.rename.success"));
+                    refresh();
+                } else {
+                    message(t("subscribe.rename.failed"));
+                }
+            });
+        }, function () {}, {
+            confirmText: t("subscribe.confirm"),
+            cancelText: t("subscribe.cancel"),
+            defaultValue: String(currentName || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+        });
+    }
+
     function update_subscribe(url) {
         pop_toast(t("subscribe.update.in_progress"))
         ajax_request({ url: "/update_subscribe", data: {subscribe:url} }).then(function (data) {
@@ -843,26 +988,43 @@
         });
     }
 
+    var g_add_subscribe_dialog = null;
+
     function add_subscribe() {
-        mdui.prompt(t("subscribe.prompt.url"), t("subscribe.prompt.add_title"), function (url) {
-            if (!url.length) {
-                return;
-            }
-            pop_toast(t("subscribe.add.in_progress"));
-            ajax_request({ url: "/add_subscribe", data: {subscribe:url} }).then(function (data) {
-                if (check_result(data)) {
-                    update_toast(t("subscribe.add.success"));
+        $("#add_subscribe_url").val("");
+        $("#add_subscribe_name").val("");
+        if (!g_add_subscribe_dialog) {
+            g_add_subscribe_dialog = new mdui.Dialog("#add_subscribe_dialog", { history: false });
+            $("#add_subscribe_dialog").on("keydown", "input", function (e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    confirm_add_subscribe();
                 }
-                else {
-                    update_toast(t("subscribe.add.failed"));
-                }
-            }).always(function () {
-                close_toast();
-                refresh();
             });
-        }, function () {}, {
-            confirmText: t("subscribe.confirm"),
-            cancelText: t("subscribe.cancel")
+        }
+        g_add_subscribe_dialog.open();
+        mdui.updateTextFields("#add_subscribe_dialog");
+        $("#add_subscribe_name").focus();
+    }
+
+    function confirm_add_subscribe() {
+        var url = $("#add_subscribe_url").val().trim();
+        var name = $("#add_subscribe_name").val().trim();
+        if (!url.length) {
+            return;
+        }
+        g_add_subscribe_dialog.close();
+        pop_toast(t("subscribe.add.in_progress"));
+        ajax_request({ url: "/add_subscribe", data: {subscribe: url, name: name} }).then(function (data) {
+            if (check_result(data)) {
+                update_toast(t("subscribe.add.success"));
+            }
+            else {
+                update_toast(t("subscribe.add.failed"));
+            }
+        }).always(function () {
+            close_toast();
+            refresh();
         });
     }
 

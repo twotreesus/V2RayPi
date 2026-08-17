@@ -776,7 +776,31 @@ body.mdui-appbar-with-toolbar {
     white-space: nowrap;
 }
 
-.subscribe-head-url {
+.subscribe-index-label {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+}
+
+.rename_subscribe,
+.subscribe-index-edit-slot {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.rename_subscribe {
+    color: #fff !important;
+    cursor: pointer;
+    user-select: none;
+}
+
+.subscribe-head-url,
+.subscribe-favorites-hint {
     flex: 1;
     min-width: 0;
     display: block;
@@ -785,11 +809,6 @@ body.mdui-appbar-with-toolbar {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-}
-
-.subscribe-favorites-hint {
-    flex: 1;
-    min-width: 0;
 }
 
 .node-row > td.node_name {
@@ -822,7 +841,53 @@ body.mdui-appbar-with-toolbar {
 }
 
 .node-name-text {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.node-airport {
+    display: none;
+}
+
+.node-airport.is-visible {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex: none;
+    box-sizing: border-box;
+    max-width: 10em;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background-color: #455a64;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.node-airport .mdui-icon {
+    flex: none;
+    font-size: 14px;
+    line-height: 1;
+    color: #fff;
+}
+
+.node-airport-label {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+}
+
+.node-name-label {
+    min-width: 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -856,14 +921,16 @@ body.mdui-appbar-with-toolbar {
         flex-shrink: 0;
     }
 
-    .subscribe-head-url {
+    .subscribe-head-url,
+    .subscribe-favorites-hint {
         flex-basis: 100%;
         max-width: none;
         margin-left: 0;
         font-size: 12px;
     }
 
-    .subscription-row .subscribe-head-url {
+    .subscription-row .subscribe-head-url,
+    .favorite-row .subscribe-favorites-hint {
         flex-basis: auto;
     }
 

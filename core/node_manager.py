@@ -8,11 +8,13 @@ Desc:
 
 from typing import List, Optional
 from datetime import datetime
+import base64
 import copy
+import re
 import time
 import requests
 import yaml
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from .keys import Keyword as K
 from .node import Node
 from .node_uri import parse_node_uri
@@ -22,6 +24,7 @@ from .base_data_item import BaseDataItem
 class NodeGroup:
     def __init__(self):
         self.subscribe: str = ''
+        self.name: str = ''
         self.nodes: List[Node] = []
 
 class NodeManager(BaseDataItem):
@@ -67,7 +70,50 @@ class NodeManager(BaseDataItem):
             return None
         return Node.from_clash(proxy)
 
-    def update_group(self, group: NodeGroup):
+    def _decode_profile_title(self, value: str) -> str:
+        value = (value or '').strip()
+        if not value:
+            return ''
+        if value.lower().startswith('base64:'):
+            raw = value.split(':', 1)[1]
+            try:
+                return base64.b64decode(raw).decode('utf-8', errors='replace').strip()
+            except Exception:
+                return ''
+        return value
+
+    def _filename_from_content_disposition(self, header: str) -> str:
+        header = header or ''
+        starred = re.search(
+            r"filename\*\s*=\s*(?:UTF-8''|utf-8'')([^;]+)",
+            header,
+            re.I,
+        )
+        if starred:
+            name = unquote(starred.group(1).strip().strip('"'))
+        else:
+            quoted = re.search(r'filename\s*=\s*"([^"]+)"', header, re.I)
+            plain = re.search(r'filename\s*=\s*([^;]+)', header, re.I)
+            name = (quoted or plain).group(1).strip().strip('"') if (quoted or plain) else ''
+        name = re.sub(r'\.(ya?ml|txt|json)$', '', name, flags=re.I).strip()
+        return name
+
+    def _extract_subscribe_name(self, response, url: str) -> str:
+        headers = getattr(response, 'headers', None) or {}
+        title = self._decode_profile_title(
+            headers.get('profile-title') or headers.get('Profile-Title') or '',
+        )
+        if title:
+            return title
+        filename = self._filename_from_content_disposition(
+            headers.get('content-disposition') or headers.get('Content-Disposition') or '',
+        )
+        if filename:
+            return filename
+        host = urlparse(url).hostname or ''
+        return host
+
+    def update_group(self, group: NodeGroup, fill_name: bool = False):
         url = group.subscribe
         r = requests.get(url, headers={'User-Agent': K.subscribe_user_agent})
 
@@ -79,6 +125,12 @@ class NodeManager(BaseDataItem):
         if not isinstance(clash, dict) or 'proxies' not in clash:
             print('Subscription {0} is not a Clash configuration, no proxies found'.format(url))
             return
+
+        if fill_name and not (group.name or '').strip():
+            name = self._extract_subscribe_name(r, url)
+            if name:
+                group.name = name
+                print('Subscription {0}: using name {1}'.format(url, name))
 
         group.nodes.clear()
         skipped = 0
@@ -106,13 +158,22 @@ class NodeManager(BaseDataItem):
         self.refresh_update_time()
         self.save()
 
-    def add_subscribe(self, url):
+    def add_subscribe(self, url, name: str = ''):
         group = NodeGroup()
         group.subscribe = url
-        self.update_group(group)
+        group.name = (name or '').strip()
+        self.update_group(group, fill_name=True)
         self.subscribes[url] = group
 
         self.refresh_update_time()
+        self.save()
+
+    def rename_subscribe(self, url, name: str):
+        name = (name or '').strip()
+        if not name:
+            raise ValueError('name is required')
+        group = self.subscribes[url]
+        group.name = name
         self.save()
 
     def remove_subscribe(self, url):
@@ -127,11 +188,20 @@ class NodeManager(BaseDataItem):
             self.manual_nodes.pop(index)
         self.save()
 
+    def _airport_name(self, url: str) -> str:
+        group = self.subscribes.get(url)
+        if not group:
+            return urlparse(url).hostname or ''
+        return (group.name or '').strip() or (urlparse(url).hostname or '')
+
     def favorite_node(self, url: str, index: int) -> bool:
         node = self.find_node(url, index)
         if any(n.ps == node.ps for n in self.manual_nodes):
             return False
-        self.manual_nodes.append(copy.deepcopy(node))
+        copied = copy.deepcopy(node)
+        copied.subscribe = url
+        copied.airport = self._airport_name(url)
+        self.manual_nodes.append(copied)
         self.save()
         return True
 

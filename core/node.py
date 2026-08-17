@@ -24,6 +24,8 @@ class Node(BaseDataItem):
         self.add = None
         self.port = None
         self.protocol = None
+        self.subscribe = ''
+        self.airport = ''
 
     @classmethod
     def from_clash(cls, proxy: dict) -> 'Node':

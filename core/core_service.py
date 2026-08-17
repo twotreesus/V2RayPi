@@ -306,9 +306,13 @@ class CoreService:
         return result
 
     @classmethod
-    def add_subscribe(cls, url):
-        cls.node_manager.add_subscribe(url)
+    def add_subscribe(cls, url, name: str = ''):
+        cls.node_manager.add_subscribe(url, name)
         cls.re_apply_node()
+
+    @classmethod
+    def rename_subscribe(cls, url, name: str):
+        cls.node_manager.rename_subscribe(url, name)
 
     @classmethod
     def remove_subscribe(cls, url):
