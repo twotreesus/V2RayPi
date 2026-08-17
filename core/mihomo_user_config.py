@@ -62,7 +62,7 @@ class MihomoUserConfig(BaseDataItem):
             LATENCY_PROBE_URL = 'https://www.gstatic.com/generate_204'
             DETECT_SPAN = 60
             FAILED_COUNT = 3
-            TIMEOUT = 1.0
+            TIMEOUT = 2.0
 
             def __init__(self):
                 self.enabled = False
