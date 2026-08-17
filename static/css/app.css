@@ -933,9 +933,9 @@ body.mdui-appbar-with-toolbar {
     text-align: center;
 }
 
-.advance-detect-url-row input.action-group-value {
-    flex: 1 1 auto;
-    min-width: 0;
+.advance-detect-url-row .action-group-value {
+    flex: 0 1 auto;
+    max-width: max-content;
 }
 
 @media (max-width: 599px) {
@@ -949,15 +949,6 @@ body.mdui-appbar-with-toolbar {
         display: grid;
         grid-template-columns: 88px minmax(64px, 96px) minmax(0, 1fr);
         align-items: center;
-    }
-
-    #advance_table > tbody > tr.advance-help-row.advance-detect-url-row {
-        grid-template-columns: 88px minmax(0, 1fr);
-    }
-
-    #advance_table > tbody > tr.advance-help-row.advance-detect-url-row > td:last-child {
-        grid-column: 1 / -1;
-        padding-top: 0;
     }
 
     #advance_table > tbody > tr.advance-inline-row.advance-dns-row,

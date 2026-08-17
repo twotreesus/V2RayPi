@@ -60,14 +60,22 @@ class MihomoUserConfig(BaseDataItem):
                     return self.default_remote
         class AutoDetectAndSwitch:
             LATENCY_PROBE_URL = 'https://www.gstatic.com/generate_204'
+            DETECT_SPAN = 60
+            FAILED_COUNT = 3
+            TIMEOUT = 1.0
 
             def __init__(self):
                 self.enabled = False
-                self.detect_span = 60
+                self.detect_span = self.DETECT_SPAN
                 self.detect_url = self.LATENCY_PROBE_URL
-                self.failed_count = 3
-                self.timeout = 1.0
+                self.failed_count = self.FAILED_COUNT
+                self.timeout = self.TIMEOUT
                 self.last_switch_time = ''
+
+            def apply_fixed_defaults(self) -> None:
+                self.detect_span = self.DETECT_SPAN
+                self.failed_count = self.FAILED_COUNT
+                self.timeout = self.TIMEOUT
 
         class GeoData:
             def __init__(self):

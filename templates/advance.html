@@ -87,45 +87,18 @@
                         </label>
                     </td>
                 </tr>
-                <tr class="advance-help-row advance-detect-url-row">
+                <tr class="advance-inline-row advance-dns-row advance-detect-url-row">
                     <td data-i18n="advance.autoSwitch.detectUrl">探测地址</td>
-                    <td colspan="3">
+                    <td colspan="5">
                         <div class="action-group">
-                            <input id="detect_url" class="mdui-textfield-input mdui-typo-display-1 action-group-value" type="text" onchange="detect_url_change()"/>
+                            <div id="detect_url" class="action-group-value"></div>
+                            <div id="modify_detect_url">
+                                <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-a100 mdui-ripple" onclick="modify_detect_url()" data-i18n="advance.action.modify">修改</button>
+                            </div>
                             <div id="clear_detect_url" style="display: none">
                                 <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-grey-300 mdui-ripple" onclick="clear_detect_url()" data-i18n="advance.action.clear">清除</button>
                             </div>
                         </div>
-                    </td>
-                    <td colspan="2">
-                        <div class="mdui-typo-caption-opacity" data-i18n-html="advance.autoSwitch.detectUrlHelp">一律发送 HEAD。默认 <code>https://www.gstatic.com/generate_204</code>。请使用国外可达的 <code>https://</code> 地址，错误地址会导致反复切换</div>
-                    </td>
-                </tr>
-                <tr class="advance-help-row">
-                    <td data-i18n="advance.autoSwitch.interval">时间间隔</td>
-                    <td colspan="2">
-                        <input id="detect_time_span" class="mdui-textfield-input mdui-typo-display-1 advance-number-input" type="number" onchange="detect_time_span_change()"/>
-                    </td>
-                    <td colspan="3">
-                        <div class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.intervalHelp">单位：秒，整数，范围：10-3600</div>
-                    </td>
-                </tr>
-                <tr class="advance-help-row">
-                    <td data-i18n="advance.autoSwitch.timeout">请求超时</td>
-                    <td colspan="2">
-                        <input id="detect_timeout" class="mdui-textfield-input mdui-typo-display-1 advance-number-input" type="number" onchange="detect_timeout_change()"/>
-                    </td>
-                    <td colspan="3">
-                        <div class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.timeoutHelp">单位：秒，支持小数，范围：0.5-10</div>
-                    </td>
-                </tr>
-                <tr class="advance-help-row">
-                    <td data-i18n="advance.autoSwitch.retries">重试次数</td>
-                    <td colspan="2">
-                        <input id="detect_max_retry" class="mdui-textfield-input mdui-typo-display-1 advance-number-input" type="number" onchange="detect_max_retry_change()"/>
-                    </td>
-                    <td colspan="3">
-                        <div class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.retriesHelp">达到重试次数后，在收藏节点之间故障转移，范围：1-10</div>
                     </td>
                 </tr>
                 <tr class="advance-inline-row">
@@ -472,13 +445,6 @@
         "advance.autoSwitch.title": {zh: "自动切换", en: "Automatic Switching"},
         "advance.autoSwitch.description": {zh: "按间隔对探测地址发送 HEAD。默认地址适合测连通性和延迟。连续失败后在收藏节点之间随机故障转移", en: "Send a HEAD request to the probe URL on an interval. The default URL is suitable for reachability and latency. After consecutive failures, fail over at random among favorite nodes."},
         "advance.autoSwitch.detectUrl": {zh: "探测地址", en: "Test URL"},
-        "advance.autoSwitch.detectUrlHelp": {zh: "一律发送 HEAD。默认 <code>https://www.gstatic.com/generate_204</code>。请使用国外可达的 <code>https://</code> 地址，错误地址会导致反复切换", en: "Always sends HEAD. Default: <code>https://www.gstatic.com/generate_204</code>. Use a reachable overseas URL beginning with <code>https://</code>; an invalid URL may cause repeated switching."},
-        "advance.autoSwitch.interval": {zh: "时间间隔", en: "Interval"},
-        "advance.autoSwitch.intervalHelp": {zh: "单位：秒，整数，范围：10-3600", en: "Unit: seconds; integer; range: 10–3600"},
-        "advance.autoSwitch.timeout": {zh: "请求超时", en: "Request Timeout"},
-        "advance.autoSwitch.timeoutHelp": {zh: "单位：秒，支持小数，范围：0.5-10", en: "Unit: seconds; decimals supported; range: 0.5–10"},
-        "advance.autoSwitch.retries": {zh: "重试次数", en: "Retry Limit"},
-        "advance.autoSwitch.retriesHelp": {zh: "达到重试次数后，在收藏节点之间故障转移，范围：1-10", en: "After reaching this retry limit, fail over among favorite nodes; range: 1–10"},
         "advance.autoSwitch.lastSwitch": {zh: "最近切换", en: "Last Switch"},
         "advance.localProxy.title": {zh: "本地代理", en: "Local Proxy"},
         "advance.localProxy.socks5": {zh: "Socks 5 代理", en: "Socks 5 Proxy"},
@@ -540,6 +506,7 @@
         "advance.prompt.socksPort": {zh: "请输入 Socks 5 代理端口：", en: "Enter the Socks 5 proxy port:"},
         "advance.prompt.localDns": {zh: "请输入国内 DNS 地址：", en: "Enter the domestic DNS address:"},
         "advance.prompt.remoteDns": {zh: "请输入国外 DNS 地址：", en: "Enter the overseas DNS address:"},
+        "advance.prompt.detectUrl": {zh: "请输入探测地址：", en: "Enter the probe URL:"},
         "advance.toast.applying": {zh: "正在应用高级配置...", en: "Applying advanced configuration..."},
         "advance.toast.applySuccess": {zh: "应用成功", en: "Applied successfully"},
         "advance.toast.applyFailure": {zh: "应用失败", en: "Failed to apply"},
@@ -638,22 +605,14 @@
         // auto detect
         $("#enable_auto_switch").prop('checked', g_config_local['auto_detect']['enabled']);
         var detect_url = g_config_local['auto_detect']['detect_url'];
-        $("#detect_url").val(detect_url);
-        if (detect_url !== DEFAULT_DETECT_URL) {
+        if (detect_url && detect_url !== DEFAULT_DETECT_URL) {
+            $("#detect_url").html(detect_url).removeClass("mdui-text-color-black-disabled");
             $("#clear_detect_url").show();
         }
         else {
+            $("#detect_url").html(DEFAULT_DETECT_URL).addClass("mdui-text-color-black-disabled");
             $("#clear_detect_url").hide();
         }
-
-        var detect_time_span = g_config_local['auto_detect']['detect_span'];
-        $("#detect_time_span").val(detect_time_span);
-
-        var detect_timeout = g_config_local['auto_detect']['timeout'];
-        $("#detect_timeout").val(detect_timeout);
-
-        var detect_max_retry = g_config_local['auto_detect']['failed_count'];
-        $("#detect_max_retry").val(detect_max_retry);
 
         var detect_last_switch = g_config_local['auto_detect']['last_switch_time'];
         $("#detect_last_switch_time").html(detect_last_switch);
@@ -874,61 +833,37 @@
 
     var DEFAULT_DETECT_URL = 'https://www.gstatic.com/generate_204';
 
-    function detect_url_change() {
-        var input = $("#detect_url");
-        var url = input.val().trim();
-        if (!url.startsWith('https://'))
-            url = DEFAULT_DETECT_URL;
-        input.val(url);
-
-        g_config_local['auto_detect']['detect_url'] = url;
-        refresh_local();
+    function modify_detect_url() {
+        var dialog = mdui.prompt(t('advance.prompt.detectUrl'), t('advance.prompt.title'), function (url) {
+            url = url.trim();
+            if (!url.length || url === 'https://') {
+                return;
+            }
+            if (!url.startsWith('https://')) {
+                url = DEFAULT_DETECT_URL;
+            }
+            g_config_local['auto_detect']['detect_url'] = url;
+            refresh_local();
+        }, function () {}, {
+            confirmText: t('advance.action.confirm'),
+            cancelText: t('advance.action.cancel'),
+            defaultValue: 'https://'
+        });
+        function placeCaretAtEnd() {
+            var input = dialog.$element.find('.mdui-textfield-input')[0];
+            if (!input) {
+                return;
+            }
+            var end = input.value.length;
+            input.setSelectionRange(end, end);
+            input.focus();
+        }
+        placeCaretAtEnd();
+        dialog.$element.on('open.mdui.dialog', placeCaretAtEnd);
     }
 
     function clear_detect_url() {
         g_config_local['auto_detect']['detect_url'] = DEFAULT_DETECT_URL;
-        refresh_local();
-    }
-
-    function detect_time_span_change() {
-        var input = $("#detect_time_span");
-        var time_span = parseInt(input.val());
-        if (time_span > 3600) {
-            time_span = 3600;
-        } else if (time_span < 10) {
-            time_span = 10;
-        }
-        input.val(time_span);
-
-        g_config_local['auto_detect']['detect_span'] = time_span;
-        refresh_local();
-    }
-
-    function detect_timeout_change() {
-        var input = $("#detect_timeout");
-        var timeout = parseFloat(input.val());
-        if (timeout > 10) {
-            timeout = 10;
-        } else if (timeout < 0.5) {
-            timeout = 0.5;
-        }
-        input.val(timeout);
-
-        g_config_local['auto_detect']['timeout'] = timeout;
-        refresh_local();
-    }
-
-    function detect_max_retry_change() {
-        var input = $("#detect_max_retry");
-        var max_retry = parseInt(input.val());
-        if (max_retry > 10) {
-            max_retry = 10;
-        } else if (max_retry < 1) {
-            max_retry = 1;
-        }
-        input.val(max_retry);
-
-        g_config_local['auto_detect']['failed_count'] = max_retry;
         refresh_local();
     }
 

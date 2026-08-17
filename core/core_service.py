@@ -64,6 +64,7 @@ class CoreService:
         cls.app_config = AppConfig().load()
         cls.node_manager = NodeManager().load()
         cls.user_config = MihomoUserConfig().load()
+        cls.user_config.advance_config.auto_detect.apply_fixed_defaults()
 
         # A node selected before the move to mihomo has no Clash payload to hand
         # to the core, so treat it as no selection rather than repeatedly failing
@@ -415,6 +416,7 @@ class CoreService:
     def apply_advance_config(cls, config:dict):
         result = True
         new_advance = cls.user_config.advance_config.load_data(config)
+        new_advance.auto_detect.apply_fixed_defaults()
         cls.user_config.advance_config = new_advance
         result = cls.re_apply_node()
         if result:
