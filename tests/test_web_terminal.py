@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 from core.web_terminal import (
     WebTerminalManager,
     WebTerminalSession,
+    _ensure_utf8_locale,
     _shell_command,
     _shell_env,
 )
@@ -54,6 +55,26 @@ class WebTerminalShellCommandTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(command[2]))
 
 
+class WebTerminalLocaleTest(unittest.TestCase):
+    def test_missing_locale_defaults_to_c_utf8(self):
+        env = {}
+        _ensure_utf8_locale(env)
+        self.assertEqual(env['LANG'], 'C.UTF-8')
+        self.assertEqual(env['LC_CTYPE'], 'C.UTF-8')
+
+    def test_posix_locale_is_upgraded_to_utf8(self):
+        env = {'LANG': 'C', 'LC_ALL': 'C'}
+        _ensure_utf8_locale(env)
+        self.assertEqual(env['LC_ALL'], 'C.UTF-8')
+
+    def test_existing_utf8_locale_is_kept(self):
+        env = {'LANG': 'en_US.UTF-8'}
+        _ensure_utf8_locale(env)
+        self.assertEqual(env['LANG'], 'en_US.UTF-8')
+        self.assertNotIn('LC_ALL', env)
+        self.assertNotIn('LC_CTYPE', env)
+
+
 class WebTerminalSessionIoTest(unittest.TestCase):
     def test_write_encodes_text_to_pty(self):
         session = WebTerminalSession.__new__(WebTerminalSession)
@@ -64,6 +85,16 @@ class WebTerminalSessionIoTest(unittest.TestCase):
         with patch('core.web_terminal.os.write') as write:
             session.write('hi')
             write.assert_called_once_with(7, b'hi')
+
+    def test_write_sends_x10_mouse_bytes_as_latin1(self):
+        session = WebTerminalSession.__new__(WebTerminalSession)
+        session.alive = True
+        session.master_fd = 7
+        session._write_lock = threading.Lock()
+
+        with patch('core.web_terminal.os.write') as write:
+            session.write('\x1b[M \xff!', binary=True)
+            write.assert_called_once_with(7, b'\x1b[M \xff!')
 
     def test_output_queue_accepts_decoded_chunks(self):
         session = WebTerminalSession.__new__(WebTerminalSession)

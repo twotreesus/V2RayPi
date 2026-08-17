@@ -553,7 +553,7 @@ def terminal_input_api():
     text = data.get('data')
     if not isinstance(text, str):
         return jsonify({K.result: K.failed, 'error': 'invalid_input'})
-    session.write(text)
+    session.write(text, binary=bool(data.get('binary')))
     return jsonify({K.result: K.ok})
 
 @app.route('/api/terminal/resize', methods=['POST'])

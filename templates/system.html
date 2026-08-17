@@ -564,14 +564,18 @@
         return overlay;
     }
 
-    function send_web_terminal_input(data) {
+    function send_web_terminal_input(data, binary) {
         if (!g_web_terminal.sessionId || !data) {
             return;
         }
         ajax_request({
             url: '/api/terminal/input',
             type: 'POST',
-            data: JSON.stringify({ id: g_web_terminal.sessionId, data: data })
+            data: JSON.stringify({
+                id: g_web_terminal.sessionId,
+                data: data,
+                binary: !!binary
+            })
         }).fail(function() {});
     }
 
@@ -624,6 +628,9 @@
                 g_web_terminal.term.open(container);
                 g_web_terminal.fitAddon.fit();
                 g_web_terminal.term.onData(send_web_terminal_input);
+                g_web_terminal.term.onBinary(function(data) {
+                    send_web_terminal_input(data, true);
+                });
 
                 overlay.show().attr('aria-hidden', 'false');
                 $(window).on('resize.webTerminal', resize_web_terminal);

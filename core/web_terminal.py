@@ -15,6 +15,26 @@ import threading
 import uuid
 
 
+def _is_utf8_locale(value: str) -> bool:
+    normalized = (value or '').upper().replace('-', '')
+    return 'UTF8' in normalized
+
+
+def _ensure_utf8_locale(env: dict) -> None:
+    # systemd on the SBC often has LANG=C or no locale at all.  ncurses then
+    # enables the X10 mouse protocol instead of SGR, and htop clicks fail.
+    if _is_utf8_locale(env.get('LC_ALL', '')):
+        return
+    if _is_utf8_locale(env.get('LC_CTYPE', '')) or _is_utf8_locale(env.get('LANG', '')):
+        if env.get('LC_ALL') and not _is_utf8_locale(env.get('LC_ALL', '')):
+            env['LC_ALL'] = 'C.UTF-8'
+        return
+    if env.get('LC_ALL'):
+        env['LC_ALL'] = 'C.UTF-8'
+    env['LANG'] = 'C.UTF-8'
+    env['LC_CTYPE'] = 'C.UTF-8'
+
+
 def _shell_env():
     env = os.environ.copy()
     # Drop debugger attach state so the login shell is a normal process, not a
@@ -26,6 +46,7 @@ def _shell_env():
     env.pop('PYTHONSTARTUP', None)
     env['TERM'] = 'xterm-256color'
     env.setdefault('COLORTERM', 'truecolor')
+    _ensure_utf8_locale(env)
     return env
 
 
@@ -151,10 +172,13 @@ class WebTerminalSession:
                 pass
         self.alive = False
 
-    def write(self, data: str) -> None:
+    def write(self, data: str, binary: bool = False) -> None:
         if not data or not self.alive or self.master_fd < 0:
             return
-        payload = data.encode('utf-8', errors='replace')
+        # xterm.js onBinary delivers one JS char per byte (X10 mouse).  UTF-8
+        # would expand bytes >= 128 and ncurses would ignore the click.
+        encoding = 'latin-1' if binary else 'utf-8'
+        payload = data.encode(encoding, errors='replace')
         with self._write_lock:
             try:
                 os.write(self.master_fd, payload)
