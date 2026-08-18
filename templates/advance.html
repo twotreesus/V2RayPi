@@ -74,7 +74,7 @@
                     <td colspan="6">
                         <div class="section-head advance-section-head mdui-typo">
                             <h5 data-i18n="advance.autoSwitch.title">自动切换</h5>
-                            <h6 class="mdui-typo-caption-opacity" data-i18n="advance.autoSwitch.description">按间隔对探测地址发送 HEAD。默认地址适合测连通性和延迟。连续失败后在收藏节点之间随机故障转移</h6>
+                            <h6 class="mdui-typo-caption-opacity" data-i18n-html="advance.autoSwitch.description">1. 每隔 5 分钟对探测地址发送 HEAD。单次超时 2 秒，失败后在同一次探测内最多再试 3 次。<br>2. 仍失败则在收藏节点中随机切换到另一个（不含当前节点）；收藏不足两个时不会切换。<br>3. 默认地址适合测连通性和延迟。手动切换节点会清空最近切换记录。</h6>
                         </div>
                     </td>
                 </tr>
@@ -443,7 +443,7 @@
         "advance.confirm.title": {zh: "重置确认", en: "Confirm reset"},
         "advance.common.enabled": {zh: "启用", en: "Enabled"},
         "advance.autoSwitch.title": {zh: "自动切换", en: "Automatic Switching"},
-        "advance.autoSwitch.description": {zh: "按间隔对探测地址发送 HEAD。默认地址适合测连通性和延迟。连续失败后在收藏节点之间随机故障转移", en: "Send a HEAD request to the probe URL on an interval. The default URL is suitable for reachability and latency. After consecutive failures, fail over at random among favorite nodes."},
+        "advance.autoSwitch.description": {zh: "1. 每隔 5 分钟对探测地址发送 HEAD。单次超时 2 秒，失败后在同一次探测内最多再试 3 次。<br>2. 仍失败则在收藏节点中随机切换到另一个（不含当前节点）；收藏不足两个时不会切换。<br>3. 默认地址适合测连通性和延迟。手动切换节点会清空最近切换记录。", en: "1. Every 5 minutes, send a HEAD request to the probe URL. Each attempt times out after 2 seconds and is retried up to 3 times within the same probe.<br>2. If it still fails, switch at random to another favorite node, not the current one. Failover needs at least two favorites.<br>3. The default URL is suitable for reachability and latency. Switching nodes manually clears the last-switch record."},
         "advance.autoSwitch.detectUrl": {zh: "探测地址", en: "Test URL"},
         "advance.autoSwitch.lastSwitch": {zh: "最近切换", en: "Last Switch"},
         "advance.localProxy.title": {zh: "本地代理", en: "Local Proxy"},
