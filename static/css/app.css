@@ -741,7 +741,7 @@ body.mdui-appbar-with-toolbar {
     min-width: 0;
     font-size: 12px;
     height: calc(2 * 1.35em + 2px + 6px);
-    padding: 0 4px 6px;
+    padding: 0 4px 6px calc(4px + 1em);
 }
 
 .chart-heading {
