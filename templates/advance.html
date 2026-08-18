@@ -592,24 +592,13 @@
     }
 
     function render_last_switch(text) {
-        var $el = $("#detect_last_switch_time").empty();
-        text = String(text || "");
+        var $el = $("#detect_last_switch_time");
+        text = String(text || "").trim();
         if (!text) {
+            $el.text("");
             return;
         }
-        var parts = text.split(" ---- ");
-        if (parts.length >= 3) {
-            $el.append(document.createTextNode(parts[0] + " ---- "));
-            $el.append(
-                $('<span class="node-airport is-visible">').append(
-                    $('<i class="mdui-icon material-icons">').text("rss_feed"),
-                    $('<span class="node-airport-label">').text(parts[1])
-                )
-            );
-            $el.append(document.createTextNode(" " + parts.slice(2).join(" ---- ")));
-            return;
-        }
-        $el.text(text);
+        $el.text(text.split(" ---- ").join(" | "));
     }
 
     function refresh_local() {
@@ -635,8 +624,7 @@
             $("#clear_detect_url").hide();
         }
 
-        var detect_last_switch = g_config_local['auto_detect']['last_switch_time'];
-        render_last_switch(detect_last_switch);
+        render_last_switch(g_config_local['auto_detect']['last_switch_time']);
 
         // log
         var log_index = g_log_levels.indexOf(g_config_local['log']['level']);

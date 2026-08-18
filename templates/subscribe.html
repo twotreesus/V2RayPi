@@ -181,10 +181,6 @@
         <td class="node_name">
             <div class="node-details">
                 <div class="node-name-text">
-                    <span class="node-airport">
-                        <i class="mdui-icon material-icons">rss_feed</i>
-                        <span class="node-airport-label"></span>
-                    </span>
                     <span class="node-name-label"></span>
                 </div>
                 <div class="node_addr"></div>
@@ -741,18 +737,14 @@
                 var typeBadge = '<span class="node-type-badge node-type-' + badge.className + '">' + badge.label + '</span>';
                 node_row.find(".node-protocol").html(typeBadge);
                 node_row.find(".node_name").attr("data-ps", node_data["ps"]);
-                node_row.find(".node-name-label").text(node_data["ps"]);
+                var name = node_data["ps"] || "";
                 if (isFavorite) {
                     var airport = favorite_airport_name(node_data);
-                    if (airport) {
-                        node_row.find(".node-airport-label").text(airport);
-                        node_row.find(".node-airport").addClass("is-visible");
-                    } else {
-                        node_row.find(".node-airport").remove();
+                    if (airport && name) {
+                        name = airport + " | " + name;
                     }
-                } else {
-                    node_row.find(".node-airport").remove();
                 }
+                node_row.find(".node-name-label").text(name);
                 node_row.find(".node_addr").html(node_data["add"]);
                 if (node_data["ps"] === node_running) {
                     node_row.addClass("node_running");
@@ -803,7 +795,6 @@
 
             function unify_subscribe_name_widths() {
                 unify_badge_widths(".subscription-row .subscribe-index, .favorite-row .subscribe-index");
-                unify_badge_widths(".node-airport.is-visible");
             }
 
             if (node_running) {
