@@ -4,10 +4,13 @@ from core.performance_history import PerformanceHistory
 
 
 class PerformanceHistoryTest(unittest.TestCase):
-    def _history(self, cores=None, memory=None):
+    def _history(self, cores=None, memory=None, mihomo=None):
         return PerformanceHistory(
             cpu_reader=lambda: cores if cores is not None else [10.0, 30.0],
             memory_reader=lambda: memory or {"percent": 40.0, "total": 2048, "used": 800},
+            mihomo_reader=lambda: mihomo or {
+                "cpu_percent": 0.0, "memory_percent": 0.0, "memory_mb": 0,
+            },
         )
 
     def test_snapshot_is_idle_until_the_first_sample(self):
@@ -16,6 +19,9 @@ class PerformanceHistoryTest(unittest.TestCase):
         self.assertEqual(snapshot["cpu"], {})
         self.assertEqual(snapshot["memory"], PerformanceHistory.IDLE_MEMORY)
         self.assertEqual(snapshot["history"]["cpu"], [])
+        self.assertEqual(snapshot["history"]["cpu_mihomo"], [])
+        self.assertEqual(snapshot["history"]["memory_mihomo"], [])
+        self.assertEqual(snapshot["mihomo"], PerformanceHistory.IDLE_MIHOMO)
         self.assertEqual(snapshot["history"]["upload"], [])
         self.assertEqual(snapshot["history"]["window"], PerformanceHistory.WINDOW_SECONDS)
 
@@ -28,8 +34,10 @@ class PerformanceHistoryTest(unittest.TestCase):
             "core 1": 10.0, "core 2": 30.0, "core 3": 50.0, "core 4": 70.0,
         })
         self.assertEqual(snapshot["history"]["cpu"], [40.0])
+        self.assertEqual(snapshot["history"]["cpu_mihomo"], [0.0])
         self.assertEqual(snapshot["memory"], {"percent": 40.0, "total": 2048, "used": 800})
         self.assertEqual(snapshot["history"]["memory"], [40.0])
+        self.assertEqual(snapshot["history"]["memory_mihomo"], [0.0])
 
     def test_a_machine_without_per_core_readings_reports_no_load(self):
         history = self._history(cores=[])
@@ -86,6 +94,19 @@ class PerformanceHistoryTest(unittest.TestCase):
 
         self.assertEqual(history.snapshot()["cpu"]["core 1"], 10.0)
         self.assertEqual(history.snapshot()["memory"]["percent"], 40.0)
+
+    def test_mihomo_process_usage_is_recorded_alongside_the_system(self):
+        history = self._history(mihomo={
+            "cpu_percent": 4.5, "memory_percent": 1.2, "memory_mb": 48,
+        })
+        history.sample({"upload": 0.0, "download": 0.0})
+
+        snapshot = history.snapshot()
+        self.assertEqual(snapshot["mihomo"], {
+            "cpu_percent": 4.5, "memory_percent": 1.2, "memory_mb": 48,
+        })
+        self.assertEqual(snapshot["history"]["cpu_mihomo"], [4.5])
+        self.assertEqual(snapshot["history"]["memory_mihomo"], [1.2])
 
 
 if __name__ == "__main__":

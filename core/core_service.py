@@ -232,6 +232,9 @@ class CoreService:
 
         node = cls.user_config.node.dump()
         result.update(node)
+        result['airport'] = cls.node_manager.airport_name_for_node(
+            cls.user_config.node,
+        )
         return result
 
     @classmethod

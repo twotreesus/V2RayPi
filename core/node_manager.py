@@ -199,9 +199,26 @@ class NodeManager(BaseDataItem):
         if airport:
             return airport
         url = getattr(node, 'subscribe', None) or ''
-        if not url:
+        if url:
+            return self._airport_name(url)
+        identity = (
+            getattr(node, 'protocol', None),
+            getattr(node, 'add', None),
+            getattr(node, 'port', None),
+            getattr(node, 'ps', None),
+        )
+        if not any(identity):
             return ''
-        return self._airport_name(url)
+        for group_url, group in self.subscribes.items():
+            for candidate in group.nodes:
+                if (
+                    candidate.protocol,
+                    candidate.add,
+                    candidate.port,
+                    candidate.ps,
+                ) == identity:
+                    return self._airport_name(group_url)
+        return ''
 
     def favorite_node(self, url: str, index: int) -> bool:
         node = self.find_node(url, index)

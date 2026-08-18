@@ -353,6 +353,40 @@ class FavoriteTest(unittest.TestCase):
         save.assert_called_once_with()
 
 
+class AirportNameTest(unittest.TestCase):
+    def _manager_with_named_group(self, name='Nexitally'):
+        manager = NodeManager()
+        node_group = group()
+        node_group.name = name
+        node_group.nodes = [
+            Node.from_clash({'name': 'HK', 'type': 'vmess', 'server': 'a.com', 'port': 1}),
+        ]
+        manager.subscribes[node_group.subscribe] = node_group
+        return manager, node_group.subscribe
+
+    def test_uses_stamped_airport(self):
+        manager = NodeManager()
+        node = Node.from_clash({'name': 'HK', 'type': 'vmess', 'server': 'a.com', 'port': 1})
+        node.airport = 'Nexitally'
+        self.assertEqual(manager.airport_name_for_node(node), 'Nexitally')
+
+    def test_uses_subscribe_url_when_airport_is_empty(self):
+        manager, url = self._manager_with_named_group()
+        node = Node.from_clash({'name': 'HK', 'type': 'vmess', 'server': 'a.com', 'port': 1})
+        node.subscribe = url
+        self.assertEqual(manager.airport_name_for_node(node), 'Nexitally')
+
+    def test_finds_subscription_group_for_unstamped_node(self):
+        manager, _url = self._manager_with_named_group()
+        node = Node.from_clash({'name': 'HK', 'type': 'vmess', 'server': 'a.com', 'port': 1})
+        self.assertEqual(manager.airport_name_for_node(node), 'Nexitally')
+
+    def test_manual_node_without_airport_stays_empty(self):
+        manager = NodeManager()
+        node = Node.from_clash({'name': 'AnyTLS', 'type': 'anytls', 'server': 'example.com', 'port': 443})
+        self.assertEqual(manager.airport_name_for_node(node), '')
+
+
 class NodeLinkTest(unittest.TestCase):
     def test_link_is_a_protocol_share_url(self):
         node = Node.from_clash({'name': '日本 01', 'type': 'hysteria2',

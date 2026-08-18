@@ -438,7 +438,9 @@
             .text(protocol.label)
             .attr('class', 'node-type-badge node-type-' + protocol.className)
             .toggle(!!protocol.label);
-        $('#hs_node').text(data['ps'] || '');
+        var ps = data['ps'] || '';
+        var airport = (data['airport'] || '').trim();
+        $('#hs_node').text(airport && ps ? (airport + '｜' + ps) : ps);
         $('#header_status').addClass('is-visible');
         $(document.body).addClass('with-status-bar');
     }

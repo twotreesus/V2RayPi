@@ -726,6 +726,82 @@ body.mdui-appbar-with-toolbar {
     padding-right: 16px;
 }
 
+.chart-cell {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    min-width: 0;
+    font-size: 12px;
+    height: calc(2 * 1.35em + 2px + 6px);
+    padding: 0 4px 6px;
+}
+
+.chart-heading {
+    flex: 0 0 auto;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #666;
+    white-space: nowrap;
+}
+
+.chart-caption {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #666;
+}
+
+.chart-caption-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.chart-caption-line > span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chart-swatch {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.chart-swatch-system {
+    background-color: rgb(158, 158, 158);
+}
+
+.chart-swatch-cpu {
+    background-color: rgb(255, 99, 132);
+}
+
+.chart-swatch-memory {
+    background-color: rgb(153, 102, 255);
+}
+
+.chart-canvas-wrap {
+    position: relative;
+    height: 140px;
+    min-width: 0;
+}
+
 /* Chart titles carry the current value, so give them room instead of packing
    four charts into a narrow screen. */
 @media (max-width: 1023px) {
