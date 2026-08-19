@@ -38,6 +38,7 @@ from .node import Node
 from .performance_history import PerformanceHistory
 from .traffic_monitor import TrafficMonitor
 from .egress_ip import EgressIpResolver
+from .api_serial import api_serial
 
 class CoreService:
     app_config : AppConfig = None
@@ -710,7 +711,16 @@ class CoreService:
 
     @classmethod
     def auto_detect_job(cls):
-        detect:MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch = cls.user_config.advance_config.auto_detect
+        def snapshot():
+            detect = cls.user_config.advance_config.auto_detect
+            return {
+                'generation': api_serial.generation,
+                'detect_url': detect.detect_url,
+                'timeout': detect.timeout,
+                'failed_count': detect.failed_count,
+            }
+
+        snap = api_serial.submit_read(snapshot)
 
         DEFAULT_TIMEOUT = 5 # seconds
         class TimeoutHTTPAdapter(HTTPAdapter):
@@ -727,44 +737,63 @@ class CoreService:
                     kwargs["timeout"] = self.timeout
                 return super().send(request, **kwargs)
 
-        retries = Retry(total=detect.failed_count, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+        retries = Retry(
+            total=snap['failed_count'],
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+        )
         http = requests.Session()
-        http.mount("https://", TimeoutHTTPAdapter(max_retries=retries, timeout=detect.timeout))
+        http.mount(
+            "https://",
+            TimeoutHTTPAdapter(max_retries=retries, timeout=snap['timeout']),
+        )
 
         started = time.monotonic()
+        delay_ms = 0
+        probe_ok = False
         try:
-            http.head(detect.detect_url)
+            http.head(snap['detect_url'])
         except Exception as e:
             print('detected connection failed, detail:\n{0}'.format(e))
         else:
             delay_ms = max(0, int(round((time.monotonic() - started) * 1000)))
             print('detected connection success, delay={0}ms'.format(delay_ms))
-            cls._record_last_probe(detect, True, delay_ms)
-            cls.user_config.save()
-            return
+            probe_ok = True
 
-        cls._record_last_probe(detect, False)
-        alternatives = []
-        current = cls.user_config.node
-        current_identity = (current.protocol, current.add, current.port, current.ps)
-        for node_index, node in enumerate(cls.node_manager.manual_nodes):
-            identity = (node.protocol, node.add, node.port, node.ps)
-            if identity == current_identity:
-                continue
-            alternatives.append((K.manual, node_index, node))
-        if not alternatives:
-            print('Auto switch skipped: no alternative favorite node is available')
-            cls.user_config.save()
-            return
+        def commit():
+            if snap['generation'] != api_serial.generation:
+                print('Auto switch skipped: configuration changed during probe')
+                return
+            detect = cls.user_config.advance_config.auto_detect
+            if probe_ok:
+                cls._record_last_probe(detect, True, delay_ms)
+                cls.user_config.save()
+                return
 
-        group_key, node_index, node = random.choice(alternatives)
-        if not cls.apply_node(group_key, node_index, restart_auto_detect=False):
-            print('Auto switch failed while applying node: {0}'.format(node.ps))
-            cls.user_config.save()
-            return
+            cls._record_last_probe(detect, False)
+            alternatives = []
+            current = cls.user_config.node
+            current_identity = (current.protocol, current.add, current.port, current.ps)
+            for node_index, node in enumerate(cls.node_manager.manual_nodes):
+                identity = (node.protocol, node.add, node.port, node.ps)
+                if identity == current_identity:
+                    continue
+                alternatives.append((K.manual, node_index, node))
+            if not alternatives:
+                print('Auto switch skipped: no alternative favorite node is available')
+                cls.user_config.save()
+                return
 
-        detect.last_switch_time = cls._format_last_switch(node)
-        cls.user_config.save()
+            group_key, node_index, node = random.choice(alternatives)
+            if not cls.apply_node(group_key, node_index, restart_auto_detect=False):
+                print('Auto switch failed while applying node: {0}'.format(node.ps))
+                cls.user_config.save()
+                return
+
+            detect.last_switch_time = cls._format_last_switch(node)
+            cls.user_config.save()
+
+        api_serial.submit_write(commit)
 
     @classmethod
     def _record_last_probe(cls, detect, ok, delay_ms=0):

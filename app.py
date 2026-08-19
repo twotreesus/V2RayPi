@@ -6,10 +6,11 @@ import queue
 import threading
 import time
 import functools
-from flask import Flask, render_template, jsonify, request, Response, make_response
+from flask import Flask, render_template, jsonify, request, Response, make_response, copy_current_request_context
 from werkzeug.serving import WSGIRequestHandler
 
 from core.core_service import CoreService
+from core.api_serial import api_serial
 from core.keys import Keyword as K
 from core.mihomo_default_path import MihomoDefaultPath
 from core.web_terminal import WebTerminalManager
@@ -53,6 +54,22 @@ def require_auth(f):
     return decorated
 
 
+def write_api(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        bound = copy_current_request_context(lambda: f(*args, **kwargs))
+        return api_serial.submit_write(bound)
+    return decorated
+
+
+def read_api(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        bound = copy_current_request_context(lambda: f(*args, **kwargs))
+        return api_serial.submit_read(bound)
+    return decorated
+
+
 @app.route('/')
 @app.route('/index.html')
 def index_page():
@@ -76,6 +93,7 @@ def system_page():
 
 @app.route('/api/update_password', methods=['POST'])
 @require_auth
+@write_api
 def update_password_api():
     result = K.failed
     data = request.get_json()
@@ -102,6 +120,7 @@ def update_password_api():
 
 @app.route('/start_service')
 @require_auth
+@write_api
 def start_service_api():
     result = K.failed
     if CoreService.re_apply_node():
@@ -111,6 +130,7 @@ def start_service_api():
 
 @app.route('/stop_service')
 @require_auth
+@write_api
 def stop_service_api():
     result = K.failed
     if CoreService.stop_mihomo():
@@ -119,6 +139,7 @@ def stop_service_api():
 
 @app.route('/restart_service')
 @require_auth
+@write_api
 def restart_service_api():
     result = K.failed
     if CoreService.restart_mihomo():
@@ -127,6 +148,7 @@ def restart_service_api():
 
 @app.route('/get_status')
 @require_auth
+@read_api
 def get_status_api():
     status = CoreService.status()
     status.update({K.result: K.ok})
@@ -134,6 +156,7 @@ def get_status_api():
 
 @app.route('/get_system_status')
 @require_auth
+@read_api
 def get_system_status_api():
     status = CoreService.status()
     status.update({K.result: K.ok})
@@ -150,6 +173,7 @@ def get_egress_ip_api():
 
 @app.route('/get_performance')
 @require_auth
+@read_api
 def get_performance_api():
     performance = CoreService.performance()
     performance.update({K.result: K.ok})
@@ -165,6 +189,7 @@ def check_mihomo_new_ver_api():
 
 @app.route('/update_mihomo')
 @require_auth
+@write_api
 def update_mihomo_api():
     success = CoreService.update_mihomo()
     result = K.failed
@@ -174,6 +199,7 @@ def update_mihomo_api():
 
 @app.route('/switch_proxy_mode')
 @require_auth
+@write_api
 def switch_proxy_mode_api():
     mode = request.args.get('mode')
     mode = int(mode)
@@ -185,6 +211,7 @@ def switch_proxy_mode_api():
 
 @app.route('/add_subscribe')
 @require_auth
+@write_api
 def add_subscribe_api():
     result = K.failed
     try:
@@ -199,6 +226,7 @@ def add_subscribe_api():
 
 @app.route('/rename_subscribe')
 @require_auth
+@write_api
 def rename_subscribe_api():
     result = K.failed
     try:
@@ -213,6 +241,7 @@ def rename_subscribe_api():
 
 @app.route('/favorite_node')
 @require_auth
+@write_api
 def favorite_node_api():
     result = K.failed
     try:
@@ -226,6 +255,7 @@ def favorite_node_api():
 
 @app.route('/add_manual_node', methods=['POST'])
 @require_auth
+@write_api
 def add_manual_node_api():
     try:
         data = request.get_json() or {}
@@ -241,6 +271,7 @@ def add_manual_node_api():
 
 @app.route('/remove_subscribe')
 @require_auth
+@write_api
 def remove_subscribe_api():
     result = K.failed
     try:
@@ -253,6 +284,7 @@ def remove_subscribe_api():
     return jsonify({K.result: result})
 
 @app.route('/update_all_subscribe')
+@write_api
 def update_all_subscribe_api():
     result = K.failed
     try:
@@ -264,6 +296,7 @@ def update_all_subscribe_api():
 
 @app.route('/update_subscribe')
 @require_auth
+@write_api
 def update_subscribe_api():
     result = K.failed
     try:
@@ -276,6 +309,7 @@ def update_subscribe_api():
 
 @app.route('/subscribe_list')
 @require_auth
+@read_api
 def subscribe_list_api():
     list = CoreService.node_manager.dump()
     status = CoreService.status()
@@ -285,6 +319,7 @@ def subscribe_list_api():
 
 @app.route('/apply_node')
 @require_auth
+@write_api
 def apply_node_api():
     url = request.args.get(K.subscribe)
     index = request.args.get(K.node_index)
@@ -300,6 +335,7 @@ def apply_node_api():
 
 @app.route('/get_node_link')
 @require_auth
+@read_api
 def get_node_link_api():
     try:
         url = request.args.get(K.subscribe)
@@ -314,6 +350,7 @@ def get_node_link_api():
 
 @app.route('/delete_node')
 @require_auth
+@write_api
 def delete_node_api():
     url = request.args.get(K.subscribe)
     index = request.args.get(K.node_index)
@@ -337,6 +374,7 @@ def check_geo_data_api():
 
 @app.route('/update_geo_data')
 @require_auth
+@write_api
 def update_geo_data_api():
     result = K.failed
     try:
@@ -349,6 +387,7 @@ def update_geo_data_api():
 
 @app.route('/get_advance_config')
 @require_auth
+@read_api
 def get_advance_config_api():
     config = CoreService.user_config.advance_config.dump(pure=False)
     result = {
@@ -359,6 +398,7 @@ def get_advance_config_api():
 
 @app.route('/set_advance_config', methods=['POST'])
 @require_auth
+@write_api
 def set_advance_config_api():
     config = request.json
     code = K.failed
@@ -369,6 +409,7 @@ def set_advance_config_api():
 
 @app.route('/reset_advance_config')
 @require_auth
+@write_api
 def reset_advance_config_api():
     code = K.failed
     result = CoreService.reset_advance_config()
@@ -441,6 +482,7 @@ def stream_logs_api():
 
 @app.route('/update_and_restart_v2raypi')
 @require_auth
+@write_api
 def update_and_restart_v2raypi_api():
     try:
         branch = request.args.get('branch')
@@ -480,6 +522,7 @@ def check_v2raypi_updates_api():
 
 @app.route('/reboot_host')
 @require_auth
+@write_api
 def reboot_host_api():
     try:
         CoreService.reboot_host()
@@ -489,6 +532,7 @@ def reboot_host_api():
 
 @app.route('/shutdown_host')
 @require_auth
+@write_api
 def shutdown_host_api():
     try:
         CoreService.shutdown_host()
@@ -579,6 +623,7 @@ def terminal_close_api():
     return jsonify({K.result: K.ok})
 
 @app.route('/export_config')
+@read_api
 def export_config_api():
     session = request.cookies.get(K.session)
     if not session or not CoreService.verify_session(session):
@@ -593,6 +638,7 @@ def export_config_api():
 
 @app.route('/import_config', methods=['POST'])
 @require_auth
+@write_api
 def import_config_api():
     if 'file' not in request.files:
         return jsonify({K.result: K.failed, 'error': 'file_required'})

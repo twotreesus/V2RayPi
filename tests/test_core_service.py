@@ -249,6 +249,48 @@ class AutoSwitchTest(unittest.TestCase):
         self.assertEqual(detect.last_probe_delay_ms, 0)
         self.assertEqual(detect.last_switch_time, '')
 
+    def test_failed_probe_skips_failover_if_config_changed_during_probe(self):
+        current = SimpleNamespace(
+            protocol='vmess', add='current.example.com', port=443, ps='current',
+        )
+        alternative = SimpleNamespace(
+            protocol='vless', add='next.example.com', port=8443, ps='next',
+        )
+        detect = self._detect('https://example.com/')
+        user_config = SimpleNamespace(
+            node=current,
+            advance_config=SimpleNamespace(auto_detect=detect),
+            save=Mock(),
+        )
+        node_manager = SimpleNamespace(manual_nodes=[current, alternative])
+        session = Mock()
+
+        def fail_after_write(*args, **kwargs):
+            from core.api_serial import api_serial
+            api_serial.submit_write(lambda: None)
+            raise RuntimeError('probe failed')
+
+        session.head.side_effect = fail_after_write
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+            node_manager=node_manager,
+        ), patch(
+            'core.core_service.requests.Session',
+            return_value=session,
+        ), patch.object(
+            CoreService,
+            'apply_node',
+            return_value=True,
+        ) as apply_node:
+            CoreService.auto_detect_job()
+
+        apply_node.assert_not_called()
+        user_config.save.assert_not_called()
+        self.assertEqual(detect.last_probe_time, '')
+        self.assertEqual(detect.last_switch_time, '')
+
     def test_default_url_uses_head_and_does_not_switch_on_success(self):
         current = SimpleNamespace(
             protocol='vmess', add='current.example.com', port=443, ps='current',
