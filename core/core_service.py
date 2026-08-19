@@ -405,7 +405,10 @@ class CoreService:
         cls.user_config.node = node
         if cls.re_apply_node(restart_auto_detect):
             if restart_auto_detect:
-                cls.user_config.advance_config.auto_detect.last_switch_time = ''
+                detect = cls.user_config.advance_config.auto_detect
+                detect.last_switch_time = ''
+                detect.last_probe_time = ''
+                detect.last_probe_delay_ms = 0
             cls.user_config.save()
             result = True
         return result
@@ -733,9 +736,14 @@ class CoreService:
         except Exception as e:
             print('detected connection failed, detail:\n{0}'.format(e))
         else:
-            print('detected connection success, delay={0:.0f}ms'.format(
-                (time.monotonic() - started) * 1000,
-            ))
+            delay_ms = max(0, int(round((time.monotonic() - started) * 1000)))
+            print('detected connection success, delay={0}ms'.format(delay_ms))
+            detect.last_probe_time = datetime.fromtimestamp(time.time()).strftime(
+                '%Y-%m-%d %H:%M:%S',
+            )
+            detect.last_probe_delay_ms = delay_ms
+            detect.last_switch_time = ''
+            cls.user_config.save()
             return
 
         alternatives = []
@@ -756,6 +764,8 @@ class CoreService:
             return
 
         detect.last_switch_time = cls._format_last_switch(node)
+        detect.last_probe_time = ''
+        detect.last_probe_delay_ms = 0
         cls.user_config.save()
 
     @classmethod

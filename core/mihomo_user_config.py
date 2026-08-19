@@ -71,6 +71,8 @@ class MihomoUserConfig(BaseDataItem):
                 self.failed_count = self.FAILED_COUNT
                 self.timeout = self.TIMEOUT
                 self.last_switch_time = ''
+                self.last_probe_time = ''
+                self.last_probe_delay_ms = 0
 
             def apply_fixed_defaults(self) -> None:
                 self.detect_span = self.DETECT_SPAN

@@ -95,6 +95,8 @@ class AutoSwitchTest(unittest.TestCase):
         detect.timeout = 0.5
         detect.detect_url = url
         detect.last_switch_time = ''
+        detect.last_probe_time = ''
+        detect.last_probe_delay_ms = 0
         return detect
 
     def test_failed_custom_url_head_fails_over_among_favorites(self):
@@ -146,11 +148,14 @@ class AutoSwitchTest(unittest.TestCase):
         )
         self.assertIn('Nexitally', detect.last_switch_time)
         self.assertIn('next', detect.last_switch_time)
+        self.assertEqual(detect.last_probe_time, '')
         user_config.save.assert_called_once_with()
 
     def test_manual_apply_clears_the_last_switch_record(self):
         detect = self._detect('https://example.com/')
         detect.last_switch_time = '2026-08-17 16:00:00 ---- Nexitally ---- next'
+        detect.last_probe_time = '2026-08-17 15:55:00'
+        detect.last_probe_delay_ms = 80
         node = SimpleNamespace(ps='chosen')
         user_config = SimpleNamespace(
             node=None,
@@ -167,11 +172,15 @@ class AutoSwitchTest(unittest.TestCase):
             self.assertTrue(CoreService.apply_node('manual', 0))
 
         self.assertEqual(detect.last_switch_time, '')
+        self.assertEqual(detect.last_probe_time, '')
+        self.assertEqual(detect.last_probe_delay_ms, 0)
         user_config.save.assert_called_once_with()
 
     def test_auto_apply_does_not_clear_the_last_switch_record(self):
         detect = self._detect('https://example.com/')
         detect.last_switch_time = 'stale'
+        detect.last_probe_time = '2026-08-17 15:55:00'
+        detect.last_probe_delay_ms = 80
         node = SimpleNamespace(ps='chosen')
         user_config = SimpleNamespace(
             node=None,
@@ -188,6 +197,8 @@ class AutoSwitchTest(unittest.TestCase):
             self.assertTrue(CoreService.apply_node('manual', 0, restart_auto_detect=False))
 
         self.assertEqual(detect.last_switch_time, 'stale')
+        self.assertEqual(detect.last_probe_time, '2026-08-17 15:55:00')
+        self.assertEqual(detect.last_probe_delay_ms, 80)
 
     def test_failed_probe_does_not_switch_to_subscription_nodes(self):
         current = SimpleNamespace(
@@ -255,7 +266,10 @@ class AutoSwitchTest(unittest.TestCase):
             CoreService,
             'apply_node',
             return_value=True,
-        ) as apply_node:
+        ) as apply_node, patch(
+            'core.core_service.time.monotonic',
+            side_effect=[1.0, 1.128],
+        ):
             CoreService.auto_detect_job()
 
         session.head.assert_called_once_with(
@@ -263,7 +277,10 @@ class AutoSwitchTest(unittest.TestCase):
         )
         session.get.assert_not_called()
         apply_node.assert_not_called()
-        user_config.save.assert_not_called()
+        user_config.save.assert_called_once_with()
+        self.assertEqual(detect.last_switch_time, '')
+        self.assertRegex(detect.last_probe_time, r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$')
+        self.assertEqual(detect.last_probe_delay_ms, 128)
 
 
 class EgressLatencyProbeTest(unittest.TestCase):

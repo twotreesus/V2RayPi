@@ -74,7 +74,7 @@
                     <td colspan="6">
                         <div class="section-head advance-section-head mdui-typo">
                             <h5 data-i18n="advance.autoSwitch.title">自动切换</h5>
-                            <h6 class="mdui-typo-caption-opacity" data-i18n-html="advance.autoSwitch.description">1. 每隔 5 分钟对探测地址发送 HEAD。单次超时 2 秒，失败后在同一次探测内最多再试 3 次。<br>2. 仍失败则在收藏节点中随机切换到另一个（不含当前节点）；收藏不足两个时不会切换。<br>3. 默认地址适合测连通性和延迟。手动切换节点会清空最近切换记录。</h6>
+                            <h6 class="mdui-typo-caption-opacity" data-i18n-html="advance.autoSwitch.description">1. 每隔 5 分钟对探测地址发送 HEAD。单次超时 2 秒，失败后在同一次探测内最多再试 3 次。<br>2. 仍失败则在收藏节点中随机切换到另一个（不含当前节点）；收藏不足两个时不会切换。<br>3. 默认地址适合测连通性和延迟。手动切换节点会清空最近探测和最近切换记录。</h6>
                         </div>
                     </td>
                 </tr>
@@ -102,9 +102,9 @@
                     </td>
                 </tr>
                 <tr class="advance-inline-row">
-                    <td data-i18n="advance.autoSwitch.lastSwitch">最近切换</td>
+                    <td id="detect_last_event_label" data-i18n="advance.autoSwitch.lastSwitch">最近切换</td>
                     <td colspan="5">
-                        <div id="detect_last_switch_time" class="mdui-typo-caption-opacity"></div>
+                        <div id="detect_last_switch_time"></div>
                     </td>
                 </tr>
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
@@ -443,9 +443,10 @@
         "advance.confirm.title": {zh: "重置确认", en: "Confirm reset"},
         "advance.common.enabled": {zh: "启用", en: "Enabled"},
         "advance.autoSwitch.title": {zh: "自动切换", en: "Automatic Switching"},
-        "advance.autoSwitch.description": {zh: "1. 每隔 5 分钟对探测地址发送 HEAD。单次超时 2 秒，失败后在同一次探测内最多再试 3 次。<br>2. 仍失败则在收藏节点中随机切换到另一个（不含当前节点）；收藏不足两个时不会切换。<br>3. 默认地址适合测连通性和延迟。手动切换节点会清空最近切换记录。", en: "1. Every 5 minutes, send a HEAD request to the probe URL. Each attempt times out after 2 seconds and is retried up to 3 times within the same probe.<br>2. If it still fails, switch at random to another favorite node, not the current one. Failover needs at least two favorites.<br>3. The default URL is suitable for reachability and latency. Switching nodes manually clears the last-switch record."},
+        "advance.autoSwitch.description": {zh: "1. 每隔 5 分钟对探测地址发送 HEAD。单次超时 2 秒，失败后在同一次探测内最多再试 3 次。<br>2. 仍失败则在收藏节点中随机切换到另一个（不含当前节点）；收藏不足两个时不会切换。<br>3. 默认地址适合测连通性和延迟。手动切换节点会清空最近探测和最近切换记录。", en: "1. Every 5 minutes, send a HEAD request to the probe URL. Each attempt times out after 2 seconds and is retried up to 3 times within the same probe.<br>2. If it still fails, switch at random to another favorite node, not the current one. Failover needs at least two favorites.<br>3. The default URL is suitable for reachability and latency. Switching nodes manually clears the last probe and last-switch records."},
         "advance.autoSwitch.detectUrl": {zh: "探测地址", en: "Test URL"},
         "advance.autoSwitch.lastSwitch": {zh: "最近切换", en: "Last Switch"},
+        "advance.autoSwitch.lastProbe": {zh: "最近探测", en: "Last Probe"},
         "advance.localProxy.title": {zh: "本地代理", en: "Local Proxy"},
         "advance.localProxy.socks5": {zh: "Socks 5 代理", en: "Socks 5 Proxy"},
         "advance.localProxy.port": {zh: "端口", en: "Port"},
@@ -591,14 +592,30 @@
         });
     }
 
-    function render_last_switch(text) {
-        var $el = $("#detect_last_switch_time");
-        text = String(text || "").trim();
-        if (!text) {
-            $el.text("");
+    function render_last_detect_event() {
+        var detect = g_config_local["auto_detect"] || {};
+        var $label = $("#detect_last_event_label");
+        var $value = $("#detect_last_switch_time").empty();
+        var switchText = String(detect.last_switch_time || "").trim();
+        if (switchText) {
+            $label.attr("data-i18n", "advance.autoSwitch.lastSwitch")
+                .text(t("advance.autoSwitch.lastSwitch"));
+            $value.append($("<span>").text(switchText.split(" ---- ").join(" | ")));
             return;
         }
-        $el.text(text.split(" ---- ").join(" | "));
+        var probeTime = String(detect.last_probe_time || "").trim();
+        if (probeTime) {
+            var delay = detect.last_probe_delay_ms;
+            $label.attr("data-i18n", "advance.autoSwitch.lastProbe")
+                .text(t("advance.autoSwitch.lastProbe"));
+            $value.append(
+                $('<i class="mdui-icon material-icons detect-probe-ok">').text("check"),
+                $("<span>").text(probeTime + " | " + (delay || 0) + " ms")
+            );
+            return;
+        }
+        $label.attr("data-i18n", "advance.autoSwitch.lastSwitch")
+            .text(t("advance.autoSwitch.lastSwitch"));
     }
 
     function refresh_local() {
@@ -624,7 +641,7 @@
             $("#clear_detect_url").hide();
         }
 
-        render_last_switch(g_config_local['auto_detect']['last_switch_time']);
+        render_last_detect_event();
 
         // log
         var log_index = g_log_levels.indexOf(g_config_local['log']['level']);

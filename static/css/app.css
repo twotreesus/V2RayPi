@@ -1112,6 +1112,20 @@ body.mdui-appbar-with-toolbar {
     max-width: max-content;
 }
 
+#detect_last_switch_time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(0, 0, 0, 0.54);
+}
+
+.detect-probe-ok {
+    flex: none;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--brand-green);
+}
+
 @media (max-width: 599px) {
     #advance_table > tbody > tr.advance-inline-row {
         display: grid;
