@@ -454,6 +454,11 @@
         "advance.autoSwitch.lastSwitch": {zh: "最近切换", en: "Last Switch"},
         "advance.autoSwitch.lastProbe": {zh: "最近探测", en: "Last Probe"},
         "advance.autoSwitch.probeFailed": {zh: "失败", en: "Failed"},
+        "advance.autoSwitch.justNow": {zh: "刚刚", en: "Just now"},
+        "advance.autoSwitch.secondsAgo": {zh: "{n} 秒前", en: "{n} seconds ago"},
+        "advance.autoSwitch.minutesAgo": {zh: "{n} 分钟前", en: "{n} minutes ago"},
+        "advance.autoSwitch.hoursAgo": {zh: "{n} 小时前", en: "{n} hours ago"},
+        "advance.autoSwitch.daysAgo": {zh: "{n} 天前", en: "{n} days ago"},
         "advance.localProxy.title": {zh: "本地代理", en: "Local Proxy"},
         "advance.localProxy.socks5": {zh: "Socks 5 代理", en: "Socks 5 Proxy"},
         "advance.localProxy.port": {zh: "端口", en: "Port"},
@@ -533,6 +538,7 @@
 
     $(document).ready(function () {
         refresh_remote();
+        add_interval(setInterval(render_last_detect_event, 1000));
 
         $("#advance_table").on("click", ".delete_rule", function() {
             var index = $(this).closest("tr").data("index");
@@ -599,21 +605,63 @@
         });
     }
 
+    function parse_local_stamp(text) {
+        var match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(String(text || "").trim());
+        if (!match) {
+            return null;
+        }
+        return new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3]),
+            Number(match[4]),
+            Number(match[5]),
+            Number(match[6])
+        );
+    }
+
+    function format_time_ago(stamp) {
+        var then = parse_local_stamp(stamp);
+        if (!then || isNaN(then.getTime())) {
+            return stamp;
+        }
+        var seconds = Math.max(0, Math.floor((Date.now() - then.getTime()) / 1000));
+        if (seconds < 5) {
+            return t("advance.autoSwitch.justNow");
+        }
+        if (seconds < 60) {
+            return t("advance.autoSwitch.secondsAgo", { n: seconds });
+        }
+        var minutes = Math.floor(seconds / 60);
+        if (minutes < 60) {
+            return t("advance.autoSwitch.minutesAgo", { n: minutes });
+        }
+        var hours = Math.floor(minutes / 60);
+        if (hours < 24) {
+            return t("advance.autoSwitch.hoursAgo", { n: hours });
+        }
+        return t("advance.autoSwitch.daysAgo", { n: Math.floor(hours / 24) });
+    }
+
     function render_last_detect_event() {
+        if (!g_config_local) {
+            return;
+        }
         var detect = g_config_local["auto_detect"] || {};
         var $probe = $("#detect_last_probe_time").empty();
         var $switched = $("#detect_last_switch_time").empty();
         var probeTime = String(detect.last_probe_time || "").trim();
         if (probeTime) {
+            var ago = format_time_ago(probeTime);
             if (detect.last_probe_ok === false) {
                 $probe.append(
                     $('<i class="mdui-icon material-icons detect-probe-fail">').text("close"),
-                    $("<span>").text(probeTime + " | " + t("advance.autoSwitch.probeFailed"))
+                    $("<span>").attr("title", probeTime).text(ago + " | " + t("advance.autoSwitch.probeFailed"))
                 );
             } else {
                 $probe.append(
                     $('<i class="mdui-icon material-icons detect-probe-ok">').text("check"),
-                    $("<span>").text(probeTime + " | " + (detect.last_probe_delay_ms || 0) + " ms")
+                    $("<span>").attr("title", probeTime).text(ago + " | " + (detect.last_probe_delay_ms || 0) + " ms")
                 );
             }
         }
