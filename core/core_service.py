@@ -17,9 +17,6 @@ from .package import jsonpickle
 from typing import List, Dict, Any, Optional
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import *
-import requests
-from urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
 import random
 import time
 import threading
@@ -250,31 +247,36 @@ class CoreService:
         return info
 
     @classmethod
-    def _probe_auto_detect_latency(cls) -> Optional[int]:
-        detect = cls.user_config.advance_config.auto_detect
-        url = (detect.detect_url or '').strip()
+    def _head_after_connect(cls, url: str, timeout) -> int:
+        url = (url or '').strip()
         parsed = urlparse(url)
         if parsed.scheme != 'https' or not parsed.hostname:
-            return None
+            raise ValueError('probe URL must be https')
         path = parsed.path or '/'
         if parsed.query:
             path = '{0}?{1}'.format(path, parsed.query)
         conn = HTTPSConnection(
             parsed.hostname,
             parsed.port or 443,
-            timeout=detect.timeout,
+            timeout=timeout,
         )
         try:
             conn.connect()
             started = time.monotonic()
             conn.request('HEAD', path)
             conn.getresponse().read()
-            latency_ms = max(0, int(round((time.monotonic() - started) * 1000)))
+            return max(0, int(round((time.monotonic() - started) * 1000)))
+        finally:
+            conn.close()
+
+    @classmethod
+    def _probe_auto_detect_latency(cls) -> Optional[int]:
+        detect = cls.user_config.advance_config.auto_detect
+        try:
+            latency_ms = cls._head_after_connect(detect.detect_url, detect.timeout)
         except Exception as e:
             print('egress latency probe failed, detail:\n{0}'.format(e))
             return None
-        finally:
-            conn.close()
         print('egress latency probe delay={0}ms'.format(latency_ms))
         return latency_ms
 
@@ -722,43 +724,24 @@ class CoreService:
 
         snap = api_serial.submit_read(snapshot)
 
-        DEFAULT_TIMEOUT = 5 # seconds
-        class TimeoutHTTPAdapter(HTTPAdapter):
-            def __init__(self, *args, **kwargs):
-                self.timeout = DEFAULT_TIMEOUT
-                if "timeout" in kwargs:
-                    self.timeout = kwargs["timeout"]
-                    del kwargs["timeout"]
-                super().__init__(*args, **kwargs)
-
-            def send(self, request, **kwargs):
-                timeout = kwargs.get("timeout")
-                if timeout is None:
-                    kwargs["timeout"] = self.timeout
-                return super().send(request, **kwargs)
-
-        retries = Retry(
-            total=snap['failed_count'],
-            backoff_factor=1,
-            status_forcelist=[429, 500, 502, 503, 504],
-        )
-        http = requests.Session()
-        http.mount(
-            "https://",
-            TimeoutHTTPAdapter(max_retries=retries, timeout=snap['timeout']),
-        )
-
-        started = time.monotonic()
         delay_ms = 0
         probe_ok = False
-        try:
-            http.head(snap['detect_url'])
-        except Exception as e:
-            print('detected connection failed, detail:\n{0}'.format(e))
-        else:
-            delay_ms = max(0, int(round((time.monotonic() - started) * 1000)))
-            print('detected connection success, delay={0}ms'.format(delay_ms))
-            probe_ok = True
+        retries = max(0, int(snap['failed_count']))
+        for attempt in range(retries + 1):
+            try:
+                delay_ms = cls._head_after_connect(
+                    snap['detect_url'],
+                    snap['timeout'],
+                )
+            except Exception as e:
+                if attempt < retries:
+                    time.sleep(1 * (2 ** attempt))
+                    continue
+                print('detected connection failed, detail:\n{0}'.format(e))
+            else:
+                print('detected connection success, delay={0}ms'.format(delay_ms))
+                probe_ok = True
+            break
 
         def commit():
             if snap['generation'] != api_serial.generation:

@@ -89,6 +89,11 @@ class OriginFetchRefspecTest(unittest.TestCase):
 
 
 class AutoSwitchTest(unittest.TestCase):
+    def setUp(self):
+        patcher = patch('core.core_service.time.sleep')
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def _detect(self, url):
         detect = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
         detect.failed_count = 1
@@ -99,6 +104,14 @@ class AutoSwitchTest(unittest.TestCase):
         detect.last_probe_ok = True
         detect.last_probe_delay_ms = 0
         return detect
+
+    def _https_connection(self, connect=None, request=None):
+        conn = Mock()
+        conn.connect.side_effect = connect
+        conn.request.side_effect = request
+        conn.getresponse.return_value.status = 204
+        conn.getresponse.return_value.read.return_value = b''
+        return conn
 
     def test_failed_custom_url_head_fails_over_among_favorites(self):
         current = SimpleNamespace(
@@ -122,16 +135,15 @@ class AutoSwitchTest(unittest.TestCase):
             },
             manual_nodes=[current, alternative],
         )
-        session = Mock()
-        session.head.side_effect = RuntimeError('probe failed')
+        conn = self._https_connection(connect=RuntimeError('probe failed'))
 
         with patch.multiple(
             CoreService,
             user_config=user_config,
             node_manager=node_manager,
         ), patch(
-            'core.core_service.requests.Session',
-            return_value=session,
+            'core.core_service.HTTPSConnection',
+            return_value=conn,
         ), patch(
             'core.core_service.random.choice',
             return_value=(K.manual, 1, alternative),
@@ -142,8 +154,7 @@ class AutoSwitchTest(unittest.TestCase):
         ) as apply_node:
             CoreService.auto_detect_job()
 
-        session.head.assert_called_once_with('https://example.com/')
-        session.get.assert_not_called()
+        conn.request.assert_not_called()
         apply_node.assert_called_once_with(
             K.manual,
             1,
@@ -225,16 +236,15 @@ class AutoSwitchTest(unittest.TestCase):
             },
             manual_nodes=[],
         )
-        session = Mock()
-        session.head.side_effect = RuntimeError('probe failed')
+        conn = self._https_connection(connect=RuntimeError('probe failed'))
 
         with patch.multiple(
             CoreService,
             user_config=user_config,
             node_manager=node_manager,
         ), patch(
-            'core.core_service.requests.Session',
-            return_value=session,
+            'core.core_service.HTTPSConnection',
+            return_value=conn,
         ), patch.object(
             CoreService,
             'apply_node',
@@ -263,22 +273,21 @@ class AutoSwitchTest(unittest.TestCase):
             save=Mock(),
         )
         node_manager = SimpleNamespace(manual_nodes=[current, alternative])
-        session = Mock()
 
         def fail_after_write(*args, **kwargs):
             from core.api_serial import api_serial
             api_serial.submit_write(lambda: None)
             raise RuntimeError('probe failed')
 
-        session.head.side_effect = fail_after_write
+        conn = self._https_connection(connect=fail_after_write)
 
         with patch.multiple(
             CoreService,
             user_config=user_config,
             node_manager=node_manager,
         ), patch(
-            'core.core_service.requests.Session',
-            return_value=session,
+            'core.core_service.HTTPSConnection',
+            return_value=conn,
         ), patch.object(
             CoreService,
             'apply_node',
@@ -305,30 +314,42 @@ class AutoSwitchTest(unittest.TestCase):
             save=Mock(),
         )
         node_manager = SimpleNamespace(manual_nodes=[current])
-        session = Mock()
-        session.head.return_value = Mock(status_code=204)
+        order = []
+        times = iter([1.0, 1.128])
+        conn = self._https_connection(
+            connect=lambda: order.append('connect'),
+            request=lambda method, path: order.append((method, path)),
+        )
+
+        def monotonic():
+            order.append('monotonic')
+            return next(times)
 
         with patch.multiple(
             CoreService,
             user_config=user_config,
             node_manager=node_manager,
         ), patch(
-            'core.core_service.requests.Session',
-            return_value=session,
-        ), patch.object(
+            'core.core_service.HTTPSConnection',
+            return_value=conn,
+        ) as connection, patch.object(
             CoreService,
             'apply_node',
             return_value=True,
         ) as apply_node, patch(
             'core.core_service.time.monotonic',
-            side_effect=[1.0, 1.128],
+            side_effect=monotonic,
         ):
             CoreService.auto_detect_job()
 
-        session.head.assert_called_once_with(
-            MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch.LATENCY_PROBE_URL,
-        )
-        session.get.assert_not_called()
+        connection.assert_called_once_with('www.gstatic.com', 443, timeout=0.5)
+        self.assertEqual(order, [
+            'connect',
+            'monotonic',
+            ('HEAD', '/generate_204'),
+            'monotonic',
+        ])
+        conn.close.assert_called_once_with()
         apply_node.assert_not_called()
         user_config.save.assert_called_once_with()
         self.assertEqual(
