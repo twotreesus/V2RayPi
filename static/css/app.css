@@ -1112,7 +1112,7 @@ body.mdui-appbar-with-toolbar {
     max-width: max-content;
 }
 
-#detect_last_switch_time {
+.detect-last-event {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -1124,6 +1124,13 @@ body.mdui-appbar-with-toolbar {
     font-size: 16px;
     line-height: 1;
     color: var(--brand-green);
+}
+
+.detect-probe-fail {
+    flex: none;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--brand-red);
 }
 
 @media (max-width: 599px) {

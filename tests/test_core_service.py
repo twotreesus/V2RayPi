@@ -96,6 +96,7 @@ class AutoSwitchTest(unittest.TestCase):
         detect.detect_url = url
         detect.last_switch_time = ''
         detect.last_probe_time = ''
+        detect.last_probe_ok = True
         detect.last_probe_delay_ms = 0
         return detect
 
@@ -108,6 +109,8 @@ class AutoSwitchTest(unittest.TestCase):
             airport='Nexitally',
         )
         detect = self._detect('https://example.com/')
+        detect.last_probe_time = '2026-08-17 15:55:00'
+        detect.last_probe_delay_ms = 80
         user_config = SimpleNamespace(
             node=current,
             advance_config=SimpleNamespace(auto_detect=detect),
@@ -148,7 +151,9 @@ class AutoSwitchTest(unittest.TestCase):
         )
         self.assertIn('Nexitally', detect.last_switch_time)
         self.assertIn('next', detect.last_switch_time)
-        self.assertEqual(detect.last_probe_time, '')
+        self.assertRegex(detect.last_probe_time, r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$')
+        self.assertFalse(detect.last_probe_ok)
+        self.assertEqual(detect.last_probe_delay_ms, 0)
         user_config.save.assert_called_once_with()
 
     def test_manual_apply_clears_the_last_switch_record(self):
@@ -173,6 +178,7 @@ class AutoSwitchTest(unittest.TestCase):
 
         self.assertEqual(detect.last_switch_time, '')
         self.assertEqual(detect.last_probe_time, '')
+        self.assertTrue(detect.last_probe_ok)
         self.assertEqual(detect.last_probe_delay_ms, 0)
         user_config.save.assert_called_once_with()
 
@@ -237,7 +243,11 @@ class AutoSwitchTest(unittest.TestCase):
             CoreService.auto_detect_job()
 
         apply_node.assert_not_called()
-        user_config.save.assert_not_called()
+        user_config.save.assert_called_once_with()
+        self.assertRegex(detect.last_probe_time, r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$')
+        self.assertFalse(detect.last_probe_ok)
+        self.assertEqual(detect.last_probe_delay_ms, 0)
+        self.assertEqual(detect.last_switch_time, '')
 
     def test_default_url_uses_head_and_does_not_switch_on_success(self):
         current = SimpleNamespace(
@@ -246,6 +256,7 @@ class AutoSwitchTest(unittest.TestCase):
         detect = self._detect(
             MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch.LATENCY_PROBE_URL,
         )
+        detect.last_switch_time = '2026-08-17 16:00:00 ---- Nexitally ---- next'
         user_config = SimpleNamespace(
             node=current,
             advance_config=SimpleNamespace(auto_detect=detect),
@@ -278,8 +289,12 @@ class AutoSwitchTest(unittest.TestCase):
         session.get.assert_not_called()
         apply_node.assert_not_called()
         user_config.save.assert_called_once_with()
-        self.assertEqual(detect.last_switch_time, '')
+        self.assertEqual(
+            detect.last_switch_time,
+            '2026-08-17 16:00:00 ---- Nexitally ---- next',
+        )
         self.assertRegex(detect.last_probe_time, r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$')
+        self.assertTrue(detect.last_probe_ok)
         self.assertEqual(detect.last_probe_delay_ms, 128)
 
 

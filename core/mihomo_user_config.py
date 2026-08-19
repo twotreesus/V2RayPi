@@ -72,6 +72,7 @@ class MihomoUserConfig(BaseDataItem):
                 self.timeout = self.TIMEOUT
                 self.last_switch_time = ''
                 self.last_probe_time = ''
+                self.last_probe_ok = True
                 self.last_probe_delay_ms = 0
 
             def apply_fixed_defaults(self) -> None:

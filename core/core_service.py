@@ -408,6 +408,7 @@ class CoreService:
                 detect = cls.user_config.advance_config.auto_detect
                 detect.last_switch_time = ''
                 detect.last_probe_time = ''
+                detect.last_probe_ok = True
                 detect.last_probe_delay_ms = 0
             cls.user_config.save()
             result = True
@@ -738,14 +739,11 @@ class CoreService:
         else:
             delay_ms = max(0, int(round((time.monotonic() - started) * 1000)))
             print('detected connection success, delay={0}ms'.format(delay_ms))
-            detect.last_probe_time = datetime.fromtimestamp(time.time()).strftime(
-                '%Y-%m-%d %H:%M:%S',
-            )
-            detect.last_probe_delay_ms = delay_ms
-            detect.last_switch_time = ''
+            cls._record_last_probe(detect, True, delay_ms)
             cls.user_config.save()
             return
 
+        cls._record_last_probe(detect, False)
         alternatives = []
         current = cls.user_config.node
         current_identity = (current.protocol, current.add, current.port, current.ps)
@@ -756,17 +754,25 @@ class CoreService:
             alternatives.append((K.manual, node_index, node))
         if not alternatives:
             print('Auto switch skipped: no alternative favorite node is available')
+            cls.user_config.save()
             return
 
         group_key, node_index, node = random.choice(alternatives)
         if not cls.apply_node(group_key, node_index, restart_auto_detect=False):
             print('Auto switch failed while applying node: {0}'.format(node.ps))
+            cls.user_config.save()
             return
 
         detect.last_switch_time = cls._format_last_switch(node)
-        detect.last_probe_time = ''
-        detect.last_probe_delay_ms = 0
         cls.user_config.save()
+
+    @classmethod
+    def _record_last_probe(cls, detect, ok, delay_ms=0):
+        detect.last_probe_time = datetime.fromtimestamp(time.time()).strftime(
+            '%Y-%m-%d %H:%M:%S',
+        )
+        detect.last_probe_ok = bool(ok)
+        detect.last_probe_delay_ms = delay_ms if ok else 0
 
     @classmethod
     def _format_last_switch(cls, node) -> str:

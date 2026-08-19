@@ -102,9 +102,15 @@
                     </td>
                 </tr>
                 <tr class="advance-inline-row">
-                    <td id="detect_last_event_label" data-i18n="advance.autoSwitch.lastSwitch">最近切换</td>
+                    <td data-i18n="advance.autoSwitch.lastProbe">最近探测</td>
                     <td colspan="5">
-                        <div id="detect_last_switch_time"></div>
+                        <div id="detect_last_probe_time" class="detect-last-event"></div>
+                    </td>
+                </tr>
+                <tr class="advance-inline-row">
+                    <td data-i18n="advance.autoSwitch.lastSwitch">最近切换</td>
+                    <td colspan="5">
+                        <div id="detect_last_switch_time" class="detect-last-event"></div>
                     </td>
                 </tr>
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
@@ -447,6 +453,7 @@
         "advance.autoSwitch.detectUrl": {zh: "探测地址", en: "Test URL"},
         "advance.autoSwitch.lastSwitch": {zh: "最近切换", en: "Last Switch"},
         "advance.autoSwitch.lastProbe": {zh: "最近探测", en: "Last Probe"},
+        "advance.autoSwitch.probeFailed": {zh: "失败", en: "Failed"},
         "advance.localProxy.title": {zh: "本地代理", en: "Local Proxy"},
         "advance.localProxy.socks5": {zh: "Socks 5 代理", en: "Socks 5 Proxy"},
         "advance.localProxy.port": {zh: "端口", en: "Port"},
@@ -594,28 +601,26 @@
 
     function render_last_detect_event() {
         var detect = g_config_local["auto_detect"] || {};
-        var $label = $("#detect_last_event_label");
-        var $value = $("#detect_last_switch_time").empty();
-        var switchText = String(detect.last_switch_time || "").trim();
-        if (switchText) {
-            $label.attr("data-i18n", "advance.autoSwitch.lastSwitch")
-                .text(t("advance.autoSwitch.lastSwitch"));
-            $value.append($("<span>").text(switchText.split(" ---- ").join(" | ")));
-            return;
-        }
+        var $probe = $("#detect_last_probe_time").empty();
+        var $switched = $("#detect_last_switch_time").empty();
         var probeTime = String(detect.last_probe_time || "").trim();
         if (probeTime) {
-            var delay = detect.last_probe_delay_ms;
-            $label.attr("data-i18n", "advance.autoSwitch.lastProbe")
-                .text(t("advance.autoSwitch.lastProbe"));
-            $value.append(
-                $('<i class="mdui-icon material-icons detect-probe-ok">').text("check"),
-                $("<span>").text(probeTime + " | " + (delay || 0) + " ms")
-            );
-            return;
+            if (detect.last_probe_ok === false) {
+                $probe.append(
+                    $('<i class="mdui-icon material-icons detect-probe-fail">').text("close"),
+                    $("<span>").text(probeTime + " | " + t("advance.autoSwitch.probeFailed"))
+                );
+            } else {
+                $probe.append(
+                    $('<i class="mdui-icon material-icons detect-probe-ok">').text("check"),
+                    $("<span>").text(probeTime + " | " + (detect.last_probe_delay_ms || 0) + " ms")
+                );
+            }
         }
-        $label.attr("data-i18n", "advance.autoSwitch.lastSwitch")
-            .text(t("advance.autoSwitch.lastSwitch"));
+        var switchText = String(detect.last_switch_time || "").trim();
+        if (switchText) {
+            $switched.append($("<span>").text(switchText.split(" ---- ").join(" | ")));
+        }
     }
 
     function refresh_local() {
