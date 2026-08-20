@@ -1,3 +1,5 @@
+import os
+import tempfile
 import unittest
 from types import SimpleNamespace
 from unittest.mock import ANY, Mock, call, patch
@@ -588,6 +590,66 @@ class RestartMihomoTest(unittest.TestCase):
 
         invalidate.assert_not_called()
         restart_detect.assert_not_called()
+
+
+class SessionPersistTest(unittest.TestCase):
+    def setUp(self):
+        self.saved_sessions = CoreService._sessions
+        self.saved_key = CoreService._session_key
+        self.saved_config = CoreService.app_config
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.path = os.path.join(self.tempdir.name, 'sessions.json')
+        self.path_patch = patch.object(
+            CoreService, '_sessions_path', return_value=self.path,
+        )
+        self.path_patch.start()
+        CoreService._sessions = {}
+        CoreService._session_key = None
+        CoreService.app_config = SimpleNamespace(
+            password_hash='abcdefgh' + ('0' * 56),
+            verify_password=lambda password: password == 'secret',
+        )
+
+    def tearDown(self):
+        self.path_patch.stop()
+        self.tempdir.cleanup()
+        CoreService._sessions = self.saved_sessions
+        CoreService._session_key = self.saved_key
+        CoreService.app_config = self.saved_config
+
+    def test_token_survives_process_reload(self):
+        token = CoreService.generate_session('secret')
+        self.assertTrue(token)
+        self.assertTrue(os.path.exists(self.path))
+
+        CoreService._sessions = {}
+        CoreService._session_key = None
+        CoreService._load_sessions()
+
+        self.assertTrue(CoreService.verify_session(token))
+
+    def test_password_change_invalidates_persisted_tokens(self):
+        token = CoreService.generate_session('secret')
+        CoreService._clear_all_sessions()
+
+        CoreService._sessions = {}
+        CoreService._session_key = None
+        CoreService._load_sessions()
+
+        self.assertFalse(CoreService.verify_session(token))
+
+    def test_expired_sessions_are_dropped_on_load(self):
+        token = CoreService.generate_session('secret')
+        session_id = next(iter(CoreService._sessions))
+        CoreService._sessions[session_id]['exp'] = 1
+        CoreService._save_sessions()
+
+        CoreService._sessions = {}
+        CoreService._session_key = None
+        CoreService._load_sessions()
+
+        self.assertFalse(CoreService.verify_session(token))
+        self.assertEqual(CoreService._sessions, {})
 
 
 if __name__ == '__main__':

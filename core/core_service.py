@@ -72,26 +72,72 @@ class CoreService:
         if not getattr(cls.user_config.node, 'clash', None):
             cls.user_config.node = Node()
 
+        cls._load_sessions()
         cls.restart_auto_detect()
 
     # Class variable to store active sessions
     _sessions = {}
     _session_key = None
-    
+    _session_lock = threading.Lock()
+    _SESSIONS_FILE = 'config/sessions.json'
+    _SESSION_TTL_DAYS = 10
+
+    @classmethod
+    def _sessions_path(cls) -> str:
+        return cls._SESSIONS_FILE
+
+    @classmethod
+    def _load_sessions(cls):
+        path = cls._sessions_path()
+        if not os.path.exists(path):
+            return
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except Exception as e:
+            print('Failed to load login sessions: {0}'.format(e))
+            return
+        if not isinstance(data, dict):
+            print('Failed to load login sessions: invalid file')
+            return
+        key = data.get('key')
+        sessions = data.get('sessions')
+        if not isinstance(key, str) or not key:
+            print('Failed to load login sessions: missing key')
+            return
+        with cls._session_lock:
+            cls._session_key = key
+            cls._sessions = sessions if isinstance(sessions, dict) else {}
+            if cls._cleanup_expired_sessions():
+                cls._save_sessions()
+            count = len(cls._sessions)
+        print('Restored {0} login session(s)'.format(count))
+
+    @classmethod
+    def _save_sessions(cls):
+        path = cls._sessions_path()
+        os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+        payload = {
+            'key': cls._get_session_key(),
+            'sessions': cls._sessions,
+        }
+        with open(path, 'w') as f:
+            json.dump(payload, f, indent=4)
+        os.sync()
+
     @classmethod
     def _get_session_key(cls) -> str:
-        """Get or generate session key for signing tokens"""
         if not cls._session_key:
-            # Generate a new key on first use
             cls._session_key = secrets.token_hex(32)
         return cls._session_key
-    
+
     @classmethod
     def _clear_all_sessions(cls):
-        """Clear all active sessions and generate new session key"""
-        cls._sessions.clear()
-        cls._session_key = None  # Force new key generation
-        
+        with cls._session_lock:
+            cls._sessions.clear()
+            cls._session_key = secrets.token_hex(32)
+            cls._save_sessions()
+
     @classmethod
     def update_password(cls, old_password: str, new_password: str) -> bool:
         """Update admin password and clear all sessions"""
@@ -108,111 +154,94 @@ class CoreService:
     
     @classmethod
     def _cleanup_expired_sessions(cls):
-        """Remove expired sessions from storage"""
         now = datetime.now().timestamp()
-        expired = [sid for sid, data in cls._sessions.items() if data["exp"] < now]
+        expired = [
+            sid for sid, data in cls._sessions.items()
+            if not isinstance(data, dict) or data.get('exp', 0) < now
+        ]
         for sid in expired:
             del cls._sessions[sid]
-    
+        return len(expired)
+
     @classmethod
     def generate_session(cls, password: str) -> str:
-        """
-        Generate a new session token based on password and expiration time
-        """
-        # Verify password first
         if not cls.app_config.verify_password(password):
             return ""
-            
-        # Clean up expired sessions
-        cls._cleanup_expired_sessions()
-        
-        # Create session data
-        expiry_date = datetime.now() + timedelta(days=3)
-        session_id = secrets.token_hex(16)  # Generate random session ID
-        
-        # Store session data server-side
-        cls._sessions[session_id] = {
-            "exp": expiry_date.timestamp(),
-            "pwd_ver": cls.app_config.password_hash[:8]  # Store truncated hash to detect password changes
-        }
-        
-        # Create client token with just session ID and expiry
+
+        expiry_date = datetime.now() + timedelta(days=cls._SESSION_TTL_DAYS)
+        session_id = secrets.token_hex(16)
         token_data = {
             "sid": session_id,
             "exp": expiry_date.timestamp()
         }
-        
-        # Convert to JSON and encode
         json_data = json.dumps(token_data)
         encoded_data = base64.b64encode(json_data.encode()).decode()
-        
-        # Create signature using server-side key
-        signature = hashlib.sha256((encoded_data + cls._get_session_key()).encode()).hexdigest()
-        
-        # Combine data and signature
-        session_token = f"{encoded_data}.{signature}"
-        return session_token
-    
+
+        with cls._session_lock:
+            cls._cleanup_expired_sessions()
+            cls._sessions[session_id] = {
+                "exp": expiry_date.timestamp(),
+                "pwd_ver": cls.app_config.password_hash[:8]
+            }
+            signature = hashlib.sha256(
+                (encoded_data + cls._get_session_key()).encode()
+            ).hexdigest()
+            cls._save_sessions()
+
+        return f"{encoded_data}.{signature}"
+
     @classmethod
     def verify_session(cls, session_token: str) -> bool:
-        """
-        Verify if a session token is valid
-        """
         if not session_token:
             return False
-            
+
         try:
-            # Split token into data and signature
             parts = session_token.split('.')
             if len(parts) != 2:
                 return False
-                
+
             encoded_data, signature = parts
-            
-            # Verify signature using server-side key
-            expected_signature = hashlib.sha256((encoded_data + cls._get_session_key()).encode()).hexdigest()
-            if signature != expected_signature:
-                return False
-                
-            # Decode data
             json_data = base64.b64decode(encoded_data).decode()
             token_data = json.loads(json_data)
-            
-            # Get session ID
             session_id = token_data.get("sid")
             if not session_id:
                 return False
-                
-            # Get session data from server-side storage
-            session_data = cls._sessions.get(session_id)
-            if not session_data:
-                return False
-                
-            # Check expiration
-            if session_data["exp"] < datetime.now().timestamp():
-                # Remove expired session
-                del cls._sessions[session_id]
-                return False
-                
-            # Check if password has changed since session was created
-            if session_data["pwd_ver"] != cls.app_config.password_hash[:8]:
-                return False
-                
-            # Return session ID for refresh
-            return session_id
+
+            with cls._session_lock:
+                expected_signature = hashlib.sha256(
+                    (encoded_data + cls._get_session_key()).encode()
+                ).hexdigest()
+                if signature != expected_signature:
+                    return False
+
+                session_data = cls._sessions.get(session_id)
+                if not session_data:
+                    return False
+
+                if session_data["exp"] < datetime.now().timestamp():
+                    del cls._sessions[session_id]
+                    cls._save_sessions()
+                    return False
+
+                if session_data["pwd_ver"] != cls.app_config.password_hash[:8]:
+                    return False
+
+                return session_id
         except Exception:
             return False
-                
+
     @classmethod
     def refresh_session(cls, session_token: str) -> bool:
-        # Verify
         session_id = cls.verify_session(session_token)
         if not session_id:
             return False
-            
-        # Update expiry
-        expiry_date = datetime.now() + timedelta(days=3)
-        cls._sessions[session_id]["exp"] = expiry_date.timestamp()
+
+        expiry_date = datetime.now() + timedelta(days=cls._SESSION_TTL_DAYS)
+        with cls._session_lock:
+            if session_id not in cls._sessions:
+                return False
+            cls._sessions[session_id]["exp"] = expiry_date.timestamp()
+            cls._save_sessions()
         return True
         
             
