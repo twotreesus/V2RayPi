@@ -35,16 +35,16 @@
         "status.chart.cpu_mihomo": {zh: "mihomo  {value}%", en: "mihomo  {value}%"},
         "status.chart.memory": {zh: "内存占用率", en: "Memory Usage"},
         "status.chart.memory_system": {
-            zh: "系统  {percent}%  ({used} / {total} MB)",
-            en: "System  {percent}%  ({used} / {total} MB)"
+            zh: "系统  {percent}%  ({used} / {total} M)",
+            en: "System  {percent}%  ({used} / {total} M)"
         },
         "status.chart.memory_mihomo": {
-            zh: "mihomo  {percent}%  ({used} MB)",
-            en: "mihomo  {percent}%  ({used} MB)"
+            zh: "mihomo  {percent}%  ({used} M)",
+            en: "mihomo  {percent}%  ({used} M)"
         },
         "status.chart.memory_details": {
-            zh: "总计：{total} MB  已用：{used} MB",
-            en: "Total: {total} MB  Used: {used} MB"
+            zh: "总计：{total} M  已用：{used} M",
+            en: "Total: {total} M  Used: {used} M"
         },
         "status.chart.upload": {zh: "上传速度", en: "Upload Speed"},
         "status.chart.upload_value": {zh: "上传速度  {speed}", en: "Upload Speed  {speed}"},
@@ -272,9 +272,8 @@
     var CHART_MEMORY_MIHOMO_COLOR = "153, 102, 255";
 
     function format_speed(kb) {
-        if (kb >= 1024) return (kb / 1024).toFixed(2) + ' MB/s';
-        if (kb >= 1) return kb.toFixed(1) + ' KB/s';
-        return Math.round(kb * 1024) + ' B/s';
+        if (kb >= 1024) return (kb / 1024).toFixed(2) + ' M/s';
+        return kb.toFixed(1) + ' K/s';
     }
 
     // The backend keeps the window, so a chart only has to plot what it is given,
