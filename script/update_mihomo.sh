@@ -39,10 +39,37 @@ fi
 command -v uname >/dev/null 2>&1 || fail "uname is required"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
+
+# The unnamed *-amd64 assets are built with GOAMD64=v3 (AVX2).  Older chips
+# such as Intel Atom need the compatible (GOAMD64=v1) build instead.
+cpu_supports_amd64_v3() {
+    local flags=""
+    if [[ -r /proc/cpuinfo ]]; then
+        flags="$(awk '/^flags[[:space:]]*:/{print; exit}' /proc/cpuinfo)"
+    elif command -v sysctl >/dev/null 2>&1; then
+        flags="$(sysctl -n machdep.cpu.features 2>/dev/null || true)"
+        flags="$flags $(sysctl -n machdep.cpu.leaf7_features 2>/dev/null || true)"
+    fi
+    flags=" $(printf '%s' "$flags" | tr '[:upper:]' '[:lower:]') "
+    case "$flags" in
+        *" avx2 "*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+amd64_platform() {
+    local os_prefix="$1"
+    if cpu_supports_amd64_v3; then
+        printf '%s-amd64\n' "$os_prefix"
+    else
+        printf '%s-amd64-compatible\n' "$os_prefix"
+    fi
+}
+
 case "$OS:$ARCH" in
-    Darwin:x86_64) ASSET_PLATFORM="darwin-amd64" ;;
+    Darwin:x86_64) ASSET_PLATFORM="$(amd64_platform darwin)" ;;
     Darwin:arm64|Darwin:aarch64) ASSET_PLATFORM="darwin-arm64" ;;
-    Linux:x86_64|Linux:amd64) ASSET_PLATFORM="linux-amd64" ;;
+    Linux:x86_64|Linux:amd64) ASSET_PLATFORM="$(amd64_platform linux)" ;;
     Linux:aarch64|Linux:arm64) ASSET_PLATFORM="linux-arm64" ;;
     Linux:armv7l|Linux:armv7) ASSET_PLATFORM="linux-armv7" ;;
     Linux:armv6l|Linux:armv6) ASSET_PLATFORM="linux-armv6" ;;
@@ -119,23 +146,6 @@ else:
 PY
 }
 
-# macOS still ships Bash 3.x, so avoid Bash 4's mapfile/readarray.
-OLD_IFS=$IFS
-IFS=$'\n'
-set -f
-# shellcheck disable=SC2207
-RELEASE_INFO=( $(read_release_info) )
-set +f
-IFS=$OLD_IFS
-TAG="${RELEASE_INFO[0]}"
-ARCHIVE_NAME="${RELEASE_INFO[1]}"
-ARCHIVE_URL="${RELEASE_INFO[2]}"
-DIGEST="${RELEASE_INFO[3]:-}"
-ARCHIVE_PATH="$TMP_DIR/$ARCHIVE_NAME"
-
-log "downloading $TAG for $ASSET_PLATFORM"
-download_file "$ARCHIVE_URL" "$ARCHIVE_PATH"
-
 sha256_of() {
     if command -v sha256sum >/dev/null 2>&1; then
         sha256sum "$1" | awk '{print $1}'
@@ -146,23 +156,59 @@ sha256_of() {
     fi
 }
 
-if [[ -n "$DIGEST" ]]; then
-    EXPECTED="${DIGEST#sha256:}"
-    [[ ${#EXPECTED} -eq 64 && "$EXPECTED" =~ ^[[:xdigit:]]+$ ]] || fail "invalid digest for $ARCHIVE_NAME"
-    ACTUAL="$(sha256_of "$ARCHIVE_PATH")"
-    [[ "$EXPECTED" == "$ACTUAL" ]] || fail "checksum verification failed"
-    log "verified sha256 $EXPECTED"
-else
-    # The release publishes no checksum for this asset.  Fall back to proving
-    # the download is a complete gzip stream and that the extracted binary
-    # actually runs, and say so plainly rather than implying verification.
-    log "warning: release publishes no checksum for $ARCHIVE_NAME, skipping verification"
-fi
+load_release_info() {
+    local old_ifs=$IFS
+    IFS=$'\n'
+    set -f
+    # macOS still ships Bash 3.x, so avoid Bash 4's mapfile/readarray.
+    # shellcheck disable=SC2207
+    RELEASE_INFO=( $(read_release_info) )
+    set +f
+    IFS=$old_ifs
+    TAG="${RELEASE_INFO[0]}"
+    ARCHIVE_NAME="${RELEASE_INFO[1]}"
+    ARCHIVE_URL="${RELEASE_INFO[2]}"
+    DIGEST="${RELEASE_INFO[3]:-}"
+    ARCHIVE_PATH="$TMP_DIR/$ARCHIVE_NAME"
+}
+
+download_and_extract() {
+    log "downloading $TAG for $ASSET_PLATFORM"
+    download_file "$ARCHIVE_URL" "$ARCHIVE_PATH"
+
+    if [[ -n "$DIGEST" ]]; then
+        EXPECTED="${DIGEST#sha256:}"
+        [[ ${#EXPECTED} -eq 64 && "$EXPECTED" =~ ^[[:xdigit:]]+$ ]] || fail "invalid digest for $ARCHIVE_NAME"
+        ACTUAL="$(sha256_of "$ARCHIVE_PATH")"
+        [[ "$EXPECTED" == "$ACTUAL" ]] || fail "checksum verification failed"
+        log "verified sha256 $EXPECTED"
+    else
+        # The release publishes no checksum for this asset.  Fall back to proving
+        # the download is a complete gzip stream and that the extracted binary
+        # actually runs, and say so plainly rather than implying verification.
+        log "warning: release publishes no checksum for $ARCHIVE_NAME, skipping verification"
+    fi
+
+    gzip -dc "$ARCHIVE_PATH" > "$SOURCE" || fail "the downloaded archive is not a valid gzip stream"
+    chmod 755 "$SOURCE"
+    "$SOURCE" -v >/dev/null 2>&1
+}
 
 SOURCE="$TMP_DIR/mihomo"
-gzip -dc "$ARCHIVE_PATH" > "$SOURCE" || fail "the downloaded archive is not a valid gzip stream"
-chmod 755 "$SOURCE"
-"$SOURCE" -v >/dev/null 2>&1 || fail "the extracted binary does not run on this platform"
+load_release_info
+if ! download_and_extract; then
+    case "$ASSET_PLATFORM" in
+        linux-amd64|darwin-amd64)
+            log "default amd64 binary does not run, retrying with compatible (GOAMD64=v1)"
+            ASSET_PLATFORM="${ASSET_PLATFORM}-compatible"
+            load_release_info
+            download_and_extract || fail "the extracted binary does not run on this platform"
+            ;;
+        *)
+            fail "the extracted binary does not run on this platform"
+            ;;
+    esac
+fi
 
 DEST_DIR="$(dirname "$DESTINATION")"
 if [[ ! -d "$DEST_DIR" ]]; then
