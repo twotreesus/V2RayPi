@@ -98,6 +98,59 @@ class EgressIpResolverTest(unittest.TestCase):
         self.assertEqual(run.call_count, 1)
         self.assertEqual(second['latency_ms'], 128)
 
+    def test_passes_token_to_ipinfo(self):
+        resolver = EgressIpResolver(token_provider=lambda: 'tok_abc')
+        completed = Mock(
+            returncode=0,
+            stdout=json.dumps({'ip': '198.51.100.1'}),
+            stderr='',
+        )
+
+        with patch(
+            'core.egress_ip.subprocess.run',
+            return_value=completed,
+        ) as run:
+            resolver.get(force=True)
+
+        command = run.call_args[0][0]
+        self.assertEqual(command[command.index('--token') + 1], 'tok_abc')
+        self.assertEqual(run.call_args[1]['env']['IPINFO_TOKEN'], 'tok_abc')
+
+    def test_omits_token_flag_when_unset(self):
+        resolver = EgressIpResolver(token_provider=lambda: '')
+        completed = Mock(
+            returncode=0,
+            stdout=json.dumps({'ip': '198.51.100.1'}),
+            stderr='',
+        )
+
+        with patch.dict('os.environ', {'IPINFO_TOKEN': ''}, clear=False), patch(
+            'core.egress_ip.subprocess.run',
+            return_value=completed,
+        ) as run:
+            resolver.get(force=True)
+
+        command = run.call_args[0][0]
+        self.assertNotIn('--token', command)
+        self.assertFalse(run.call_args[1]['env'].get('IPINFO_TOKEN'))
+
+    def test_rate_limit_returns_dedicated_error(self):
+        resolver = EgressIpResolver()
+        completed = Mock(
+            returncode=1,
+            stdout='',
+            stderr="err: GET https://ipinfo.io/: 429 You've hit the daily limit",
+        )
+
+        with patch(
+            'core.egress_ip.subprocess.run',
+            return_value=completed,
+        ):
+            info = resolver.get(force=True)
+
+        self.assertFalse(info['ok'])
+        self.assertEqual(info['error'], 'ipinfo_rate_limited')
+
 
 if __name__ == '__main__':
     unittest.main()

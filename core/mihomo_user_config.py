@@ -106,3 +106,4 @@ class MihomoUserConfig(BaseDataItem):
         self.proxy_mode:int = self.ProxyMode.ProxyAuto.value
         self.node:Node = Node()
         self.advance_config:MihomoUserConfig.AdvanceConfig = self.AdvanceConfig()
+        self.ipinfo_token = ''

@@ -171,6 +171,31 @@ def get_egress_ip_api():
     payload[K.result] = K.ok if info.get('ok') else K.failed
     return jsonify(payload)
 
+@app.route('/get_ipinfo_token')
+@require_auth
+@read_api
+def get_ipinfo_token_api():
+    token = CoreService.ipinfo_token()
+    return jsonify({
+        K.result: K.ok,
+        'token': token,
+        'configured': bool(token),
+    })
+
+@app.route('/set_ipinfo_token', methods=['POST'])
+@require_auth
+@write_api
+def set_ipinfo_token_api():
+    data = request.get_json(silent=True) or {}
+    if 'token' not in data:
+        return jsonify({K.result: K.failed, 'error': 'ipinfo_token_required'})
+    token = CoreService.set_ipinfo_token(str(data.get('token') or ''))
+    return jsonify({
+        K.result: K.ok,
+        'token': token,
+        'configured': bool(token),
+    })
+
 @app.route('/get_performance')
 @require_auth
 @read_api

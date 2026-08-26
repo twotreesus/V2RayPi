@@ -554,6 +554,40 @@ class EgressLatencyProbeTest(unittest.TestCase):
         resolver.update_cache.assert_called_once()
 
 
+class IpinfoTokenTest(unittest.TestCase):
+    def test_set_ipinfo_token_strips_saves_and_invalidates_cache(self):
+        user_config = Mock()
+        user_config.ipinfo_token = ''
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+        ), patch.object(
+            CoreService, 'invalidate_egress_ip',
+        ) as invalidate:
+            token = CoreService.set_ipinfo_token('  tok_abc  ')
+
+        self.assertEqual(token, 'tok_abc')
+        self.assertEqual(user_config.ipinfo_token, 'tok_abc')
+        user_config.save.assert_called_once_with()
+        invalidate.assert_called_once_with()
+
+    def test_set_ipinfo_token_can_clear_the_saved_value(self):
+        user_config = Mock()
+        user_config.ipinfo_token = 'tok_abc'
+
+        with patch.multiple(
+            CoreService,
+            user_config=user_config,
+        ), patch.object(
+            CoreService, 'invalidate_egress_ip',
+        ):
+            token = CoreService.set_ipinfo_token('  ')
+
+        self.assertEqual(token, '')
+        self.assertEqual(user_config.ipinfo_token, '')
+
+
 class RestartMihomoTest(unittest.TestCase):
     def test_recycles_the_process_without_reapplying_the_node(self):
         mihomo = Mock()

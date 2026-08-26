@@ -44,7 +44,11 @@ class CoreService:
     node_manager:NodeManager = NodeManager()
     traffic_monitor = TrafficMonitor()
     performance_history = PerformanceHistory()
-    egress_ip_resolver = EgressIpResolver()
+    egress_ip_resolver = EgressIpResolver(
+        token_provider=lambda: (
+            getattr(CoreService.user_config, 'ipinfo_token', None) or ''
+        ).strip()
+    )
     scheduler:BackgroundScheduler = BackgroundScheduler(
         {
             'apscheduler.executors.default': {
@@ -71,6 +75,8 @@ class CoreService:
         # to apply it.
         if not getattr(cls.user_config.node, 'clash', None):
             cls.user_config.node = Node()
+        if not hasattr(cls.user_config, 'ipinfo_token') or cls.user_config.ipinfo_token is None:
+            cls.user_config.ipinfo_token = ''
 
         cls._load_sessions()
         cls.restart_auto_detect()
@@ -312,6 +318,17 @@ class CoreService:
     @classmethod
     def invalidate_egress_ip(cls) -> None:
         cls.egress_ip_resolver.invalidate()
+
+    @classmethod
+    def ipinfo_token(cls) -> str:
+        return (getattr(cls.user_config, 'ipinfo_token', None) or '').strip()
+
+    @classmethod
+    def set_ipinfo_token(cls, token: str) -> str:
+        cls.user_config.ipinfo_token = (token or '').strip()
+        cls.user_config.save()
+        cls.invalidate_egress_ip()
+        return cls.user_config.ipinfo_token
 
     @classmethod
     def update_and_restart_v2raypi(cls, branch: str = None):

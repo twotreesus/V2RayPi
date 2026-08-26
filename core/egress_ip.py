@@ -12,13 +12,22 @@ from typing import Any, Dict, Optional
 class EgressIpResolver:
     TTL_SECONDS = 300
 
-    def __init__(self):
+    def __init__(self, token_provider=None):
         self._lock = threading.Lock()
         self._cache: Optional[Dict[str, Any]] = None
         self._fetched_at = 0.0
+        self._token_provider = token_provider
 
     def _binary(self) -> str:
         return os.environ.get('IPINFO_BIN') or shutil.which('ipinfo') or 'ipinfo'
+
+    def _token(self) -> str:
+        token = ''
+        if self._token_provider:
+            token = self._token_provider() or ''
+        if not token:
+            token = os.environ.get('IPINFO_TOKEN') or ''
+        return str(token).strip()
 
     def get(self, force: bool = False) -> Dict[str, Any]:
         now = time.time()
@@ -49,14 +58,18 @@ class EgressIpResolver:
 
     def _query(self) -> Dict[str, Any]:
         binary = self._binary()
+        token = self._token()
+        command = [binary, 'myip', '--json', '--nocache', '--nocolor']
+        if token:
+            command.extend(['--token', token])
         try:
             result = subprocess.run(
-                [binary, 'myip', '--json', '--nocache', '--nocolor'],
+                command,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 timeout=20,
-                env=self._subprocess_env(),
+                env=self._subprocess_env(token),
             )
         except FileNotFoundError:
             print('ipinfo binary not found; egress IP lookup skipped')
@@ -71,6 +84,8 @@ class EgressIpResolver:
         if result.returncode != 0:
             err = (result.stderr or result.stdout or '').strip()
             print(f'ipinfo myip returned {result.returncode}: {err}')
+            if self._is_rate_limited(err):
+                return self._failure('ipinfo_rate_limited')
             return self._failure('ipinfo_failed')
 
         try:
@@ -108,12 +123,20 @@ class EgressIpResolver:
             'error': '',
         }
 
-    def _subprocess_env(self) -> Dict[str, str]:
+    def _subprocess_env(self, token: str = '') -> Dict[str, str]:
         # Avoid noisy config-file warnings when the service home is not writable.
         env = os.environ.copy()
         env.setdefault('XDG_CONFIG_HOME', '/tmp')
         env.setdefault('HOME', env.get('HOME') or '/tmp')
+        if token:
+            env['IPINFO_TOKEN'] = token
+        else:
+            env.pop('IPINFO_TOKEN', None)
         return env
+
+    def _is_rate_limited(self, err: str) -> bool:
+        text = (err or '').lower()
+        return '429' in text or 'daily limit' in text or 'rate limit' in text
 
     def _failure(self, error: str) -> Dict[str, Any]:
         return {

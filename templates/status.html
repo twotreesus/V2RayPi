@@ -28,6 +28,7 @@
         "status.egress.org": {zh: "组织", en: "Organization"},
         "status.egress.unavailable": {zh: "暂时无法获取", en: "Unavailable"},
         "status.egress.missing": {zh: "未安装 ipinfo", en: "ipinfo is not installed"},
+        "status.egress.rateLimited": {zh: "ipinfo 额度已用完，请在系统页配置 Token", en: "ipinfo quota exceeded. Set a token on the System page"},
         "status.section.performance": {zh: "性能监控", en: "Performance Monitoring"},
         "status.chart.cpu": {zh: "CPU 占用率", en: "CPU Usage"},
         "status.chart.cpu_system": {zh: "系统  {value}%", en: "System  {value}%"},
@@ -466,9 +467,12 @@
                 });
                 return;
             }
-            var message = (data && data.error === "ipinfo_missing")
-                ? t("status.egress.missing")
-                : t("status.egress.unavailable");
+            var message = t("status.egress.unavailable");
+            if (data && data.error === "ipinfo_missing") {
+                message = t("status.egress.missing");
+            } else if (data && data.error === "ipinfo_rate_limited") {
+                message = t("status.egress.rateLimited");
+            }
             set_egress_fields({
                 ip: message,
                 location: "-",

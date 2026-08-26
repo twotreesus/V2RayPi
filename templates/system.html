@@ -24,6 +24,14 @@
         "system.password.relogin": {zh: "密码已更新，需要重新登录", en: "Password updated. Please sign in again"},
         "system.password.loginWithNew": {zh: "密码已更改，请使用新密码登录", en: "Password changed. Sign in with your new password"},
         "system.password.currentInvalid": {zh: "当前密码验证失败", en: "Current password verification failed"},
+        "system.ipinfo.title": {zh: "ipinfo Token", en: "ipinfo token"},
+        "system.ipinfo.token": {zh: "API Token", en: "API token"},
+        "system.ipinfo.placeholder": {zh: "在 ipinfo.io 注册后填写", en: "Paste the token from ipinfo.io"},
+        "system.ipinfo.save": {zh: "保存", en: "Save"},
+        "system.ipinfo.hint": {zh: "未认证查询有每日限额，配置 Token 后出口 IP 查询可走更高额度", en: "Unauthenticated lookups have a daily limit. A token raises the public-IP quota"},
+        "system.ipinfo.saved": {zh: "Token 已保存", en: "Token saved"},
+        "system.ipinfo.cleared": {zh: "Token 已清除", en: "Token cleared"},
+        "system.ipinfo.saveFailed": {zh: "保存失败", en: "Save failed"},
         "system.backup.title": {zh: "配置备份", en: "Configuration backup"},
         "system.backup.export": {zh: "导出配置", en: "Export configuration"},
         "system.backup.exportHint": {zh: "导出节点、订阅和高级设置为 zip 文件", en: "Export nodes, subscriptions, and advanced settings as a ZIP file"},
@@ -179,6 +187,30 @@
                 </tr>
                 <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
 
+                <tr>
+                    <td colspan="2" class="mdui-typo">
+                        <h5 style="margin: 0;" data-i18n="system.ipinfo.title">ipinfo Token</h5>
+                    </td>
+                </tr>
+                <tr class="system-inline-row system-password-row">
+                    <td data-i18n="system.ipinfo.token">API Token</td>
+                    <td>
+                        <div class="action-group">
+                            <div class="mdui-textfield system-password-field">
+                                <input class="mdui-textfield-input" type="password" id="ipinfo_token" placeholder="在 ipinfo.io 注册后填写" data-i18n-placeholder="system.ipinfo.placeholder" autocomplete="off"/>
+                                <i class="mdui-icon material-icons" onclick="togglePasswordVisibility('ipinfo_token')">visibility_off</i>
+                            </div>
+                            <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-theme-accent mdui-ripple" onclick="save_ipinfo_token()" data-i18n="system.ipinfo.save">保存</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <span class="action-group-value system-hint" data-i18n="system.ipinfo.hint">未认证查询有每日限额，配置 Token 后出口 IP 查询可走更高额度</span>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100" style="height: 8px;"><td colspan="2"></td></tr>
+
                 <!-- Backup & Restore -->
                 <tr>
                     <td colspan="2" class="mdui-typo">
@@ -303,6 +335,7 @@
             });
         get_v2raypi_recent_commits();
         get_v2raypi_branches();
+        load_ipinfo_token();
     }
 
     function get_v2raypi_branches() {
@@ -750,6 +783,33 @@
                 logEventSource = null;
             }
         }
+    }
+
+    function load_ipinfo_token() {
+        ajax_request({ url: "/get_ipinfo_token" })
+            .done(function (data) {
+                if (check_result(data)) {
+                    $("#ipinfo_token").val(data.token || "");
+                }
+            });
+    }
+
+    function save_ipinfo_token() {
+        var token = ($("#ipinfo_token").val() || "").trim();
+        ajax_request({
+            url: "/set_ipinfo_token",
+            type: "POST",
+            data: JSON.stringify({ token: token })
+        }).done(function (data) {
+            if (check_result(data)) {
+                $("#ipinfo_token").val(data.token || "");
+                message(token ? t("system.ipinfo.saved") : t("system.ipinfo.cleared"));
+            } else {
+                message(t("system.ipinfo.saveFailed"));
+            }
+        }).fail(function () {
+            message(t("system.ipinfo.saveFailed"));
+        });
     }
 
     function togglePasswordVisibility(inputId) {
