@@ -27,12 +27,14 @@ PROXYCHAINS_BIN=""
 CFAILURE='\033[1;31m'
 CSUCCESS='\033[1;32m'
 CINFO='\033[1;34m'
+CHIGHLIGHT='\033[1;33m'
 CEND='\033[0m'
 CURRENT_STEP=""
 STEP_INDEX=0
 STEP_TOTAL=3
 
 log() { printf "${CINFO}[v2raypi] %s${CEND}\n" "$*"; }
+notice() { printf "${CHIGHLIGHT}[v2raypi] %s${CEND}\n" "$*"; }
 ok() { printf "${CSUCCESS}✔ %s${CEND}\n" "$*"; }
 fail() {
     trap - ERR
@@ -77,19 +79,22 @@ print_access_urls() {
     done < <(list_local_ipv4 || true)
 
     if [[ ${#urls[@]} -eq 0 ]]; then
-        log "Open http://127.0.0.1:${port} (no non-loopback IPv4 found)"
+        notice "Open http://127.0.0.1:${port} (no non-loopback IPv4 found)"
+        notice "Default password: admin"
         return
     fi
 
     if [[ ${#urls[@]} -eq 1 ]]; then
-        log "Open ${urls[0]}"
+        notice "Open ${urls[0]}"
+        notice "Default password: admin"
         return
     fi
 
-    log "Open the management panel:"
+    notice "Open the management panel:"
     for ip in "${urls[@]}"; do
-        log "  ${ip}"
+        notice "  ${ip}"
     done
+    notice "Default password: admin"
 }
 
 step() {
