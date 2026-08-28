@@ -49,11 +49,13 @@ on_error() {
 trap on_error ERR
 
 step() {
-    CURRENT_STEP="$1"
-    shift
-    printf "${CINFO}▸ %s${CEND}\n" "$CURRENT_STEP"
+    local start_msg="$1"
+    local done_msg="$2"
+    shift 2
+    CURRENT_STEP="$start_msg"
+    printf "${CINFO}▸ %s${CEND}\n" "$start_msg"
     "$@"
-    printf "${CSUCCESS}✔ %s${CEND}\n" "$CURRENT_STEP"
+    printf "${CSUCCESS}✔ %s${CEND}\n" "$done_msg"
     CURRENT_STEP=""
 }
 
@@ -193,7 +195,7 @@ fi
 
 export DEBIAN_FRONTEND=noninteractive
 
-step "Install bootstrap packages" bash -c 'apt-get update -y && apt-get install -y --no-install-recommends ca-certificates curl wget git apt-transport-https'
+step "Installing bootstrap packages" "Installed bootstrap packages" bash -c 'apt-get update -y && apt-get install -y --no-install-recommends ca-certificates curl wget git apt-transport-https'
 
 if [[ -n "$SOCKS5_URL" ]]; then
     setup_proxychains() {
@@ -236,7 +238,7 @@ EOF
         log "Wrote proxychains config: $PROXYCHAINS_CONF"
     }
 
-    step "Install and configure proxychains" setup_proxychains
+    step "Installing and configuring proxychains" "Installed and configured proxychains" setup_proxychains
 fi
 
 run_net() {
@@ -273,14 +275,14 @@ clone_or_update_repo() {
     fi
 }
 
-step "Clone or update repository" clone_or_update_repo
+step "Cloning or updating repository" "Cloned or updated repository" clone_or_update_repo
 
 [[ -x "$INSTALL_DIR/script/install.sh" ]] \
     || fail "missing $INSTALL_DIR/script/install.sh after clone"
 
 # Run the full local installer under the same proxychains session so apt,
 # pip, git and GitHub downloads all share the SOCKS5 path when configured.
-step "Run local installer" run_net bash "$INSTALL_DIR/script/install.sh"
+step "Running local installer" "Ran local installer" run_net bash "$INSTALL_DIR/script/install.sh"
 
 ok "Online install finished"
 log "Open http://<device-ip>:1086 after networking is configured"

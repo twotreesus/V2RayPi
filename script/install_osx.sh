@@ -22,11 +22,13 @@ on_error() {
 trap on_error ERR
 
 step() {
-    CURRENT_STEP="$1"
-    shift
-    print_start "$CURRENT_STEP"
+    local start_msg="$1"
+    local done_msg="$2"
+    shift 2
+    CURRENT_STEP="$start_msg"
+    print_start "$start_msg"
     "$@"
-    print_ok "$CURRENT_STEP"
+    print_ok "$done_msg"
     CURRENT_STEP=""
 }
 
@@ -61,9 +63,9 @@ CoreService.update_geo_data()
 PY
 }
 
-step "Installed Homebrew packages" install_packages
-step "Installed Python dependencies" install_python_deps
-step "Started mihomo" brew services start mihomo
-step "Installed GEO databases" install_geo_data
+step "Installing Homebrew packages" "Installed Homebrew packages" install_packages
+step "Installing Python dependencies" "Installed Python dependencies" install_python_deps
+step "Starting mihomo" "Started mihomo" brew services start mihomo
+step "Installing GEO databases" "Installed GEO databases" install_geo_data
 
 print_ok "Install finished"

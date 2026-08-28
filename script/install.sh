@@ -26,11 +26,13 @@ on_error() {
 trap on_error ERR
 
 step() {
-    CURRENT_STEP="$1"
-    shift
-    print_start "$CURRENT_STEP"
+    local start_msg="$1"
+    local done_msg="$2"
+    shift 2
+    CURRENT_STEP="$start_msg"
+    print_start "$start_msg"
     "$@"
-    print_ok "$CURRENT_STEP"
+    print_ok "$done_msg"
     CURRENT_STEP=""
 }
 
@@ -217,16 +219,16 @@ enable_services() {
     sync
 }
 
-step "Installed system packages" install_packages
-step "Installed Python dependencies" install_python_deps
-step "Configured rc.local" configure_rc_local
-step "Installed mihomo" install_mihomo
-step "Installed ipinfo" install_ipinfo
-step "Seeded mihomo config" seed_mihomo_config
-step "Installed GEO databases" install_geo_data
-step "Configured Supervisor" configure_supervisor
-step "Configured mihomo service" configure_mihomo_service
-step "Configured TPROXY service" configure_iptables_service
-step "Enabled services" enable_services
+step "Installing system packages" "Installed system packages" install_packages
+step "Installing Python dependencies" "Installed Python dependencies" install_python_deps
+step "Configuring rc.local" "Configured rc.local" configure_rc_local
+step "Installing mihomo" "Installed mihomo" install_mihomo
+step "Installing ipinfo" "Installed ipinfo" install_ipinfo
+step "Seeding mihomo config" "Seeded mihomo config" seed_mihomo_config
+step "Installing GEO databases" "Installed GEO databases" install_geo_data
+step "Configuring Supervisor" "Configured Supervisor" configure_supervisor
+step "Configuring mihomo service" "Configured mihomo service" configure_mihomo_service
+step "Configuring TPROXY service" "Configured TPROXY service" configure_iptables_service
+step "Enabling services" "Enabled services" enable_services
 
 print_ok "Install finished"
