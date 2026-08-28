@@ -34,7 +34,7 @@ log() { printf "${CINFO}[v2raypi] %s${CEND}\n" "$*"; }
 ok() { printf "${CSUCCESS}✔ %s${CEND}\n" "$*"; }
 fail() {
     trap - ERR
-    printf "${CFAILURE}✘ %s${CEND}\n" "$*" >&2
+    printf "${CFAILURE}✘ Failed: %s${CEND}\n" "$*" >&2
     exit 1
 }
 
@@ -42,7 +42,7 @@ on_error() {
     local rc=$?
     trap - ERR
     if [[ -n "${CURRENT_STEP:-}" ]]; then
-        printf "${CFAILURE}✘ %s${CEND}\n" "$CURRENT_STEP" >&2
+        printf "${CFAILURE}✘ Failed: %s${CEND}\n" "$CURRENT_STEP" >&2
     fi
     exit "$rc"
 }

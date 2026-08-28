@@ -13,7 +13,7 @@ CURRENT_STEP=""
 
 print_start() { printf '%b▸ %s%b\n' "$C_BLUE" "$1" "$C_RESET"; }
 print_ok() { printf '%b✔ %s%b\n' "$C_GREEN" "$1" "$C_RESET"; }
-print_fail() { printf '%b✘ %s%b\n' "$C_RED" "$1" "$C_RESET" >&2; }
+print_fail() { printf '%b✘ Failed: %s%b\n' "$C_RED" "$1" "$C_RESET" >&2; }
 
 on_error() {
     local rc=$?
