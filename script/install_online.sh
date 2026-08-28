@@ -30,11 +30,11 @@ CINFO='\033[1;34m'
 CEND='\033[0m'
 CURRENT_STEP=""
 
-log() { printf "${CINFO}[v2raypi]${CEND} %s\n" "$*"; }
-ok() { printf "${CSUCCESS}✔${CEND} %s\n" "$*"; }
+log() { printf "${CINFO}[v2raypi] %s${CEND}\n" "$*"; }
+ok() { printf "${CSUCCESS}✔ %s${CEND}\n" "$*"; }
 fail() {
     trap - ERR
-    printf "${CFAILURE}✘${CEND} %s\n" "$*" >&2
+    printf "${CFAILURE}✘ %s${CEND}\n" "$*" >&2
     exit 1
 }
 
@@ -42,7 +42,7 @@ on_error() {
     local rc=$?
     trap - ERR
     if [[ -n "${CURRENT_STEP:-}" ]]; then
-        printf "${CFAILURE}✘${CEND} %s\n" "$CURRENT_STEP" >&2
+        printf "${CFAILURE}✘ %s${CEND}\n" "$CURRENT_STEP" >&2
     fi
     exit "$rc"
 }
@@ -51,8 +51,9 @@ trap on_error ERR
 step() {
     CURRENT_STEP="$1"
     shift
+    printf "${CINFO}▸ %s${CEND}\n" "$CURRENT_STEP"
     "$@"
-    printf "${CSUCCESS}✔${CEND} %s\n" "$CURRENT_STEP"
+    printf "${CSUCCESS}✔ %s${CEND}\n" "$CURRENT_STEP"
     CURRENT_STEP=""
 }
 

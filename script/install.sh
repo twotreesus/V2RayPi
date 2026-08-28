@@ -5,16 +5,21 @@ export DEBIAN_FRONTEND=noninteractive
 
 set -eEuo pipefail
 
+C_BLUE='\033[1;34m'
 C_GREEN='\033[1;32m'
 C_RED='\033[1;31m'
 C_RESET='\033[0m'
 CURRENT_STEP=""
 
+print_start() { printf '%b▸ %s%b\n' "$C_BLUE" "$1" "$C_RESET"; }
+print_ok() { printf '%b✔ %s%b\n' "$C_GREEN" "$1" "$C_RESET"; }
+print_fail() { printf '%b✘ %s%b\n' "$C_RED" "$1" "$C_RESET" >&2; }
+
 on_error() {
     local rc=$?
     trap - ERR
     if [[ -n "${CURRENT_STEP:-}" ]]; then
-        printf '%b %s\n' "${C_RED}✘${C_RESET}" "$CURRENT_STEP" >&2
+        print_fail "$CURRENT_STEP"
     fi
     exit "$rc"
 }
@@ -23,14 +28,15 @@ trap on_error ERR
 step() {
     CURRENT_STEP="$1"
     shift
+    print_start "$CURRENT_STEP"
     "$@"
-    printf '%b %s\n' "${C_GREEN}✔${C_RESET}" "$CURRENT_STEP"
+    print_ok "$CURRENT_STEP"
     CURRENT_STEP=""
 }
 
 #check Root
 if [[ "$(id -u)" != "0" ]]; then
-    printf '%b %s\n' "${C_RED}✘${C_RESET}" "Must run as root" >&2
+    print_fail "Must run as root"
     exit 1
 fi
 
@@ -223,4 +229,4 @@ step "Configured mihomo service" configure_mihomo_service
 step "Configured TPROXY service" configure_iptables_service
 step "Enabled services" enable_services
 
-printf '%b %s\n' "${C_GREEN}✔${C_RESET}" "Install finished"
+print_ok "Install finished"
