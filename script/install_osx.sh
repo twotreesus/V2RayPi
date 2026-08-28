@@ -6,10 +6,14 @@ C_GREEN='\033[1;32m'
 C_RED='\033[1;31m'
 C_RESET='\033[0m'
 CURRENT_STEP=""
+STEP_INDEX=0
+STEP_TOTAL=4
 
 print_start() { printf '%b▸ %s%b\n' "$C_BLUE" "$1" "$C_RESET"; }
 print_ok() { printf '%b✔ %s%b\n' "$C_GREEN" "$1" "$C_RESET"; }
 print_fail() { printf '%b✘ Failed: %s%b\n' "$C_RED" "$1" "$C_RESET" >&2; }
+
+step_label() { printf '[%s/%s] %s' "$STEP_INDEX" "$STEP_TOTAL" "$1"; }
 
 on_error() {
     local rc=$?
@@ -25,10 +29,11 @@ step() {
     local start_msg="$1"
     local done_msg="$2"
     shift 2
-    CURRENT_STEP="$start_msg"
-    print_start "$start_msg"
+    STEP_INDEX=$((STEP_INDEX + 1))
+    CURRENT_STEP="$(step_label "$start_msg")"
+    print_start "$CURRENT_STEP"
     "$@"
-    print_ok "$done_msg"
+    print_ok "$(step_label "$done_msg")"
     CURRENT_STEP=""
 }
 

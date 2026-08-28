@@ -29,6 +29,8 @@ CSUCCESS='\033[1;32m'
 CINFO='\033[1;34m'
 CEND='\033[0m'
 CURRENT_STEP=""
+STEP_INDEX=0
+STEP_TOTAL=3
 
 log() { printf "${CINFO}[v2raypi] %s${CEND}\n" "$*"; }
 ok() { printf "${CSUCCESS}✔ %s${CEND}\n" "$*"; }
@@ -48,14 +50,57 @@ on_error() {
 }
 trap on_error ERR
 
+step_label() { printf '[%s/%s] %s' "$STEP_INDEX" "$STEP_TOTAL" "$1"; }
+
+list_local_ipv4() {
+    if command -v ip >/dev/null 2>&1; then
+        ip -4 -o addr show scope global 2>/dev/null \
+            | awk '{print $4}' \
+            | cut -d/ -f1 \
+            | awk '$1 !~ /^127\./ && $1 !~ /^169\.254\./ { print }'
+    elif command -v hostname >/dev/null 2>&1; then
+        # hostname -I is a fallback for hosts without iproute2.
+        hostname -I 2>/dev/null \
+            | tr ' ' '\n' \
+            | awk '/^[0-9]+\./ && $1 !~ /^127\./ && $1 !~ /^169\.254\./ { print }'
+    fi
+}
+
+print_access_urls() {
+    local port=1086
+    local ip
+    local urls=()
+
+    while read -r ip; do
+        [[ -n "$ip" ]] || continue
+        urls+=("http://${ip}:${port}")
+    done < <(list_local_ipv4 || true)
+
+    if [[ ${#urls[@]} -eq 0 ]]; then
+        log "Open http://127.0.0.1:${port} (no non-loopback IPv4 found)"
+        return
+    fi
+
+    if [[ ${#urls[@]} -eq 1 ]]; then
+        log "Open ${urls[0]}"
+        return
+    fi
+
+    log "Open the management panel:"
+    for ip in "${urls[@]}"; do
+        log "  ${ip}"
+    done
+}
+
 step() {
     local start_msg="$1"
     local done_msg="$2"
     shift 2
-    CURRENT_STEP="$start_msg"
-    printf "${CINFO}▸ %s${CEND}\n" "$start_msg"
+    STEP_INDEX=$((STEP_INDEX + 1))
+    CURRENT_STEP="$(step_label "$start_msg")"
+    printf "${CINFO}▸ %s${CEND}\n" "$CURRENT_STEP"
     "$@"
-    printf "${CSUCCESS}✔ %s${CEND}\n" "$done_msg"
+    printf "${CSUCCESS}✔ %s${CEND}\n" "$(step_label "$done_msg")"
     CURRENT_STEP=""
 }
 
@@ -191,6 +236,7 @@ fi
 
 if [[ -n "$SOCKS5_URL" ]]; then
     parse_socks5 "$SOCKS5_URL"
+    STEP_TOTAL=4
 fi
 
 export DEBIAN_FRONTEND=noninteractive
@@ -285,7 +331,7 @@ step "Cloning or updating repository" "Cloned or updated repository" clone_or_up
 step "Running local installer" "Ran local installer" run_net bash "$INSTALL_DIR/script/install.sh"
 
 ok "Online install finished"
-log "Open http://<device-ip>:1086 after networking is configured"
+print_access_urls
 if [[ -n "$PROXYCHAINS_BIN" ]]; then
     log "proxychains4 remains installed; install-only config: $PROXYCHAINS_CONF"
 fi
