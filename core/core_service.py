@@ -342,6 +342,16 @@ class CoreService:
         os.system(f'setsid {script_path}{target} > /dev/null 2>&1 < /dev/null &')
 
     @classmethod
+    def restart_v2raypi(cls):
+        print('Scheduling V2RayPi process restart')
+        # Delay so the current request can finish, then restart via supervisor
+        # in a new session so it survives this process exiting.
+        os.system(
+            "setsid bash -c 'sleep 2; supervisorctl -c /etc/supervisor/supervisord.conf restart v2raypi' "
+            "> /dev/null 2>&1 < /dev/null &"
+        )
+
+    @classmethod
     def reboot_host(cls) -> bool:
         try:
             # Run reboot command in a new session to ensure it survives service stop
@@ -871,7 +881,8 @@ class CoreService:
                     dst = os.path.join('config', fname)
                     shutil.move(src, dst)
             shutil.rmtree(tmpdir)
-            cls.load()
+            print('Imported configuration from backup; restarting V2RayPi')
+            cls.restart_v2raypi()
             return True
         except Exception:
             return False

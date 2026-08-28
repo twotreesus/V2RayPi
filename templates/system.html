@@ -36,12 +36,13 @@
         "system.backup.export": {zh: "导出配置", en: "Export configuration"},
         "system.backup.exportHint": {zh: "导出节点、订阅和高级设置为 zip 文件", en: "Export nodes, subscriptions, and advanced settings as a ZIP file"},
         "system.backup.import": {zh: "导入配置", en: "Import configuration"},
-        "system.backup.importHint": {zh: "导入将完整覆盖配置，请确认后再操作", en: "Importing will completely replace the configuration. Confirm before continuing"},
+        "system.backup.importHint": {zh: "导入将覆盖配置并重启服务，节点需手动重新应用", en: "Importing replaces the configuration and restarts the service. Re-apply the node yourself"},
         "system.backup.sessionExpired": {zh: "会话已过期，请重新登录", en: "Session expired. Please sign in again"},
         "system.backup.exportFailed": {zh: "导出失败", en: "Export failed"},
-        "system.backup.importPrompt": {zh: "导入配置将完整覆盖现有配置，确定继续吗？", en: "Importing will completely replace the current configuration. Continue?"},
+        "system.backup.importPrompt": {zh: "导入将覆盖现有配置并重启服务，节点需手动重新应用。确定继续吗？", en: "Importing will replace the current configuration and restart the service. Re-apply the node yourself. Continue?"},
         "system.backup.importTitle": {zh: "导入确认", en: "Confirm import"},
-        "system.backup.importSuccess": {zh: "导入成功，页面将刷新", en: "Import successful. The page will refresh"},
+        "system.backup.importSuccess": {zh: "导入成功，服务即将重启", en: "Import successful. The service will restart"},
+        "system.backup.importRestartCountdown": {zh: "导入成功，正在重启服务，{seconds} 秒后刷新页面", en: "Import successful. Restarting service; refreshing in {seconds} seconds"},
         "system.backup.noFile": {zh: "未提供备份文件", en: "No backup file provided"},
         "system.backup.zipOnly": {zh: "备份文件必须为 ZIP 格式", en: "The backup file must be a ZIP file"},
         "system.backup.invalidFile": {zh: "备份文件无效", en: "Invalid backup file"},
@@ -230,7 +231,7 @@
                         <div class="action-group system-backup-actions">
                             <button class="mdui-btn mdui-btn-raised mdui-btn-dense mdui-color-orange mdui-ripple" onclick="document.getElementById('import_file').click()" data-i18n="system.backup.import">导入配置</button>
                             <input type="file" id="import_file" accept=".zip" style="display:none" onchange="import_config(this.files[0])">
-                            <span class="action-group-value system-hint" data-i18n="system.backup.importHint">导入将完整覆盖配置，请确认后再操作</span>
+                            <span class="action-group-value system-hint" data-i18n="system.backup.importHint">导入将覆盖配置并重启服务，节点需手动重新应用</span>
                         </div>
                     </td>
                 </tr>
@@ -925,8 +926,17 @@
                 contentType: false,
                 success: function(data) {
                     if (data.result === 'ok') {
-                        message(t("system.backup.importSuccess"));
-                        setTimeout(function() { window.location.reload(); }, 1500);
+                        pop_toast(t("system.backup.importSuccess"));
+                        var countdown = 10;
+                        var timer = setInterval(function() {
+                            update_toast(t("system.backup.importRestartCountdown", { seconds: countdown }));
+                            countdown--;
+                            if (countdown < 0) {
+                                clearInterval(timer);
+                                close_toast();
+                                window.location.reload();
+                            }
+                        }, 1000);
                     } else {
                         message(I18n.apiError(
                             data,
