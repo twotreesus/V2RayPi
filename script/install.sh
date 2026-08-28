@@ -1,9 +1,38 @@
 #!/usr/bin/env bash
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
+export DEBIAN_FRONTEND=noninteractive
+
+set -eEuo pipefail
+
+C_GREEN='\033[1;32m'
+C_RED='\033[1;31m'
+C_RESET='\033[0m'
+CURRENT_STEP=""
+
+on_error() {
+    local rc=$?
+    trap - ERR
+    if [[ -n "${CURRENT_STEP:-}" ]]; then
+        printf '%b %s\n' "${C_RED}✘${C_RESET}" "$CURRENT_STEP" >&2
+    fi
+    exit "$rc"
+}
+trap on_error ERR
+
+step() {
+    CURRENT_STEP="$1"
+    shift
+    "$@"
+    printf '%b %s\n' "${C_GREEN}✔${C_RESET}" "$CURRENT_STEP"
+    CURRENT_STEP=""
+}
 
 #check Root
-[ $(id -u) != "0" ] && { echo "${CFAILURE}Error: You must be root to run this script${CEND}"; exit 1; }
+if [[ "$(id -u)" != "0" ]]; then
+    printf '%b %s\n' "${C_RED}✘${C_RESET}" "Must run as root" >&2
+    exit 1
+fi
 
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -17,19 +46,22 @@ if command -v systemctl >/dev/null 2>&1 && systemctl is-enabled --quiet mihomo_i
     IPTABLES_WAS_ENABLED=1
 fi
 
-#install Needed Packages
-apt-get update -y
-apt-get install wget curl socat git iptables python3 python3-venv python3-dev openssl libssl-dev ca-certificates supervisor -y
+install_packages() {
+    apt-get update -y
+    apt-get install wget curl socat git iptables python3 python3-venv python3-dev openssl libssl-dev ca-certificates supervisor -y
+}
 
-# setup venv and install pip packages
-python3 -m venv "$VENV_DIR"
-source "$VENV_DIR/bin/activate"
-pip install --upgrade pip setuptools wheel
-pip install -r $SCRIPT_DIR/requirements.txt
-deactivate
+install_python_deps() {
+    python3 -m venv "$VENV_DIR"
+    # shellcheck disable=SC1091
+    source "$VENV_DIR/bin/activate"
+    pip install --upgrade pip setuptools wheel
+    pip install -r "$SCRIPT_DIR/requirements.txt"
+    deactivate
+}
 
-#enable rc.local
-cat>/etc/rc.local<<-EOF
+configure_rc_local() {
+    cat>/etc/rc.local<<-EOF
 #!/bin/sh -e
 #
 # rc.local
@@ -47,37 +79,42 @@ if [ ! -d "/var/log/mihomo" ]; then
 fi
 exit 0
 EOF
+    chmod +x /etc/rc.local
+}
 
-# install mihomo (portable official release for the current CPU architecture)
-mkdir -p /etc/mihomo/
-mkdir -p /var/log/mihomo/
-bash "$SCRIPT_DIR/update_mihomo.sh" install
+install_mihomo() {
+    mkdir -p /etc/mihomo/
+    mkdir -p /var/log/mihomo/
+    bash "$SCRIPT_DIR/update_mihomo.sh" install
+}
 
-# ipinfo CLI is used by the status page to show the current egress IP.
-# Prefer the official apt repository so the package stays updatable.
-echo "deb [trusted=yes] https://ppa.ipinfo.net/ /" \
-    > /etc/apt/sources.list.d/ipinfo.ppa.list
-apt-get update -y
-apt-get install -y ipinfo
+install_ipinfo() {
+    echo "deb [trusted=yes] https://ppa.ipinfo.net/ /" \
+        > /etc/apt/sources.list.d/ipinfo.ppa.list
+    apt-get update -y
+    apt-get install -y ipinfo
+}
 
-# mihomo refuses to start without a config file.  Seed a direct-mode
-# placeholder so the service is startable before the first node is applied;
-# V2RayPi overwrites it on every node application.
-if [ ! -f /etc/mihomo/config.yaml ]; then
-    cat>/etc/mihomo/config.yaml<<-EOF
+seed_mihomo_config() {
+    # mihomo refuses to start without a config file.  Seed a direct-mode
+    # placeholder so the service is startable before the first node is applied;
+    # V2RayPi overwrites it on every node application.
+    if [ ! -f /etc/mihomo/config.yaml ]; then
+        cat>/etc/mihomo/config.yaml<<-EOF
 mode: direct
 log-level: warning
 rules:
   - MATCH,DIRECT
 EOF
-fi
-chmod 644 /etc/mihomo/config.yaml
+    fi
+    chmod 644 /etc/mihomo/config.yaml
+}
 
-# Download the GEO databases and persist the release version before the web
-# app starts.  CoreService keeps the user config in memory for the life of the
-# process, so writing current_version after supervisor has already loaded an
-# empty config would leave the UI showing "[Built-in version]" until restart.
-if ! (
+install_geo_data() {
+    # Download the GEO databases and persist the release version before the web
+    # app starts.  CoreService keeps the user config in memory for the life of the
+    # process, so writing current_version after supervisor has already loaded an
+    # empty config would leave the UI showing "[Built-in version]" until restart.
     cd "$PROJECT_DIR"
     "$VENV_DIR/bin/python" - <<'PY'
 from core.core_service import CoreService
@@ -85,21 +122,16 @@ from core.core_service import CoreService
 CoreService.load()
 CoreService.update_geo_data()
 PY
-); then
-    echo "Failed to install GEO databases" >&2
-    exit 1
-fi
+}
 
-#configure Supervisor
-mkdir /etc/supervisor
-mkdir /etc/supervisor/conf.d
-echo_supervisord_conf > /etc/supervisor/supervisord.conf
-cat>>/etc/supervisor/supervisord.conf<<EOF
+configure_supervisor() {
+    mkdir -p /etc/supervisor/conf.d
+    echo_supervisord_conf > /etc/supervisor/supervisord.conf
+    cat>>/etc/supervisor/supervisord.conf<<EOF
 [include]
 files = /etc/supervisor/conf.d/*.ini
 EOF
-touch /etc/supervisor/conf.d/v2raypi.ini
-cat>/etc/supervisor/conf.d/v2raypi.ini<<-EOF
+    cat>/etc/supervisor/conf.d/v2raypi.ini<<-EOF
 [program:v2raypi]
 command=/usr/local/V2RayPi/script/start.sh run
 stdout_logfile=/var/log/v2raypi
@@ -112,15 +144,17 @@ priority=1
 stopasgroup=true
 killasgroup=true
 EOF
+    systemctl restart supervisor
+    supervisorctl -c /etc/supervisor/supervisord.conf restart v2raypi \
+        || supervisorctl -c /etc/supervisor/supervisord.conf start v2raypi
+}
 
-systemctl restart supervisor
-supervisorctl -c /etc/supervisor/supervisord.conf restart v2raypi
-
-# mihomo service.  Logs are appended to a file rather than left in the journal
-# so that the management UI can tail them the same way it always has.  The
-# redirection is done by a shell instead of StandardOutput=append:, which needs
-# systemd 240 and is silently ignored on older distributions.
-cat>/etc/systemd/system/mihomo.service<<-EOF
+configure_mihomo_service() {
+    # Logs are appended to a file rather than left in the journal so that the
+    # management UI can tail them the same way it always has.  The redirection
+    # is done by a shell instead of StandardOutput=append:, which needs systemd
+    # 240 and is silently ignored on older distributions.
+    cat>/etc/systemd/system/mihomo.service<<-EOF
 [Unit]
 Description=mihomo Daemon
 After=network.target nss-lookup.target
@@ -137,10 +171,11 @@ AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME 
 [Install]
 WantedBy=multi-user.target
 EOF
+}
 
-# ip table
-echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf && sysctl -p
-cat>/etc/systemd/system/mihomo_iptable.service<<-EOF
+configure_iptables_service() {
+    echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf && sysctl -p
+    cat>/etc/systemd/system/mihomo_iptable.service<<-EOF
 [Unit]
 Description=Tproxy rule
 After=network-online.target
@@ -155,24 +190,37 @@ ExecStart=/bin/bash /usr/local/V2RayPi/script/config_iptable.sh
 [Install]
 WantedBy=multi-user.target
 EOF
+}
 
-systemctl daemon-reload
-systemctl enable mihomo.service
+enable_services() {
+    systemctl daemon-reload
+    systemctl enable mihomo.service
 
-# Keep a fresh installation safe, while preserving an already-enabled
-# service when the installer is run again.
-if [[ "$IPTABLES_WAS_ENABLED" -eq 1 ]]; then
-    systemctl enable mihomo_iptable.service
-    systemctl restart mihomo_iptable.service
-else
-    systemctl disable mihomo_iptable.service >/dev/null 2>&1 || true
-    systemctl stop mihomo_iptable.service >/dev/null 2>&1 || true
-fi
+    # Keep a fresh installation safe, while preserving an already-enabled
+    # service when the installer is run again.
+    if [[ "$IPTABLES_WAS_ENABLED" -eq 1 ]]; then
+        systemctl enable mihomo_iptable.service
+        systemctl restart mihomo_iptable.service
+    else
+        systemctl disable mihomo_iptable.service >/dev/null 2>&1 || true
+        systemctl stop mihomo_iptable.service >/dev/null 2>&1 || true
+    fi
 
-#
-chmod +x /etc/rc.local
-systemctl start rc-local
-systemctl status rc-local --no-pager
-sync
+    systemctl start rc-local
+    systemctl status rc-local --no-pager || true
+    sync
+}
 
-echo "install success"
+step "Installed system packages" install_packages
+step "Installed Python dependencies" install_python_deps
+step "Configured rc.local" configure_rc_local
+step "Installed mihomo" install_mihomo
+step "Installed ipinfo" install_ipinfo
+step "Seeded mihomo config" seed_mihomo_config
+step "Installed GEO databases" install_geo_data
+step "Configured Supervisor" configure_supervisor
+step "Configured mihomo service" configure_mihomo_service
+step "Configured TPROXY service" configure_iptables_service
+step "Enabled services" enable_services
+
+printf '%b %s\n' "${C_GREEN}✔${C_RESET}" "Install finished"
