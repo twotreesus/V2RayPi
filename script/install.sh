@@ -187,7 +187,14 @@ EOF
 }
 
 configure_iptables_service() {
-    echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf && sysctl -p
+    # Apply only the forwarding knob we need. `sysctl -p` reloads the whole
+    # file and fails on vendor keys that this kernel no longer exports
+    # (e.g. net.netfilter.nf_conntrack_helper on Armbian 6.18).
+    if ! grep -qE '^[[:space:]]*net\.ipv4\.ip_forward[[:space:]]*=' /etc/sysctl.conf; then
+        echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
+    fi
+    sysctl -w net.ipv4.ip_forward=1
+    echo "Enabled IPv4 forwarding (net.ipv4.ip_forward=1)"
     cat>/etc/systemd/system/mihomo_iptable.service<<-EOF
 [Unit]
 Description=Tproxy rule
