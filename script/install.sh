@@ -157,9 +157,7 @@ priority=1
 stopasgroup=true
 killasgroup=true
 EOF
-    systemctl restart supervisor
-    supervisorctl -c /etc/supervisor/supervisord.conf restart v2raypi \
-        || supervisorctl -c /etc/supervisor/supervisord.conf start v2raypi
+    bash "$SCRIPT_DIR/restart_v2raypi.sh"
 }
 
 configure_mihomo_service() {

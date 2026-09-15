@@ -31,6 +31,4 @@ if [ -d "$VENV_DIR" ]; then
     deactivate
 fi
 
-# Restart service via supervisor
-SUPERVISOR_CONFIG="/etc/supervisor/supervisord.conf"
-supervisorctl -c "$SUPERVISOR_CONFIG" restart v2raypi
+bash "$SCRIPT_DIR/restart_v2raypi.sh"

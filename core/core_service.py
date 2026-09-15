@@ -10,6 +10,7 @@ import os
 import os.path
 import platform
 import re
+import shlex
 import subprocess
 from http.client import HTTPSConnection
 from urllib.parse import urlparse
@@ -338,17 +339,28 @@ class CoreService:
             return
         target = f' {branch}' if branch else ''
         print(f'Updating V2RayPi, target branch: {branch or "current"}')
-        # Run script in a new session to ensure it survives service stop
-        os.system(f'setsid {script_path}{target} > /dev/null 2>&1 < /dev/null &')
+        # Run script in a new session to ensure it survives service stop.
+        # Keep the output: a failed supervisorctl restart used to be silent.
+        os.system(
+            'setsid {0}{1} >>/var/log/v2raypi-update.log 2>&1 < /dev/null &'.format(
+                shlex.quote(script_path), target,
+            )
+        )
 
     @classmethod
     def restart_v2raypi(cls):
         print('Scheduling V2RayPi process restart')
-        # Delay so the current request can finish, then restart via supervisor
-        # in a new session so it survives this process exiting.
+        restart_script = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'script',
+            'restart_v2raypi.sh',
+        )
+        # Delay so the current request can finish, then restart in a new
+        # session so it survives this process exiting.
         os.system(
-            "setsid bash -c 'sleep 2; supervisorctl -c /etc/supervisor/supervisord.conf restart v2raypi' "
-            "> /dev/null 2>&1 < /dev/null &"
+            "setsid bash -c 'sleep 2; {0}' >>/var/log/v2raypi-update.log 2>&1 < /dev/null &".format(
+                shlex.quote(restart_script),
+            )
         )
 
     @classmethod
