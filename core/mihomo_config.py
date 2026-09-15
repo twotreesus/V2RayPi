@@ -230,12 +230,27 @@ class MihomoConfig:
         # rules below reference the outbound by name, so pin it to a stable tag.
         proxy['name'] = PROXY_TAG
 
-        if proxy.get('type') in MUX_CAPABLE_PROXY_TYPES:
+        if cls._mux_supported(proxy):
             proxy['smux'] = {'enabled': bool(user_config.advance_config.enable_mux)}
         else:
             proxy.pop('smux', None)
 
         return [proxy]
+
+    @classmethod
+    def _mux_supported(cls, proxy: Dict) -> bool:
+        if proxy.get('type') not in MUX_CAPABLE_PROXY_TYPES:
+            return False
+        # XTLS Vision splices the inner TLS of the raw TCP stream; mux wraps
+        # that stream and the handshake stalls.  VLESS Encryption has the
+        # same constraint.
+        flow = str(proxy.get('flow') or '')
+        if flow.startswith('xtls-rprx-vision'):
+            return False
+        encryption = str(proxy.get('encryption') or '').strip().lower()
+        if encryption and encryption != 'none':
+            return False
+        return True
 
     @classmethod
     def _gen_rules(cls, user_config: MihomoUserConfig, node_domains: List[str],

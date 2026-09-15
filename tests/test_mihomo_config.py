@@ -114,6 +114,31 @@ class ProxiesTest(unittest.TestCase):
         user_config.node = make_node(type='hysteria2', password='p', smux={'enabled': True})
         self.assertNotIn('smux', generate(user_config)['proxies'][0])
 
+    def test_mux_is_skipped_for_vision_flow(self):
+        user_config = MihomoUserConfig()
+        user_config.node = make_node(
+            type='vless',
+            flow='xtls-rprx-vision',
+            smux={'enabled': True},
+        )
+        self.assertNotIn('smux', generate(user_config)['proxies'][0])
+
+        user_config.node = make_node(type='vless', flow='xtls-rprx-vision-udp443')
+        self.assertNotIn('smux', generate(user_config)['proxies'][0])
+
+    def test_mux_is_skipped_for_vless_encryption(self):
+        user_config = MihomoUserConfig()
+        user_config.node = make_node(
+            type='vless',
+            encryption='mlkem768x25519plus.native.0rtt.abc',
+        )
+        self.assertNotIn('smux', generate(user_config)['proxies'][0])
+
+    def test_mux_is_still_injected_for_plain_vless(self):
+        user_config = MihomoUserConfig()
+        user_config.node = make_node(type='vless', encryption='none')
+        self.assertEqual(generate(user_config)['proxies'][0]['smux'], {'enabled': True})
+
     def test_direct_mode_has_no_proxies(self):
         user_config = MihomoUserConfig()
         user_config.node = make_node()

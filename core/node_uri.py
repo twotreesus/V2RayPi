@@ -178,6 +178,9 @@ def _parse_vless(uri: str) -> dict:
         proxy['servername'] = _first(query, 'sni', 'servername')
     if _first(query, 'flow'):
         proxy['flow'] = _first(query, 'flow')
+    encryption = _first(query, 'encryption')
+    if encryption and encryption != 'none':
+        proxy['encryption'] = encryption
     if _first(query, 'fp'):
         proxy['client-fingerprint'] = _first(query, 'fp')
     if _enabled(_first(query, 'insecure', 'allowInsecure')):

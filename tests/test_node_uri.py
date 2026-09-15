@@ -153,6 +153,31 @@ class NodeUriTest(unittest.TestCase):
                 self.assertTrue(uri.startswith(prefix))
                 self.assertEqual(parse_node_uri(uri)['name'], 'alias-node')
 
+    def test_vless_encryption_and_vision_survive_url_import(self):
+        uri = (
+            'vless://5f661e15-a3f9-488e-b558-0a1736543758@ml.example.com:42758'
+            '?encryption=mlkem768x25519plus.native.0rtt.DFdVUAAKad42dr24UTAtJZu8ezV-tk_IWzBWutI6XyI'
+            '&security=reality'
+            '&pbk=fcsNcSKqocaM7ba3VSDBYDh3vRspLPLs_0cA0Msk1FM'
+            '&sid=7e5ec7dc'
+            '&sni=video-caps.wetvinfo.com'
+            '&flow=xtls-rprx-vision'
+            '&fp=chrome'
+            '&type=tcp'
+            '#node'
+        )
+        parsed = parse_node_uri(uri)
+        self.assertEqual(parsed['type'], 'vless')
+        self.assertEqual(parsed['flow'], 'xtls-rprx-vision')
+        self.assertEqual(
+            parsed['encryption'],
+            'mlkem768x25519plus.native.0rtt.DFdVUAAKad42dr24UTAtJZu8ezV-tk_IWzBWutI6XyI',
+        )
+        self.assertEqual(parsed['reality-opts']['public-key'],
+                         'fcsNcSKqocaM7ba3VSDBYDh3vRspLPLs_0cA0Msk1FM')
+        self.assertEqual(parse_node_uri(encode_node_uri(parsed))['encryption'],
+                         parsed['encryption'])
+
     def test_unsupported_scheme_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'Unsupported'):
             parse_node_uri('socks5://example.com:1080')
