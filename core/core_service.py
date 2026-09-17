@@ -481,6 +481,7 @@ class CoreService:
                 detect.last_probe_time = ''
                 detect.last_probe_ok = True
                 detect.last_probe_delay_ms = 0
+                detect.last_probe_epoch = 0
             cls.user_config.save()
             result = True
         return result
@@ -848,7 +849,9 @@ class CoreService:
 
     @classmethod
     def _record_last_probe(cls, detect, ok, delay_ms=0):
-        detect.last_probe_time = datetime.fromtimestamp(time.time()).strftime(
+        now = time.time()
+        detect.last_probe_epoch = int(now)
+        detect.last_probe_time = datetime.fromtimestamp(now).strftime(
             '%Y-%m-%d %H:%M:%S',
         )
         detect.last_probe_ok = bool(ok)

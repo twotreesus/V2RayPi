@@ -620,12 +620,21 @@
         );
     }
 
-    function format_time_ago(stamp) {
-        var then = parse_local_stamp(stamp);
-        if (!then || isNaN(then.getTime())) {
+    function format_time_ago(stamp, epoch) {
+        var thenMs = 0;
+        if (epoch) {
+            thenMs = Number(epoch) * 1000;
+        } else {
+            var then = parse_local_stamp(stamp);
+            if (!then || isNaN(then.getTime())) {
+                return stamp;
+            }
+            thenMs = then.getTime();
+        }
+        if (!thenMs) {
             return stamp;
         }
-        var seconds = Math.max(0, Math.floor((Date.now() - then.getTime()) / 1000));
+        var seconds = Math.max(0, Math.floor((Date.now() - thenMs) / 1000));
         if (seconds < 5) {
             return t("advance.autoSwitch.justNow");
         }
@@ -652,7 +661,7 @@
         var $switched = $("#detect_last_switch_time").empty();
         var probeTime = String(detect.last_probe_time || "").trim();
         if (probeTime) {
-            var ago = format_time_ago(probeTime);
+            var ago = format_time_ago(probeTime, detect.last_probe_epoch);
             if (detect.last_probe_ok === false) {
                 $probe.append(
                     $('<i class="mdui-icon material-icons detect-probe-fail">').text("close"),

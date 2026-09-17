@@ -105,6 +105,7 @@ class AutoSwitchTest(unittest.TestCase):
         detect.last_probe_time = ''
         detect.last_probe_ok = True
         detect.last_probe_delay_ms = 0
+        detect.last_probe_epoch = 0
         return detect
 
     def _https_connection(self, connect=None, request=None):
@@ -359,6 +360,7 @@ class AutoSwitchTest(unittest.TestCase):
             '2026-08-17 16:00:00 ---- Nexitally ---- next',
         )
         self.assertRegex(detect.last_probe_time, r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$')
+        self.assertGreater(detect.last_probe_epoch, 0)
         self.assertTrue(detect.last_probe_ok)
         self.assertEqual(detect.last_probe_delay_ms, 128)
 

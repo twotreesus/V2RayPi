@@ -74,6 +74,7 @@ class MihomoUserConfig(BaseDataItem):
                 self.last_probe_time = ''
                 self.last_probe_ok = True
                 self.last_probe_delay_ms = 0
+                self.last_probe_epoch = 0
 
             def apply_fixed_defaults(self) -> None:
                 self.detect_span = self.DETECT_SPAN
