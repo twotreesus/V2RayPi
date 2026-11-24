@@ -826,7 +826,9 @@ class CoreService:
             alternatives = []
             current = cls.user_config.node
             current_identity = (current.protocol, current.add, current.port, current.ps)
-            for node_index, node in enumerate(cls.node_manager.manual_nodes):
+            resolver = getattr(cls.node_manager, 'resolved_manual_nodes', None)
+            manual_nodes = resolver() if callable(resolver) else cls.node_manager.manual_nodes
+            for node_index, node in enumerate(manual_nodes):
                 identity = (node.protocol, node.add, node.port, node.ps)
                 if identity == current_identity:
                     continue

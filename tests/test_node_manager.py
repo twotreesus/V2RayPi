@@ -301,6 +301,19 @@ class LegacyNodeTest(unittest.TestCase):
 
         self.assertEqual([node.ps for node in node_group.nodes], ['new'])
         self.assertEqual(manager.manual_nodes, [])
+
+    def test_subscription_favorite_reference_is_kept_without_payload(self):
+        manager = NodeManager()
+        reference = Node()
+        reference.ps = 'HK'
+        reference.subscribe = 'https://example.com/sub'
+        manager.manual_nodes = [reference, self._legacy_node('old')]
+
+        manager._drop_nodes_without_clash_payload()
+
+        self.assertEqual([node.ps for node in manager.manual_nodes], ['HK'])
+
+
 class FavoriteTest(unittest.TestCase):
     def _manager(self):
         manager = NodeManager()
@@ -311,17 +324,140 @@ class FavoriteTest(unittest.TestCase):
         manager.subscribes[node_group.subscribe] = node_group
         return manager, node_group.subscribe
 
-    def test_favorite_copies_the_node(self):
+    def test_favorite_references_the_subscription_node_by_name(self):
         manager, url = self._manager()
         with patch.object(manager, 'save'):
             self.assertTrue(manager.favorite_node(url, 0))
 
+        stored = manager.manual_nodes[0]
+        self.assertEqual(stored.ps, 'HK')
+        self.assertEqual(stored.subscribe, url)
+        self.assertEqual(stored.airport, 'example.com')
+        self.assertFalse(stored.clash)
+
+        resolved = manager.find_node('manual', 0)
+        source = manager.subscribes[url].nodes[0]
+        self.assertIs(resolved.clash, source.clash)
+        self.assertEqual(resolved.add, 'a.com')
+        self.assertEqual(resolved.protocol, 'vmess')
+        self.assertEqual(resolved.port, 1)
+
+    def test_copied_favorites_are_discarded_on_load(self):
+        manager, url = self._manager()
+        copied = Node.from_clash({
+            'name': 'HK', 'type': 'vmess', 'server': 'old.com', 'port': 9,
+        })
+        copied.subscribe = url
+        copied.airport = 'example.com'
+        added = Node.from_clash({
+            'name': 'AnyTLS', 'type': 'anytls', 'server': 'example.com', 'port': 443,
+        })
+        reference = Node()
+        reference.ps = 'SG'
+        reference.subscribe = 'https://other.example/sub'
+        manager.manual_nodes = [copied, added, reference]
+
+        manager._drop_copied_favorites()
+
+        self.assertEqual([node.ps for node in manager.manual_nodes], ['AnyTLS', 'SG'])
+
+    def test_subscription_update_refreshes_the_favorite(self):
+        manager, url = self._manager()
+        with patch.object(manager, 'save'):
+            self.assertTrue(manager.favorite_node(url, 0))
+        content = yaml.safe_dump({'proxies': [
+            {'name': 'HK', 'type': 'trojan', 'server': 'b.com', 'port': 8443, 'password': 'p'},
+        ]})
+        with patch('core.node_manager.requests.get', return_value=response(content)), \
+                patch.object(manager, 'save'):
+            manager.update(url)
+
+        resolved = manager.find_node('manual', 0)
+        source = manager.subscribes[url].nodes[0]
+        self.assertEqual(len(manager.manual_nodes), 1)
+        self.assertIs(resolved.clash, source.clash)
+        self.assertEqual(resolved.add, 'b.com')
+        self.assertEqual(resolved.port, 8443)
+        self.assertEqual(resolved.protocol, 'trojan')
+
+    def test_subscription_update_drops_favorite_when_name_is_gone(self):
+        manager, url = self._manager()
+        with patch.object(manager, 'save'):
+            self.assertTrue(manager.favorite_node(url, 0))
+            self.assertTrue(manager.add_manual_node(
+                'anytls://password@example.com:443/?sni=cdn.example.com#AnyTLS'))
+        content = yaml.safe_dump({'proxies': [
+            {'name': 'JP', 'type': 'vmess', 'server': 'b.com', 'port': 1},
+        ]})
+        with patch('core.node_manager.requests.get', return_value=response(content)), \
+                patch.object(manager, 'save'):
+            manager.update(url)
+
+        self.assertEqual([node.ps for node in manager.manual_nodes], ['AnyTLS'])
+
+    def test_failed_subscription_update_keeps_the_favorite(self):
+        manager, url = self._manager()
+        with patch.object(manager, 'save'):
+            self.assertTrue(manager.favorite_node(url, 0))
+        with patch('core.node_manager.requests.get', return_value=response(BASE64_SUBSCRIPTION)), \
+                patch.object(manager, 'save'):
+            manager.update(url)
+
         self.assertEqual([node.ps for node in manager.manual_nodes], ['HK'])
-        # A copy, so editing the subscription later cannot reach the favorite.
-        self.assertIsNot(manager.manual_nodes[0].clash,
-                         manager.subscribes[url].nodes[0].clash)
-        self.assertEqual(manager.manual_nodes[0].subscribe, url)
-        self.assertEqual(manager.manual_nodes[0].airport, 'example.com')
+        self.assertEqual(manager.find_node('manual', 0).add, 'a.com')
+
+    def test_update_only_prunes_favorites_of_that_subscription(self):
+        manager, url = self._manager()
+        other = group('https://other.example/sub')
+        other.name = 'Other'
+        other.nodes = [
+            Node.from_clash({'name': 'SG', 'type': 'vmess', 'server': 'c.com', 'port': 2}),
+        ]
+        manager.subscribes[other.subscribe] = other
+        with patch.object(manager, 'save'):
+            self.assertTrue(manager.favorite_node(url, 0))
+            self.assertTrue(manager.favorite_node(other.subscribe, 0))
+        content = yaml.safe_dump({'proxies': [
+            {'name': 'JP', 'type': 'vmess', 'server': 'b.com', 'port': 1},
+        ]})
+        with patch('core.node_manager.requests.get', return_value=response(content)), \
+                patch.object(manager, 'save'):
+            manager.update(url)
+
+        self.assertEqual([node.ps for node in manager.manual_nodes], ['SG'])
+        self.assertEqual(manager.find_node('manual', 0).add, 'c.com')
+        self.assertEqual(manager.find_node('manual', 0).airport, 'Other')
+
+    def test_removing_subscription_drops_its_favorites(self):
+        manager, url = self._manager()
+        with patch.object(manager, 'save'):
+            self.assertTrue(manager.favorite_node(url, 0))
+            self.assertTrue(manager.add_manual_node(
+                'anytls://password@example.com:443/?sni=cdn.example.com#AnyTLS'))
+            manager.remove_subscribe(url)
+
+        self.assertEqual([node.ps for node in manager.manual_nodes], ['AnyTLS'])
+
+    def test_deleting_subscription_node_drops_favorite_when_name_is_gone(self):
+        manager, url = self._manager()
+        with patch.object(manager, 'save'):
+            self.assertTrue(manager.favorite_node(url, 0))
+            manager.delete_node(url, 0)
+
+        self.assertEqual(manager.manual_nodes, [])
+
+    def test_dump_exposes_the_referenced_node(self):
+        manager, url = self._manager()
+        with patch.object(manager, 'save'):
+            self.assertTrue(manager.favorite_node(url, 0))
+
+        favorite = manager.dump()['manual_nodes'][0]
+
+        self.assertEqual(favorite['ps'], 'HK')
+        self.assertEqual(favorite['add'], 'a.com')
+        self.assertEqual(favorite['protocol'], 'vmess')
+        self.assertEqual(favorite['subscribe'], url)
+        self.assertEqual(favorite['airport'], 'example.com')
 
     def test_favorite_uses_the_airport_name(self):
         manager, url = self._manager()

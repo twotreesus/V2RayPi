@@ -9,7 +9,6 @@ Desc:
 from typing import List, Optional
 from datetime import datetime
 import base64
-import copy
 import re
 import time
 import requests
@@ -39,6 +38,7 @@ class NodeManager(BaseDataItem):
     def load(self):
         manager = super().load()
         manager._drop_nodes_without_clash_payload()
+        manager._drop_copied_favorites()
         return manager
 
     def _drop_nodes_without_clash_payload(self):
@@ -54,12 +54,28 @@ class NodeManager(BaseDataItem):
             kept = [node for node in group.nodes if getattr(node, 'clash', None)]
             dropped += len(group.nodes) - len(kept)
             group.nodes = kept
-        kept_manual = [node for node in self.manual_nodes if getattr(node, 'clash', None)]
+        kept_manual = [
+            node for node in self.manual_nodes
+            if getattr(node, 'clash', None) or self._is_subscription_favorite(node)
+        ]
         dropped += len(self.manual_nodes) - len(kept_manual)
         self.manual_nodes = kept_manual
         if dropped:
             print('Dropped {0} node(s) saved by an older V2RayPi version, '
                   'please update the subscriptions again'.format(dropped))
+
+    def _drop_copied_favorites(self):
+        kept = []
+        dropped = 0
+        for node in self.manual_nodes:
+            if self._is_subscription_favorite(node) and getattr(node, 'clash', None):
+                dropped += 1
+                continue
+            kept.append(node)
+        self.manual_nodes = kept
+        if dropped:
+            print('Cleared {0} favorite node(s) saved as copies by an older V2RayPi version'.format(
+                dropped))
 
     def _proxy_to_node(self, proxy: dict) -> Optional[Node]:
         if not isinstance(proxy, dict):
@@ -144,6 +160,7 @@ class NodeManager(BaseDataItem):
             # Only the selected node is written into the mihomo config, but an
             # unsupported entry would still break it once applied.
             print('Subscription {0}: skipped {1} unsupported node(s)'.format(url, skipped))
+        self._prune_missing_favorites(group)
 
     def update(self, url):
         group = self.subscribes[url]
@@ -178,12 +195,14 @@ class NodeManager(BaseDataItem):
 
     def remove_subscribe(self, url):
         self.subscribes.pop(url)
+        self._drop_favorites_for_subscribe(url)
         self.save()
 
     def delete_node(self, url, index):
         if url != K.manual:
             group = self.subscribes[url]
             group.nodes.pop(index)
+            self._prune_missing_favorites(group)
         else:
             self.manual_nodes.pop(index)
         self.save()
@@ -220,14 +239,84 @@ class NodeManager(BaseDataItem):
                     return self._airport_name(group_url)
         return ''
 
+    def _is_subscription_favorite(self, node: Node) -> bool:
+        return bool((getattr(node, 'subscribe', None) or '').strip()
+                    and (getattr(node, 'ps', None) or '').strip())
+
+    def _subscription_node_by_name(self, group: NodeGroup, name: str) -> Optional[Node]:
+        for candidate in group.nodes:
+            if candidate.ps == name:
+                return candidate
+        return None
+
+    def _prune_missing_favorites(self, group: NodeGroup):
+        url = group.subscribe
+        names = {node.ps for node in group.nodes}
+        kept = []
+        removed = []
+        for node in self.manual_nodes:
+            if (getattr(node, 'subscribe', None) or '') != url:
+                kept.append(node)
+                continue
+            if node.ps in names:
+                node.airport = (group.name or '').strip() or (urlparse(url).hostname or '')
+                node.clash = {}
+                node.add = None
+                node.port = None
+                node.protocol = None
+                kept.append(node)
+                continue
+            removed.append(node.ps or '')
+        self.manual_nodes = kept
+        if removed:
+            print('Subscription {0}: removed {1} favorite node(s) that no longer exist: {2}'.format(
+                url, len(removed), ', '.join(removed)))
+
+    def _drop_favorites_for_subscribe(self, url: str):
+        kept = []
+        removed = []
+        for node in self.manual_nodes:
+            if (getattr(node, 'subscribe', None) or '') == url:
+                removed.append(node.ps or '')
+                continue
+            kept.append(node)
+        self.manual_nodes = kept
+        if removed:
+            print('Subscription {0}: removed {1} favorite node(s) with the subscription: {2}'.format(
+                url, len(removed), ', '.join(removed)))
+
+    def resolve_manual_node(self, node: Node) -> Node:
+        url = (getattr(node, 'subscribe', None) or '').strip()
+        if not url:
+            return node
+        group = self.subscribes.get(url)
+        if not group:
+            return node
+        source = self._subscription_node_by_name(group, node.ps)
+        if not source:
+            return node
+        resolved = Node()
+        resolved.clash = source.clash
+        resolved.ps = source.ps
+        resolved.add = source.add
+        resolved.port = source.port
+        resolved.protocol = source.protocol
+        resolved.subscribe = url
+        resolved.airport = self._airport_name(url)
+        return resolved
+
+    def resolved_manual_nodes(self) -> List[Node]:
+        return [self.resolve_manual_node(node) for node in self.manual_nodes]
+
     def favorite_node(self, url: str, index: int) -> bool:
         node = self.find_node(url, index)
         if any(n.ps == node.ps for n in self.manual_nodes):
             return False
-        copied = copy.deepcopy(node)
-        copied.subscribe = url
-        copied.airport = self._airport_name(url)
-        self.manual_nodes.append(copied)
+        reference = Node()
+        reference.ps = node.ps
+        reference.subscribe = url
+        reference.airport = self._airport_name(url)
+        self.manual_nodes.append(reference)
         self.save()
         return True
 
@@ -240,20 +329,25 @@ class NodeManager(BaseDataItem):
         return True
 
     def find_node(self, url: str, index: int) -> Node:
-        node = None
         if url == K.manual:
-            node = self.manual_nodes[index]
-        else:
-            node = self.subscribes[url].nodes[index]
-        return node
+            return self.resolve_manual_node(self.manual_nodes[index])
+        return self.subscribes[url].nodes[index]
 
     def all_nodes(self) -> list:
         nodes = []
         for url in self.subscribes.keys():
             group = self.subscribes[url]
             nodes.extend(group.nodes)
-        nodes.extend(self.manual_nodes)
+        nodes.extend(self.resolved_manual_nodes())
         return nodes
+
+    def dump(self, pure=True):
+        data = super().dump(pure=pure)
+        data['manual_nodes'] = [
+            self.resolve_manual_node(node).dump(pure=pure)
+            for node in self.manual_nodes
+        ]
+        return data
 
     def subscribe_hosts(self) -> list:
         hosts = []
