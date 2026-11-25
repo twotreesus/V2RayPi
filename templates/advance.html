@@ -40,6 +40,14 @@
         margin-bottom: 4px;
         font-weight: 500;
     }
+
+    .auto-subscribe-time {
+        font: inherit;
+        padding: 6px 8px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 4px;
+        background: #fff;
+    }
 </style>
 <div id="advance_page" class="mdui-container">
     <div id="action_bar_wrapper" class="page-action-bar">
@@ -111,6 +119,30 @@
                     <td data-i18n="advance.autoSwitch.lastSwitch">最近切换</td>
                     <td colspan="5">
                         <div id="detect_last_switch_time" class="detect-last-event"></div>
+                    </td>
+                </tr>
+                <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="section-head advance-section-head mdui-typo">
+                            <h5 data-i18n="advance.autoSubscribe.title">自动更新订阅</h5>
+                            <h6 class="mdui-typo-caption-opacity" data-i18n="advance.autoSubscribe.description">打开后，每天在设定的本机时间更新全部订阅节点。效果与订阅页的「全部更新」相同。</h6>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="advance-inline-row">
+                    <td data-i18n="advance.common.enabled">启用</td>
+                    <td colspan="5">
+                        <label class="mdui-switch">
+                            <input id="enable_auto_subscribe" type="checkbox" onchange="enable_auto_subscribe_change()"/>
+                            <i class="mdui-switch-icon"></i>
+                        </label>
+                    </td>
+                </tr>
+                <tr class="advance-inline-row">
+                    <td data-i18n="advance.autoSubscribe.time">更新时间</td>
+                    <td colspan="5">
+                        <input id="auto_subscribe_time" class="auto-subscribe-time" type="time" onchange="auto_subscribe_time_change()"/>
                     </td>
                 </tr>
                 <tr class="mdui-color-grey-100"><td colspan="6"></td></tr>
@@ -459,6 +491,9 @@
         "advance.autoSwitch.minutesAgo": {zh: "{n} 分钟前", en: "{n} minutes ago"},
         "advance.autoSwitch.hoursAgo": {zh: "{n} 小时前", en: "{n} hours ago"},
         "advance.autoSwitch.daysAgo": {zh: "{n} 天前", en: "{n} days ago"},
+        "advance.autoSubscribe.title": {zh: "自动更新订阅", en: "Automatic Subscription Update"},
+        "advance.autoSubscribe.description": {zh: "打开后，每天在设定的本机时间更新全部订阅节点。效果与订阅页的「全部更新」相同。", en: "When enabled, update every subscription node each day at the configured local time. This does the same thing as Update all on the subscription page."},
+        "advance.autoSubscribe.time": {zh: "更新时间", en: "Update Time"},
         "advance.localProxy.title": {zh: "本地代理", en: "Local Proxy"},
         "advance.localProxy.socks5": {zh: "Socks 5 代理", en: "Socks 5 Proxy"},
         "advance.localProxy.port": {zh: "端口", en: "Port"},
@@ -705,6 +740,16 @@
 
         render_last_detect_event();
 
+        var auto_subscribe = g_config_local['auto_subscribe'];
+        if (!auto_subscribe) {
+            auto_subscribe = {enabled: false, hour: 4, minute: 0};
+            g_config_local['auto_subscribe'] = auto_subscribe;
+        }
+        $("#enable_auto_subscribe").prop('checked', !!auto_subscribe['enabled']);
+        var subscribe_hour = String(auto_subscribe['hour']).padStart(2, '0');
+        var subscribe_minute = String(auto_subscribe['minute']).padStart(2, '0');
+        $("#auto_subscribe_time").val(subscribe_hour + ':' + subscribe_minute);
+
         // log
         var log_index = g_log_levels.indexOf(g_config_local['log']['level']);
         $("#select_log_level").prop('selectedIndex', log_index);
@@ -916,6 +961,28 @@
     
     function enable_auto_detect_change() {
         g_config_local['auto_detect']['enabled'] = $("#enable_auto_switch").prop('checked');
+        refresh_local();
+    }
+
+    function enable_auto_subscribe_change() {
+        if (!g_config_local['auto_subscribe']) {
+            g_config_local['auto_subscribe'] = {enabled: false, hour: 4, minute: 0};
+        }
+        g_config_local['auto_subscribe']['enabled'] = $("#enable_auto_subscribe").prop('checked');
+        refresh_local();
+    }
+
+    function auto_subscribe_time_change() {
+        var match = /^(\d{2}):(\d{2})$/.exec($("#auto_subscribe_time").val() || '');
+        if (!match) {
+            refresh_local();
+            return;
+        }
+        if (!g_config_local['auto_subscribe']) {
+            g_config_local['auto_subscribe'] = {enabled: false, hour: 4, minute: 0};
+        }
+        g_config_local['auto_subscribe']['hour'] = parseInt(match[1], 10);
+        g_config_local['auto_subscribe']['minute'] = parseInt(match[2], 10);
         refresh_local();
     }
 

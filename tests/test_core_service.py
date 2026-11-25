@@ -688,5 +688,104 @@ class SessionPersistTest(unittest.TestCase):
         self.assertEqual(CoreService._sessions, {})
 
 
+class AutoSubscribeTest(unittest.TestCase):
+    def test_invalid_clock_time_uses_the_default_for_that_field(self):
+        subscribe = MihomoUserConfig.AdvanceConfig.AutoSubscribe()
+        subscribe.hour = 99
+        subscribe.minute = '15'
+        subscribe.normalize()
+
+        self.assertEqual(subscribe.hour, 4)
+        self.assertEqual(subscribe.minute, 15)
+
+    def test_missing_setting_is_created_for_an_older_config(self):
+        advance = MihomoUserConfig.AdvanceConfig()
+        del advance.auto_subscribe
+        user_config = SimpleNamespace(advance_config=advance)
+
+        with patch.multiple(CoreService, user_config=user_config):
+            CoreService._ensure_auto_subscribe()
+
+        self.assertFalse(advance.auto_subscribe.enabled)
+        self.assertEqual((advance.auto_subscribe.hour, advance.auto_subscribe.minute), (4, 0))
+
+    def test_apply_normalizes_the_daily_update_time_and_reschedules(self):
+        user_config = MihomoUserConfig()
+        posted = user_config.advance_config.dump()
+        posted['auto_subscribe']['enabled'] = True
+        posted['auto_subscribe']['hour'] = 99
+        posted['auto_subscribe']['minute'] = 5
+
+        with patch.multiple(CoreService, user_config=user_config), patch.object(
+            CoreService, 're_apply_node', return_value=True,
+        ), patch.object(
+            CoreService, 'restart_auto_subscribe',
+        ) as restart, patch.object(user_config, 'save') as save:
+            self.assertTrue(CoreService.apply_advance_config(posted))
+
+        subscribe = user_config.advance_config.auto_subscribe
+        self.assertTrue(subscribe.enabled)
+        self.assertEqual((subscribe.hour, subscribe.minute), (4, 5))
+        restart.assert_called_once_with()
+        save.assert_called_once_with()
+
+    def test_enabled_schedule_uses_the_configured_clock_time(self):
+        from apscheduler.schedulers.base import STATE_RUNNING
+
+        subscribe = MihomoUserConfig.AdvanceConfig.AutoSubscribe()
+        subscribe.enabled = True
+        subscribe.hour = 6
+        subscribe.minute = 30
+        user_config = SimpleNamespace(
+            advance_config=SimpleNamespace(auto_subscribe=subscribe),
+        )
+        scheduler = Mock()
+        scheduler.state = STATE_RUNNING
+
+        with patch.multiple(CoreService, user_config=user_config, scheduler=scheduler):
+            CoreService.restart_auto_subscribe()
+
+        scheduler.add_job.assert_called_once_with(
+            CoreService.auto_subscribe_job,
+            trigger='cron',
+            hour=6,
+            minute=30,
+            id=K.auto_subscribe,
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=30 * 60,
+        )
+        scheduler.start.assert_not_called()
+
+    def test_disabled_schedule_is_removed(self):
+        subscribe = MihomoUserConfig.AdvanceConfig.AutoSubscribe()
+        user_config = SimpleNamespace(
+            advance_config=SimpleNamespace(auto_subscribe=subscribe),
+        )
+        job = Mock()
+        scheduler = Mock()
+        scheduler.get_job.return_value = job
+
+        with patch.multiple(CoreService, user_config=user_config, scheduler=scheduler):
+            CoreService.restart_auto_subscribe()
+
+        scheduler.get_job.assert_called_once_with(K.auto_subscribe)
+        job.remove.assert_called_once_with()
+        scheduler.add_job.assert_not_called()
+
+    def test_job_updates_all_subscriptions(self):
+        with patch.object(CoreService, 'update_all_subscribe') as update:
+            CoreService.auto_subscribe_job()
+
+        update.assert_called_once_with()
+
+    def test_job_failure_does_not_escape_the_scheduler(self):
+        with patch.object(
+            CoreService, 'update_all_subscribe', side_effect=RuntimeError('down'),
+        ):
+            CoreService.auto_subscribe_job()
+
+
 if __name__ == '__main__':
     unittest.main()

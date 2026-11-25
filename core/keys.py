@@ -32,6 +32,7 @@ class Keyword:
     type = 'type'
     outbound = 'outbound'
     auto_detect = 'auto_detect'
+    auto_subscribe = 'auto_subscribe'
     performance_sample = 'performance_sample'
     ps = 'ps'
     

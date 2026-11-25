@@ -81,6 +81,29 @@ class MihomoUserConfig(BaseDataItem):
                 self.failed_count = self.FAILED_COUNT
                 self.timeout = self.TIMEOUT
 
+        class AutoSubscribe:
+            DEFAULT_HOUR = 4
+            DEFAULT_MINUTE = 0
+
+            def __init__(self):
+                self.enabled = False
+                self.hour = self.DEFAULT_HOUR
+                self.minute = self.DEFAULT_MINUTE
+
+            def normalize(self) -> None:
+                self.hour = self._clock_field(self.hour, 0, 23, self.DEFAULT_HOUR)
+                self.minute = self._clock_field(self.minute, 0, 59, self.DEFAULT_MINUTE)
+
+            @staticmethod
+            def _clock_field(value, low: int, high: int, default: int) -> int:
+                try:
+                    number = int(value)
+                except (TypeError, ValueError):
+                    return default
+                if low <= number <= high:
+                    return number
+                return default
+
         class GeoData:
             def __init__(self):
                 self.check_url = 'https://github.com/Loyalsoldier/v2ray-rules-dat/releases'
@@ -95,6 +118,7 @@ class MihomoUserConfig(BaseDataItem):
             self.dns: MihomoUserConfig.AdvanceConfig.DnsConfig = MihomoUserConfig.AdvanceConfig.DnsConfig()
             self.policys:List[MihomoUserConfig.AdvanceConfig.Policy] = []
             self.auto_detect: MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch = MihomoUserConfig.AdvanceConfig.AutoDetectAndSwitch()
+            self.auto_subscribe: MihomoUserConfig.AdvanceConfig.AutoSubscribe = MihomoUserConfig.AdvanceConfig.AutoSubscribe()
             self.geo_data:MihomoUserConfig.AdvanceConfig.GeoData = MihomoUserConfig.AdvanceConfig.GeoData()
             self.proxy_preferred = True
             self.enable_mux = True

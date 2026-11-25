@@ -70,6 +70,7 @@ class CoreService:
         cls.node_manager = NodeManager().load()
         cls.user_config = MihomoUserConfig().load()
         cls.user_config.advance_config.auto_detect.apply_fixed_defaults()
+        cls._ensure_auto_subscribe()
 
         # A node selected before the move to mihomo has no Clash payload to hand
         # to the core, so treat it as no selection rather than repeatedly failing
@@ -81,6 +82,7 @@ class CoreService:
 
         cls._load_sessions()
         cls.restart_auto_detect()
+        cls.restart_auto_subscribe()
 
     # Class variable to store active sessions
     _sessions = {}
@@ -524,10 +526,15 @@ class CoreService:
     @classmethod
     def apply_advance_config(cls, config:dict):
         result = True
+        cls._ensure_auto_subscribe()
         new_advance = cls.user_config.advance_config.load_data(config)
         new_advance.auto_detect.apply_fixed_defaults()
+        if not getattr(new_advance, 'auto_subscribe', None):
+            new_advance.auto_subscribe = MihomoUserConfig.AdvanceConfig.AutoSubscribe()
+        new_advance.auto_subscribe.normalize()
         cls.user_config.advance_config = new_advance
         result = cls.re_apply_node()
+        cls.restart_auto_subscribe()
         if result:
             cls.user_config.save()
         return  result
@@ -537,9 +544,17 @@ class CoreService:
         result = True
         cls.user_config.advance_config = MihomoUserConfig.AdvanceConfig()
         result = cls.re_apply_node()
+        cls.restart_auto_subscribe()
         if result:
             cls.user_config.save()
         return result
+
+    @classmethod
+    def _ensure_auto_subscribe(cls):
+        advance = cls.user_config.advance_config
+        if not getattr(advance, 'auto_subscribe', None):
+            advance.auto_subscribe = MihomoUserConfig.AdvanceConfig.AutoSubscribe()
+        advance.auto_subscribe.normalize()
 
     @classmethod
     def make_policy(cls, contents:List[str], type:str, outbound:str) -> dict:
@@ -779,6 +794,55 @@ class CoreService:
         job = cls.scheduler.get_job(K.auto_detect)
         if job:
             job.remove()
+
+    @classmethod
+    def restart_auto_subscribe(cls):
+        cls.auto_subscribe_cancel()
+        if cls.user_config.advance_config.auto_subscribe.enabled:
+            cls.auto_subscribe_start()
+
+    @classmethod
+    def auto_subscribe_start(cls):
+        subscribe = cls.user_config.advance_config.auto_subscribe
+        subscribe.normalize()
+        cls.scheduler.add_job(
+            CoreService.auto_subscribe_job,
+            trigger='cron',
+            hour=subscribe.hour,
+            minute=subscribe.minute,
+            id=K.auto_subscribe,
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=30 * 60,
+        )
+        print('Automatic subscription update scheduled at {0:02d}:{1:02d}'.format(
+            subscribe.hour, subscribe.minute))
+        if cls.scheduler.state is not STATE_RUNNING:
+            cls.scheduler.start()
+
+    @classmethod
+    def auto_subscribe_cancel(cls):
+        job = cls.scheduler.get_job(K.auto_subscribe)
+        if job:
+            job.remove()
+
+    @classmethod
+    def auto_subscribe_job(cls):
+        print('Automatic subscription update started')
+
+        def run():
+            try:
+                cls.update_all_subscribe()
+            except Exception as error:
+                print('Automatic subscription update failed: {0}'.format(error))
+                return
+            print('Automatic subscription update finished')
+
+        try:
+            api_serial.submit_write(run)
+        except Exception as error:
+            print('Automatic subscription update failed: {0}'.format(error))
 
     @classmethod
     def auto_detect_job(cls):
