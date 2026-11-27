@@ -237,7 +237,10 @@
 </table>
 
 <div id="node_probe_dialog" class="mdui-dialog node-probe-dialog">
-    <div class="mdui-dialog-title" data-i18n="subscribe.probe.title">探测</div>
+    <div class="mdui-dialog-title node-probe-title">
+        <span data-i18n="subscribe.probe.title">探测</span>
+        <i id="node_probe_ok" class="mdui-icon material-icons node-probe-ok" hidden>check</i>
+    </div>
     <div class="mdui-dialog-content">
         <div id="node_probe_pending" class="node-probe-pending">
             <i class="mdui-icon material-icons node-probe-spinner">refresh</i>
@@ -353,6 +356,18 @@
     .node-probe-dialog {
         max-width: 480px;
     }
+    .node-probe-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .node-probe-ok {
+        color: var(--brand-green);
+        font-size: 28px;
+        line-height: 28px;
+        width: 28px;
+        height: 28px;
+    }
     .node-probe-dialog [hidden] {
         display: none !important;
     }
@@ -363,7 +378,16 @@
         color: rgba(0, 0, 0, 0.7);
     }
     .node-probe-spinner {
-        animation: egress-refresh-spin 0.8s linear infinite;
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
+        line-height: 24px;
+        animation: node-probe-spin 0.8s linear infinite;
+    }
+    @keyframes node-probe-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
     .node-probe-row {
         display: flex;
@@ -1099,10 +1123,12 @@
         set_probe_latency(data.latency_ms);
         set_probe_flag(data.country);
         $("#node_probe_error").prop("hidden", true).text("");
+        $("#node_probe_ok").prop("hidden", false);
         $("#node_probe_result").prop("hidden", false);
     }
 
     function render_node_probe_error(data) {
+        $("#node_probe_ok").prop("hidden", true);
         $("#node_probe_result").prop("hidden", true);
         $("#node_probe_error").text(probe_error_message(data)).prop("hidden", false);
     }
@@ -1110,6 +1136,7 @@
     function show_node_probe() {
         var seq = ++g_node_probe_seq;
         $("#node_probe_pending").prop("hidden", false);
+        $("#node_probe_ok").prop("hidden", true);
         $("#node_probe_result").prop("hidden", true);
         $("#node_probe_error").prop("hidden", true).text("");
         if (!g_node_probe_dialog) {
