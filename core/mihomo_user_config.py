@@ -82,7 +82,7 @@ class MihomoUserConfig(BaseDataItem):
                 self.timeout = self.TIMEOUT
 
         class AutoSubscribe:
-            DEFAULT_HOUR = 4
+            DEFAULT_HOUR = 5
             DEFAULT_MINUTE = 0
 
             def __init__(self):

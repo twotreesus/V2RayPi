@@ -695,7 +695,7 @@ class AutoSubscribeTest(unittest.TestCase):
         subscribe.minute = '15'
         subscribe.normalize()
 
-        self.assertEqual(subscribe.hour, 4)
+        self.assertEqual(subscribe.hour, 5)
         self.assertEqual(subscribe.minute, 15)
 
     def test_missing_setting_is_created_for_an_older_config(self):
@@ -707,7 +707,7 @@ class AutoSubscribeTest(unittest.TestCase):
             CoreService._ensure_auto_subscribe()
 
         self.assertFalse(advance.auto_subscribe.enabled)
-        self.assertEqual((advance.auto_subscribe.hour, advance.auto_subscribe.minute), (4, 0))
+        self.assertEqual((advance.auto_subscribe.hour, advance.auto_subscribe.minute), (5, 0))
 
     def test_apply_normalizes_the_daily_update_time_and_reschedules(self):
         user_config = MihomoUserConfig()
@@ -725,7 +725,7 @@ class AutoSubscribeTest(unittest.TestCase):
 
         subscribe = user_config.advance_config.auto_subscribe
         self.assertTrue(subscribe.enabled)
-        self.assertEqual((subscribe.hour, subscribe.minute), (4, 5))
+        self.assertEqual((subscribe.hour, subscribe.minute), (5, 5))
         restart.assert_called_once_with()
         save.assert_called_once_with()
 

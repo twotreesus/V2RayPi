@@ -487,6 +487,7 @@
         "advance.autoSwitch.lastProbe": {zh: "最近探测", en: "Last Probe"},
         "advance.autoSwitch.probeFailed": {zh: "失败", en: "Failed"},
         "advance.autoSwitch.justNow": {zh: "刚刚", en: "Just now"},
+        "advance.autoSwitch.today": {zh: "今天 {time}", en: "Today {time}"},
         "advance.autoSwitch.secondsAgo": {zh: "{n} 秒前", en: "{n} seconds ago"},
         "advance.autoSwitch.minutesAgo": {zh: "{n} 分钟前", en: "{n} minutes ago"},
         "advance.autoSwitch.hoursAgo": {zh: "{n} 小时前", en: "{n} hours ago"},
@@ -687,6 +688,35 @@
         return t("advance.autoSwitch.daysAgo", { n: Math.floor(hours / 24) });
     }
 
+    function format_recent_clock(stamp) {
+        var text = String(stamp || "").trim();
+        if (!text) {
+            return "";
+        }
+        var then = parse_local_stamp(text);
+        if (!then || isNaN(then.getTime())) {
+            return text;
+        }
+        var now = new Date();
+        var elapsedMs = Math.max(0, now.getTime() - then.getTime());
+        if (elapsedMs < 60 * 60 * 1000) {
+            var minutes = Math.floor(elapsedMs / 60000);
+            if (minutes < 1) {
+                return t("advance.autoSwitch.justNow");
+            }
+            return t("advance.autoSwitch.minutesAgo", { n: minutes });
+        }
+        var sameDay = then.getFullYear() === now.getFullYear()
+            && then.getMonth() === now.getMonth()
+            && then.getDate() === now.getDate();
+        if (sameDay) {
+            var hour = String(then.getHours()).padStart(2, "0");
+            var minute = String(then.getMinutes()).padStart(2, "0");
+            return t("advance.autoSwitch.today", { time: hour + ":" + minute });
+        }
+        return text;
+    }
+
     function render_last_detect_event() {
         if (!g_config_local) {
             return;
@@ -711,7 +741,16 @@
         }
         var switchText = String(detect.last_switch_time || "").trim();
         if (switchText) {
-            $switched.append($("<span>").text(switchText.split(" ---- ").join(" | ")));
+            var parts = switchText.split(" ---- ");
+            var stamp = parts.shift();
+            var label = format_recent_clock(stamp);
+            var detail = parts.join(" | ");
+            var shown = detail ? label + " | " + detail : label;
+            var span = $("<span>").text(shown);
+            if (label !== stamp) {
+                span.attr("title", stamp);
+            }
+            $switched.append(span);
         }
     }
 
@@ -742,7 +781,7 @@
 
         var auto_subscribe = g_config_local['auto_subscribe'];
         if (!auto_subscribe) {
-            auto_subscribe = {enabled: false, hour: 4, minute: 0};
+            auto_subscribe = {enabled: false, hour: 5, minute: 0};
             g_config_local['auto_subscribe'] = auto_subscribe;
         }
         $("#enable_auto_subscribe").prop('checked', !!auto_subscribe['enabled']);
@@ -966,7 +1005,7 @@
 
     function enable_auto_subscribe_change() {
         if (!g_config_local['auto_subscribe']) {
-            g_config_local['auto_subscribe'] = {enabled: false, hour: 4, minute: 0};
+            g_config_local['auto_subscribe'] = {enabled: false, hour: 5, minute: 0};
         }
         g_config_local['auto_subscribe']['enabled'] = $("#enable_auto_subscribe").prop('checked');
         refresh_local();
@@ -979,7 +1018,7 @@
             return;
         }
         if (!g_config_local['auto_subscribe']) {
-            g_config_local['auto_subscribe'] = {enabled: false, hour: 4, minute: 0};
+            g_config_local['auto_subscribe'] = {enabled: false, hour: 5, minute: 0};
         }
         g_config_local['auto_subscribe']['hour'] = parseInt(match[1], 10);
         g_config_local['auto_subscribe']['minute'] = parseInt(match[2], 10);

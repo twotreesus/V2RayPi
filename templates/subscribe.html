@@ -1,6 +1,9 @@
 <script>
     I18n.register({
         "subscribe.recent": {zh: "最近订阅", en: "Recent subscription"},
+        "subscribe.recent.just_now": {zh: "刚刚", en: "Just now"},
+        "subscribe.recent.minutes_ago": {zh: "{n} 分钟前", en: "{n} minutes ago"},
+        "subscribe.recent.today": {zh: "今天 {time}", en: "Today {time}"},
         "subscribe.update_all": {zh: "全部更新", en: "Update all"},
         "subscribe.add": {zh: "新增订阅", en: "Add subscription"},
         "subscribe.add_node": {zh: "添加节点", en: "Add node"},
@@ -35,6 +38,16 @@
         "subscribe.apply.in_progress": {zh: "正在应用节点...", en: "Applying node..."},
         "subscribe.apply.success": {zh: "应用成功", en: "Node applied"},
         "subscribe.apply.failed": {zh: "应用失败", en: "Failed to apply node"},
+        "subscribe.probe.title": {zh: "探测", en: "Probe"},
+        "subscribe.probe.pending": {zh: "正在获取公网 IP...", en: "Fetching public IP..."},
+        "subscribe.probe.ip": {zh: "IP 地址", en: "IP Address"},
+        "subscribe.probe.latency": {zh: "响应 {ms} ms", en: "Response {ms} ms"},
+        "subscribe.probe.location": {zh: "地理位置", en: "Location"},
+        "subscribe.probe.org": {zh: "组织", en: "Organization"},
+        "subscribe.probe.unavailable": {zh: "暂时无法获取", en: "Unavailable"},
+        "subscribe.probe.missing": {zh: "未安装 ipinfo", en: "ipinfo is not installed"},
+        "subscribe.probe.rateLimited": {zh: "ipinfo 额度已用完，请在系统页配置 Token", en: "ipinfo quota exceeded. Set a token on the System page"},
+        "subscribe.probe.close": {zh: "关闭", en: "Close"},
         "subscribe.link_copied": {zh: "节点分享链接已复制", en: "Node share link copied"},
         "subscribe.link_unavailable": {zh: "该节点无法生成分享链接", en: "A share link cannot be generated for this node"},
         "subscribe.qr_unavailable": {zh: "该节点无法生成二维码", en: "A QR code cannot be generated for this node"},
@@ -223,6 +236,42 @@
     </tbody>
 </table>
 
+<div id="node_probe_dialog" class="mdui-dialog node-probe-dialog">
+    <div class="mdui-dialog-title" data-i18n="subscribe.probe.title">探测</div>
+    <div class="mdui-dialog-content">
+        <div id="node_probe_pending" class="node-probe-pending">
+            <i class="mdui-icon material-icons node-probe-spinner">refresh</i>
+            <span data-i18n="subscribe.probe.pending">正在获取公网 IP...</span>
+        </div>
+        <div id="node_probe_result" hidden>
+            <div class="node-probe-row">
+                <div class="node-probe-label" data-i18n="subscribe.probe.ip">IP 地址</div>
+                <div class="action-group egress-ip-row">
+                    <span id="node_probe_ip" class="action-group-value"></span>
+                    <span id="node_probe_latency" class="egress-latency" hidden></span>
+                </div>
+            </div>
+            <div class="node-probe-row">
+                <div class="node-probe-label" data-i18n="subscribe.probe.location">地理位置</div>
+                <div class="action-group egress-location-row">
+                    <img id="node_probe_flag" class="egress-flag" alt="" hidden>
+                    <span id="node_probe_location" class="action-group-value"></span>
+                </div>
+            </div>
+            <div class="node-probe-row">
+                <div class="node-probe-label" data-i18n="subscribe.probe.org">组织</div>
+                <div class="action-group">
+                    <span id="node_probe_org" class="action-group-value"></span>
+                </div>
+            </div>
+        </div>
+        <div id="node_probe_error" class="node-probe-error" hidden></div>
+    </div>
+    <div class="mdui-dialog-actions">
+        <button type="button" class="mdui-btn mdui-ripple" mdui-dialog-close data-i18n="subscribe.probe.close">关闭</button>
+    </div>
+</div>
+
 <div id="qr_toast" class="mdui-dialog">
     <div class="mdui-dialog-content">
         <div id="qr_code" style="width: fit-content"></div>
@@ -291,6 +340,68 @@
     }
     .node_running td.node_name {
         text-align: left;
+    }
+    .node-switch-dialog {
+        cursor: pointer;
+    }
+    .node-switch-dialog > .mdui-dialog-title {
+        padding-right: 148px;
+    }
+    .node-switch-dialog > .mdui-dialog-content {
+        padding-right: 148px;
+    }
+    .node-probe-dialog {
+        max-width: 480px;
+    }
+    .node-probe-dialog [hidden] {
+        display: none !important;
+    }
+    .node-probe-pending {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(0, 0, 0, 0.7);
+    }
+    .node-probe-spinner {
+        animation: egress-refresh-spin 0.8s linear infinite;
+    }
+    .node-probe-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-height: 36px;
+    }
+    .node-probe-row + .node-probe-row {
+        margin-top: 4px;
+    }
+    .node-probe-label {
+        flex: 0 0 88px;
+        color: rgba(0, 0, 0, 0.54);
+    }
+    .node-probe-error {
+        color: #e53935;
+    }
+    .node-switch-dialog > .node-switch-confirm.mdui-btn {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 132px;
+        height: auto;
+        min-width: 0;
+        margin: 0;
+        padding: 0 12px;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        font-size: 20px;
+        line-height: 1.2;
+        letter-spacing: 0.08em;
+        text-transform: none;
+        white-space: nowrap;
     }
     .subscribe-index {
         display: inline-flex;
@@ -467,11 +578,29 @@
             var url = row.data("url");
             var index = row.data("index");
             var nodeName = row.find(".node-name-label").text() || row.find(".node_name").data("ps");
-            mdui.confirm(t("subscribe.switch.prompt", {name: nodeName}), t("subscribe.switch.title"), function() {
+            var dialog = mdui.dialog({
+                title: t("subscribe.switch.title"),
+                content: t("subscribe.switch.prompt", {name: nodeName}),
+                cssClass: "mdui-dialog-confirm node-switch-dialog",
+                history: false,
+                onOpen: function (instance) {
+                    var $dialog = instance.$element;
+                    if ($dialog.children(".node-switch-confirm").length) {
+                        return;
+                    }
+                    $dialog.append(
+                        $("<button>", {
+                            type: "button",
+                            "class": "mdui-btn mdui-ripple mdui-color-theme-accent node-switch-confirm",
+                            text: t("subscribe.confirm")
+                        })
+                    );
+                    mdui.mutation();
+                }
+            });
+            dialog.$element.one("click", function() {
+                dialog.close();
                 apply_node(url, index);
-            }, function() {}, {
-                confirmText: t("subscribe.confirm"),
-                cancelText: t("subscribe.cancel")
             });
         });
 
@@ -540,7 +669,68 @@
             });
 
         refresh();
+        if (typeof add_interval === "function") {
+            add_interval(setInterval(render_last_subscribe, 30000));
+        }
+        I18n.onChange(render_last_subscribe);
     });
+
+    var g_last_subscribe_stamp = "";
+
+    function parse_subscribe_stamp(text) {
+        var match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(String(text || "").trim());
+        if (!match) {
+            return null;
+        }
+        return new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3]),
+            Number(match[4]),
+            Number(match[5]),
+            Number(match[6])
+        );
+    }
+
+    function format_last_subscribe(stamp) {
+        var text = String(stamp || "").trim();
+        if (!text) {
+            return "";
+        }
+        var then = parse_subscribe_stamp(text);
+        if (!then || isNaN(then.getTime())) {
+            return text;
+        }
+        var now = new Date();
+        var elapsedMs = Math.max(0, now.getTime() - then.getTime());
+        if (elapsedMs < 60 * 60 * 1000) {
+            var minutes = Math.floor(elapsedMs / 60000);
+            if (minutes < 1) {
+                return t("subscribe.recent.just_now");
+            }
+            return t("subscribe.recent.minutes_ago", { n: minutes });
+        }
+        var sameDay = then.getFullYear() === now.getFullYear()
+            && then.getMonth() === now.getMonth()
+            && then.getDate() === now.getDate();
+        if (sameDay) {
+            var hour = String(then.getHours()).padStart(2, "0");
+            var minute = String(then.getMinutes()).padStart(2, "0");
+            return t("subscribe.recent.today", { time: hour + ":" + minute });
+        }
+        return text;
+    }
+
+    function render_last_subscribe() {
+        var label = format_last_subscribe(g_last_subscribe_stamp);
+        var node = $("#last_subscribe");
+        node.text(label);
+        if (g_last_subscribe_stamp && label !== String(g_last_subscribe_stamp).trim()) {
+            node.attr("title", String(g_last_subscribe_stamp).trim());
+        } else {
+            node.removeAttr("title");
+        }
+    }
 
     var GROUP_EXPAND_STORAGE_KEY = "v2raypi.subscribe.groupExpanded";
 
@@ -588,7 +778,8 @@
 
     function refresh() {
         ajax_request({ url: "/subscribe_list" }).then(function (subscribe) {
-            $("#last_subscribe").html(subscribe["last_subscribe"]);
+            g_last_subscribe_stamp = subscribe["last_subscribe"] || "";
+            render_last_subscribe();
             var groups = Object.values(subscribe["subscribes"]);
             if (groups.length === 0) {
                 $("#update_all_subscribe").hide();
@@ -821,11 +1012,138 @@
         });
     }
 
+    var g_node_probe_dialog = null;
+    var g_node_probe_seq = 0;
+
+    function probe_flag_url(code) {
+        if (!code || !/^[A-Za-z]{2}$/.test(code)) {
+            return "";
+        }
+        return "https://cdn.jsdelivr.net/gh/HatScripts/circle-flags@2.7.0/flags/"
+            + code.toLowerCase() + ".svg";
+    }
+
+    function probe_latency_class(ms) {
+        if (ms <= 500) {
+            return "is-fast";
+        }
+        if (ms < 1000) {
+            return "is-fair";
+        }
+        return "is-slow";
+    }
+
+    function set_probe_flag(code) {
+        var $flag = $("#node_probe_flag");
+        var url = probe_flag_url(code);
+        if (!url) {
+            $flag.attr({ src: "", hidden: true, alt: "" });
+            return;
+        }
+        $flag
+            .off("error.probeFlag load.probeFlag")
+            .on("error.probeFlag", function () {
+                $(this).attr({ src: "", hidden: true, alt: "" });
+            })
+            .on("load.probeFlag", function () {
+                $(this).prop("hidden", false);
+            })
+            .attr({
+                src: url,
+                alt: String(code || "").toUpperCase(),
+                hidden: true
+            });
+    }
+
+    function set_probe_latency(ms) {
+        var $latency = $("#node_probe_latency");
+        if (typeof ms !== "number" || !isFinite(ms) || ms < 0) {
+            $latency.attr({ hidden: true, title: "" }).text("").removeClass("is-fast is-fair is-slow");
+            return;
+        }
+        var rounded = Math.round(ms);
+        $latency
+            .text(rounded + " ms")
+            .attr("title", t("subscribe.probe.latency", {ms: rounded}))
+            .removeClass("is-fast is-fair is-slow")
+            .addClass(probe_latency_class(rounded))
+            .prop("hidden", false);
+    }
+
+    function probe_error_message(data) {
+        if (data && data.error === "ipinfo_missing") {
+            return t("subscribe.probe.missing");
+        }
+        if (data && data.error === "ipinfo_rate_limited") {
+            return t("subscribe.probe.rateLimited");
+        }
+        return t("subscribe.probe.unavailable");
+    }
+
+    function finish_node_probe(seq) {
+        if (seq !== g_node_probe_seq || !g_node_probe_dialog) {
+            return false;
+        }
+        $("#node_probe_pending").prop("hidden", true);
+        g_node_probe_dialog.handleUpdate();
+        return true;
+    }
+
+    function render_node_probe_result(data) {
+        var location = [data.city, data.region, data.country]
+            .filter(function (part) { return !!part; })
+            .join(", ");
+        $("#node_probe_ip").text(data.ip || "-");
+        $("#node_probe_location").text(location || "-");
+        $("#node_probe_org").text(data.org || "-");
+        set_probe_latency(data.latency_ms);
+        set_probe_flag(data.country);
+        $("#node_probe_error").prop("hidden", true).text("");
+        $("#node_probe_result").prop("hidden", false);
+    }
+
+    function render_node_probe_error(data) {
+        $("#node_probe_result").prop("hidden", true);
+        $("#node_probe_error").text(probe_error_message(data)).prop("hidden", false);
+    }
+
+    function show_node_probe() {
+        var seq = ++g_node_probe_seq;
+        $("#node_probe_pending").prop("hidden", false);
+        $("#node_probe_result").prop("hidden", true);
+        $("#node_probe_error").prop("hidden", true).text("");
+        if (!g_node_probe_dialog) {
+            g_node_probe_dialog = new mdui.Dialog("#node_probe_dialog", {
+                history: false,
+                modal: false,
+                closeOnEsc: true
+            });
+        }
+        g_node_probe_dialog.open();
+        g_node_probe_dialog.handleUpdate();
+        ajax_request({ url: "/get_egress_ip?force=1" }).then(function (data) {
+            if (!finish_node_probe(seq)) {
+                return;
+            }
+            if (data && data.ok && data.ip) {
+                render_node_probe_result(data);
+            } else {
+                render_node_probe_error(data);
+            }
+            g_node_probe_dialog.handleUpdate();
+        }).fail(function () {
+            if (!finish_node_probe(seq)) {
+                return;
+            }
+            render_node_probe_error(null);
+            g_node_probe_dialog.handleUpdate();
+        });
+    }
+
     function apply_node(url, index) {
         pop_toast(t("subscribe.apply.in_progress"));
         ajax_request({ url: "/apply_node", data: {subscribe: url, node_index: index} }).then(function(data) {
             if (check_result(data)) {
-                update_toast(t("subscribe.apply.success"));
                 if (typeof update_header_status === "function") {
                     update_header_status(data);
                 } else if (typeof refresh_header_status === "function") {
@@ -852,13 +1170,16 @@
                         return $(this).data("url") === url;
                     }).find(".subscribe-index").addClass("running");
                 }
-                // Warm the egress-IP cache after the node change; Status will
-                // pick up the fresh result without waiting on the TTL.
-                ajax_request({ url: "/get_egress_ip?force=1" });
+                if (g_toast) {
+                    g_toast.close();
+                }
+                show_node_probe();
             } else {
                 update_toast(t("subscribe.apply.failed"));
+                close_toast();
             }
-        }).always(function() {
+        }).fail(function() {
+            update_toast(t("subscribe.apply.failed"));
             close_toast();
         });
     }
