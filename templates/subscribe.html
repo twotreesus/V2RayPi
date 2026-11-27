@@ -244,7 +244,7 @@
     <div class="mdui-dialog-content">
         <div id="node_probe_pending" class="node-probe-pending">
             <i class="mdui-icon material-icons node-probe-spinner">refresh</i>
-            <span data-i18n="subscribe.probe.pending">正在获取公网 IP...</span>
+            <span id="node_probe_status"></span>
         </div>
         <div id="node_probe_result" hidden>
             <div class="node-probe-row">
@@ -343,9 +343,6 @@
     }
     .node_running td.node_name {
         text-align: left;
-    }
-    .node-switch-dialog {
-        cursor: pointer;
     }
     .node-switch-dialog > .mdui-dialog-title {
         padding-right: 148px;
@@ -622,7 +619,8 @@
                     mdui.mutation();
                 }
             });
-            dialog.$element.one("click", function() {
+            dialog.$element.find(".node-switch-confirm").one("click", function(e) {
+                e.stopPropagation();
                 dialog.close();
                 apply_node(url, index);
             });
@@ -1104,12 +1102,42 @@
         return t("subscribe.probe.unavailable");
     }
 
+    function update_node_probe_layout() {
+        if (!g_node_probe_dialog || !g_node_probe_dialog.isOpen()) {
+            return;
+        }
+        g_node_probe_dialog.handleUpdate();
+    }
+
+    function ensure_node_probe_dialog() {
+        if (!g_node_probe_dialog) {
+            g_node_probe_dialog = new mdui.Dialog("#node_probe_dialog", {
+                history: false,
+                modal: false,
+                closeOnEsc: true
+            });
+            g_node_probe_dialog.$element.on("opened.mdui.dialog", update_node_probe_layout);
+        }
+        if (!g_node_probe_dialog.isOpen()) {
+            g_node_probe_dialog.open();
+        }
+    }
+
+    function reset_node_probe_dialog(statusText) {
+        $("#node_probe_status").text(statusText);
+        $("#node_probe_pending").prop("hidden", false);
+        $("#node_probe_ok").prop("hidden", true);
+        $("#node_probe_result").prop("hidden", true);
+        $("#node_probe_error").prop("hidden", true).text("");
+        ensure_node_probe_dialog();
+        update_node_probe_layout();
+    }
+
     function finish_node_probe(seq) {
         if (seq !== g_node_probe_seq || !g_node_probe_dialog) {
             return false;
         }
         $("#node_probe_pending").prop("hidden", true);
-        g_node_probe_dialog.handleUpdate();
         return true;
     }
 
@@ -1133,21 +1161,17 @@
         $("#node_probe_error").text(probe_error_message(data)).prop("hidden", false);
     }
 
-    function show_node_probe() {
-        var seq = ++g_node_probe_seq;
-        $("#node_probe_pending").prop("hidden", false);
+    function render_node_apply_error() {
+        $("#node_probe_pending").prop("hidden", true);
         $("#node_probe_ok").prop("hidden", true);
         $("#node_probe_result").prop("hidden", true);
-        $("#node_probe_error").prop("hidden", true).text("");
-        if (!g_node_probe_dialog) {
-            g_node_probe_dialog = new mdui.Dialog("#node_probe_dialog", {
-                history: false,
-                modal: false,
-                closeOnEsc: true
-            });
-        }
-        g_node_probe_dialog.open();
-        g_node_probe_dialog.handleUpdate();
+        $("#node_probe_error").text(t("subscribe.apply.failed")).prop("hidden", false);
+        update_node_probe_layout();
+    }
+
+    function begin_node_probe(seq) {
+        $("#node_probe_status").text(t("subscribe.probe.pending"));
+        update_node_probe_layout();
         ajax_request({ url: "/get_egress_ip?force=1" }).then(function (data) {
             if (!finish_node_probe(seq)) {
                 return;
@@ -1157,57 +1181,63 @@
             } else {
                 render_node_probe_error(data);
             }
-            g_node_probe_dialog.handleUpdate();
+            update_node_probe_layout();
         }).fail(function () {
             if (!finish_node_probe(seq)) {
                 return;
             }
             render_node_probe_error(null);
-            g_node_probe_dialog.handleUpdate();
+            update_node_probe_layout();
         });
     }
 
-    function apply_node(url, index) {
-        pop_toast(t("subscribe.apply.in_progress"));
-        ajax_request({ url: "/apply_node", data: {subscribe: url, node_index: index} }).then(function(data) {
-            if (check_result(data)) {
-                if (typeof update_header_status === "function") {
-                    update_header_status(data);
-                } else if (typeof refresh_header_status === "function") {
-                    refresh_header_status();
-                }
-                $(".node_running").removeClass("node_running");
-                $(".subscribe-index").removeClass("running");
+    function mark_applied_node(url, index) {
+        $(".node_running").removeClass("node_running");
+        $(".subscribe-index").removeClass("running");
 
-                var current_node = $("#node_list_body tr").filter(function() {
-                    return $(this).data("url") === url && $(this).data("index") === index;
-                });
-                current_node.addClass("node_running");
+        var current_node = $("#node_list_body tr").filter(function() {
+            return $(this).data("url") === url && $(this).data("index") === index;
+        });
+        current_node.addClass("node_running");
 
-                if (url === "manual") {
-                    $("#real_manual .subscribe-index").addClass("running");
-                    var ps = current_node.find(".node_name").data("ps");
-                    if (ps) {
-                        $("#node_list_body tr").filter(function() {
-                            return $(this).data("url") !== 'manual' && $(this).find(".node_name").data("ps") === ps;
-                        }).addClass("node_running");
-                    }
-                } else {
-                    $("#node_list_body tr").filter(function() {
-                        return $(this).data("url") === url;
-                    }).find(".subscribe-index").addClass("running");
-                }
-                if (g_toast) {
-                    g_toast.close();
-                }
-                show_node_probe();
-            } else {
-                update_toast(t("subscribe.apply.failed"));
-                close_toast();
+        if (url === "manual") {
+            $("#real_manual .subscribe-index").addClass("running");
+            var ps = current_node.find(".node_name").data("ps");
+            if (ps) {
+                $("#node_list_body tr").filter(function() {
+                    return $(this).data("url") !== "manual" && $(this).find(".node_name").data("ps") === ps;
+                }).addClass("node_running");
             }
+        } else {
+            $("#node_list_body tr").filter(function() {
+                return $(this).data("url") === url;
+            }).find(".subscribe-index").addClass("running");
+        }
+    }
+
+    function apply_node(url, index) {
+        var seq = ++g_node_probe_seq;
+        reset_node_probe_dialog(t("subscribe.apply.in_progress"));
+        ajax_request({ url: "/apply_node", data: {subscribe: url, node_index: index} }).then(function(data) {
+            if (seq !== g_node_probe_seq) {
+                return;
+            }
+            if (!check_result(data)) {
+                render_node_apply_error();
+                return;
+            }
+            if (typeof update_header_status === "function") {
+                update_header_status(data);
+            } else if (typeof refresh_header_status === "function") {
+                refresh_header_status();
+            }
+            mark_applied_node(url, index);
+            begin_node_probe(seq);
         }).fail(function() {
-            update_toast(t("subscribe.apply.failed"));
-            close_toast();
+            if (seq !== g_node_probe_seq) {
+                return;
+            }
+            render_node_apply_error();
         });
     }
     
